@@ -1,0 +1,49 @@
+@font-face {
+    font-family: 'Foco Trial';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_Rg.woff') format('truetype');
+}
+@font-face {
+    font-family: 'Foco Trial';
+    font-style: italic;
+    font-weight: 400;
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_It.woff') format('truetype');
+}
+@font-face {
+    font-family: 'Foco Trial';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_Lt.woff') format('truetype');
+}
+@font-face {
+    font-family: 'Foco Trial';
+    font-style: italic;
+    font-weight: 300;
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_LtIt.woff') format('truetype');
+}
+@font-face {
+    font-family: 'Foco Trial';
+    font-style: normal;
+    font-weight: 700;
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_Bd.woff') format('truetype');
+}
+@font-face {
+    font-family: 'Foco Trial';
+    font-style: italic;
+    font-weight: 700;
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_BdIt.woff') format('truetype');
+}
+@font-face {
+    font-family: 'Foco Trial';
+    font-style: normal;
+    font-weight: 900;
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_Blk.woff') format('truetype');
+}
+@font-face {
+    font-family: 'Foco Trial';
+    font-style: italic;
+    font-weight: 900;
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_BlkIt.woff') format('truetype');
+}
+

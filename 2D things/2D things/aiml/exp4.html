@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Regression Simulation</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            /* Colors */
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --warning-color: #f1c40f;
+            --point-color: #e74c3c;
+            --line-color: #3498db;
+
+            /* Spacing */
+            --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+            --spacing-sm: clamp(0.5rem, 1vw, 1rem);
+            --spacing-md: clamp(1rem, 2vw, 1.5rem);
+            --spacing-lg: clamp(1.5rem, 3vw, 2rem);
+
+            /* Typography */
+            --font-size-sm: clamp(0.875rem, 1.5vw, 1rem);
+            --font-size-md: clamp(1rem, 2vw, 1.25rem);
+            --font-size-lg: clamp(1.25rem, 2.5vw, 1.5rem);
+            --font-size-xl: clamp(1.5rem, 3vw, 2rem);
+
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-slow: 350ms ease;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+
+            /* Border Radius */
+            --border-radius-sm: 4px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+        }
+
+        body {
+            background-color: var(--background-color);
+            padding: var(--spacing-md);
+            color: var(--text-color);
+            font-size: var(--font-size-md);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: min(1000px, 95vw);
+            margin: 0 auto;
+            padding: var(--spacing-md);
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin: var(--spacing-md) 0;
+            box-shadow: var(--shadow-md);
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: var(--spacing-md) 0;
+            width: 100%;
+            aspect-ratio: 2/1;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #regressionCanvas {
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            background-color: var(--card-background);
+            cursor: crosshair;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        #regressionCanvas:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .controls {
+            margin: var(--spacing-md) 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+            align-items: center;
+        }
+
+        .equation {
+            font-family: 'Courier New', monospace;
+            font-size: var(--font-size-lg);
+            padding: var(--spacing-sm);
+            background-color: var(--background-color);
+            border-radius: var(--border-radius-md);
+            margin: var(--spacing-sm) 0;
+            flex-grow: 1;
+            text-align: center;
+            transition: background-color var(--transition-normal);
+        }
+
+        .equation:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .instructions {
+            background-color: rgba(52, 152, 219, 0.1);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            margin: var(--spacing-sm) 0;
+            transition: background-color var(--transition-normal);
+        }
+
+        .instructions:hover {
+            background-color: rgba(52, 152, 219, 0.15);
+        }
+
+        .point-info {
+            font-family: monospace;
+            margin: var(--spacing-sm) 0;
+            padding: var(--spacing-sm);
+            background-color: var(--background-color);
+            border-radius: var(--border-radius-md);
+            min-height: 2em;
+            transition: background-color var(--transition-normal);
+        }
+
+        .point-info:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius-sm);
+            border: none;
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .error-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .success-message {
+            color: var(--success-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .success-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--spacing-sm);
+            }
+
+            .card {
+                padding: var(--spacing-md);
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .equation {
+                font-size: var(--font-size-md);
+            }
+
+            .point-info {
+                font-size: var(--font-size-sm);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">📈 Linear Regression</h1>
+
+        
+        <div class="card">
+            <div class="instructions">
+                <h3>How to Use:</h3>
+                <ol>
+                    <li>Click on the canvas to add data points</li>
+                    <li>After adding 2 or more points, the best fit line will be calculated and drawn</li>
+                    <li>Click "Reset" to clear all points and start over</li>
+                    <li>Hover over points to see their coordinates</li>
+                </ol>
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <div class="canvas-container">
+                <canvas id="regressionCanvas" width="800" height="400"></canvas>
+            </div>
+
+            <div class="controls">
+                <button onclick="resetCanvas()" class="btn btn-danger">Reset</button>
+                <div class="equation" id="equationDisplay">y = mx + b</div>
+                <div class="point-info" id="pointInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('regressionCanvas');
+        const ctx = canvas.getContext('2d');
+        const points = [];
+        let animationFrame = null;
+        let currentLine = { m: 0, b: 0 };
+        let targetLine = { m: 0, b: 0 };
+
+        // Canvas dimensions and scaling
+        const PADDING = 40;
+        const SCALE = 1;
+        const POINT_RADIUS = 5;
+
+        // Initialize canvas
+        function initCanvas() {
+            // Set canvas size based on container
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            // Draw axes
+            drawAxes();
+
+            // Add resize handler
+            window.addEventListener('resize', handleResize);
+        }
+
+        // Draw coordinate axes
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+
+            // X-axis
+            ctx.moveTo(PADDING, canvas.height - PADDING);
+            ctx.lineTo(canvas.width - PADDING, canvas.height - PADDING);
+
+            // Y-axis
+            ctx.moveTo(PADDING, PADDING);
+            ctx.lineTo(PADDING, canvas.height - PADDING);
+
+            ctx.stroke();
+
+            // Add axis labels
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.fillText('x', canvas.width - PADDING + 5, canvas.height - PADDING + 15);
+            ctx.fillText('y', PADDING - 15, PADDING - 5);
+        }
+
+        // Convert screen coordinates to data coordinates
+        function screenToData(screenX, screenY) {
+            return {
+                x: (screenX - PADDING) / SCALE,
+                y: (canvas.height - PADDING - screenY) / SCALE
+            };
+        }
+
+        // Convert data coordinates to screen coordinates
+        function dataToScreen(dataX, dataY) {
+            return {
+                x: dataX * SCALE + PADDING,
+                y: canvas.height - PADDING - dataY * SCALE
+            };
+        }
+
+        // Draw a point
+        function drawPoint(x, y, color = 'var(--point-color)', isHovered = false) {
+            const screen = dataToScreen(x, y);
+            ctx.beginPath();
+            ctx.arc(screen.x, screen.y, POINT_RADIUS * (isHovered ? 1.2 : 1), 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = isHovered ? '#fff' : 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = isHovered ? 3 : 2;
+            ctx.stroke();
+
+            if (isHovered) {
+                // Draw coordinates
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, screen.x + 10, screen.y - 10);
+            }
+        }
+
+        // Draw the regression line
+        function drawLine(m, b, color = 'var(--line-color)') {
+            const x1 = 0;
+            const x2 = (canvas.width - 2 * PADDING) / SCALE;
+            const y1 = m * x1 + b;
+            const y2 = m * x2 + b;
+
+            const screen1 = dataToScreen(x1, y1);
+            const screen2 = dataToScreen(x2, y2);
+
+            ctx.beginPath();
+            ctx.moveTo(screen1.x, screen1.y);
+            ctx.lineTo(screen2.x, screen2.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw equation at the end of the line
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim();
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(`y = ${m.toFixed(2)}x + ${b.toFixed(2)}`, screen2.x - 5, screen2.y - 5);
+        }
+
+        // Calculate linear regression
+        function calculateRegression() {
+            if (points.length < 2) return null;
+
+            // Calculate means
+            const meanX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+            const meanY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+
+            // Calculate slope (m) and y-intercept (b)
+            let numerator = 0;
+            let denominator = 0;
+
+            for (const point of points) {
+                numerator += (point.x - meanX) * (point.y - meanY);
+                denominator += Math.pow(point.x - meanX, 2);
+            }
+
+            const m = numerator / denominator;
+            const b = meanY - m * meanX;
+
+            return { m, b };
+        }
+
+        // Animate the line
+        async function animateLine() {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+
+            const startTime = performance.now();
+            const duration = 1000; // 1 second animation
+
+            function update(timestamp) {
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Interpolate between current and target line
+                const m = currentLine.m + (targetLine.m - currentLine.m) * progress;
+                const b = currentLine.b + (targetLine.b - currentLine.b) * progress;
+
+                // Clear canvas and redraw
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawAxes();
+                points.forEach(p => drawPoint(p.x, p.y));
+                drawLine(m, b);
+
+                // Update equation display
+                document.getElementById('equationDisplay').textContent =
+                    `y = ${m.toFixed(2)}x + ${b.toFixed(2)}`;
+
+                if (progress < 1) {
+                    animationFrame = requestAnimationFrame(update);
+                } else {
+                    currentLine = { ...targetLine };
+                }
+            }
+
+            animationFrame = requestAnimationFrame(update);
+        }
+
+        // Handle canvas click
+        canvas.addEventListener('click', async (event) => {
+            try {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                // Validate click position
+                if (x < PADDING || x > canvas.width - PADDING ||
+                    y < PADDING || y > canvas.height - PADDING) {
+                    throw new Error('Please click within the plot area');
+                }
+
+                // Convert to data coordinates
+                const data = screenToData(x, y);
+                points.push(data);
+
+                // Redraw canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawAxes();
+                points.forEach(p => drawPoint(p.x, p.y));
+
+                // Calculate and draw regression line if we have enough points
+                if (points.length >= 2) {
+                    const regression = calculateRegression();
+                    if (regression) {
+                        targetLine = regression;
+                        await animateLine();
+                        showSuccess('Regression line updated!');
+                    }
+                }
+
+                // Update point info
+                updatePointInfo();
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        // Handle mouse move for point hover
+        canvas.addEventListener('mousemove', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const data = screenToData(x, y);
+
+            // Check if mouse is near any point
+            const hoveredPoint = points.find(p => {
+                const screen = dataToScreen(p.x, p.y);
+                const dx = screen.x - x;
+                const dy = screen.y - y;
+                return Math.sqrt(dx * dx + dy * dy) < POINT_RADIUS;
+            });
+
+            if (hoveredPoint) {
+                canvas.style.cursor = 'pointer';
+                document.getElementById('pointInfo').textContent =
+                    `Point: (${hoveredPoint.x.toFixed(2)}, ${hoveredPoint.y.toFixed(2)})`;
+            } else {
+                canvas.style.cursor = 'crosshair';
+                document.getElementById('pointInfo').textContent = '';
+            }
+        });
+
+        // Reset canvas
+        async function resetCanvas() {
+            if (points.length > 0 && !confirm('Are you sure you want to reset the canvas?')) {
+                return;
+            }
+
+            try {
+                setLoading('resetButton', true);
+                points.length = 0;
+                currentLine = { m: 0, b: 0 };
+                targetLine = { m: 0, b: 0 };
+                if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawAxes();
+                document.getElementById('equationDisplay').textContent = 'y = mx + b';
+                document.getElementById('pointInfo').textContent = '';
+                showSuccess('Canvas reset successfully!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('resetButton', false);
+            }
+        }
+
+        // Update point information display
+        function updatePointInfo() {
+            const info = points.map((p, i) =>
+                `Point ${i + 1}: (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`
+            ).join('\n');
+            document.getElementById('pointInfo').textContent = info;
+        }
+
+        // Add loading state management
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.classList.toggle('loading', isLoading);
+                button.disabled = isLoading;
+            }
+        }
+
+        // Add error handling
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            document.querySelector('.controls').insertAdjacentElement('beforeend', errorDiv);
+
+            // Show error
+            setTimeout(() => errorDiv.classList.add('visible'), 10);
+
+            // Remove error after 3 seconds
+            setTimeout(() => {
+                errorDiv.classList.remove('visible');
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Add success message
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.textContent = message;
+            document.querySelector('.controls').insertAdjacentElement('beforeend', successDiv);
+
+            // Show success
+            setTimeout(() => successDiv.classList.add('visible'), 10);
+
+            // Remove success after 3 seconds
+            setTimeout(() => {
+                successDiv.classList.remove('visible');
+                setTimeout(() => successDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Handle canvas resize
+        function handleResize() {
+            const container = canvas.parentElement;
+            const oldWidth = canvas.width;
+            const oldHeight = canvas.height;
+
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            // Redraw everything
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAxes();
+            points.forEach(p => drawPoint(p.x, p.y));
+            if (points.length >= 2) {
+                drawLine(currentLine.m, currentLine.b);
+            }
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        resetCanvas();
+                        break;
+                    case 'z':
+                        e.preventDefault();
+                        if (points.length > 0) {
+                            points.pop();
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            drawAxes();
+                            points.forEach(p => drawPoint(p.x, p.y));
+                            if (points.length >= 2) {
+                                const regression = calculateRegression();
+                                if (regression) {
+                                    targetLine = regression;
+                                    animateLine();
+                                }
+                            } else {
+                                document.getElementById('equationDisplay').textContent = 'y = mx + b';
+                            }
+                            updatePointInfo();
+                            showSuccess('Last point removed!');
+                        }
+                        break;
+                }
+            }
+        });
+
+        // Initialize the page
+        window.onload = function () {
+            // Add reset button with ID
+            const resetButton = document.querySelector('button');
+            resetButton.id = 'resetButton';
+
+            // Add keyboard shortcut hints
+            const shortcutHints = document.createElement('div');
+            shortcutHints.className = 'text-muted mt-2';
+            shortcutHints.style.fontSize = 'var(--font-size-sm)';
+            shortcutHints.innerHTML = 'Keyboard shortcuts:<br>Ctrl + R: Reset canvas<br>Ctrl + Z: Undo last point';
+            resetButton.parentNode.insertBefore(shortcutHints, resetButton.nextSibling);
+
+            // Initialize canvas
+            initCanvas();
+        };
+    </script>
+</body>
+
+</html>

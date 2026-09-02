@@ -1,0 +1,13 @@
+@font-face {
+    font-family: 'Zacbel X';
+    src: local('Zacbel X'), url('https://fonts.cdnfonts.com/s/83998/zacbelx-extrabold.woff') format('woff');
+    font-weight: 800;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Zacbel X Medium';
+    src: local('Zacbel X Medium'), url('https://fonts.cdnfonts.com/s/83998/zacbelx-medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+}

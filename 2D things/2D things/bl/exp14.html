@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 14: Scalability & Performance</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --performance-color: #27ae60;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .optimization-panel,
+        .performance-panel {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: clamp(10px, 2vw, 15px);
+            padding-bottom: clamp(5px, 1.5vw, 10px);
+            border-bottom: 2px solid var(--performance-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .optimization-controls {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+        }
+
+        .optimization-method {
+            margin-bottom: clamp(15px, 3vw, 20px);
+            padding: clamp(12px, 2.5vw, 15px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .optimization-method:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .method-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .method-name {
+            font-weight: bold;
+            color: var(--performance-color);
+            font-size: clamp(1em, 1.5vw, 1.2em);
+        }
+
+        .method-description {
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .method-parameters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+            gap: clamp(8px, 1.5vw, 10px);
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .parameter-group {
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .parameter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+        }
+
+        .parameter-group input,
+        .parameter-group select {
+            width: 100%;
+            padding: clamp(8px, 1.5vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .parameter-group input:focus,
+        .parameter-group select:focus {
+            border-color: var(--performance-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2);
+        }
+
+        .button {
+            background-color: var(--performance-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #219a52;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            color: var(--performance-color);
+            font-family: monospace;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .performance-log {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .log-entry.optimization {
+            color: var(--performance-color);
+        }
+
+        .log-entry.warning {
+            color: var(--warning-color);
+        }
+
+        .log-entry.error {
+            color: var(--accent-color);
+        }
+
+        .optimization-status {
+            margin: 20px 0;
+        }
+
+        .status-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .status-name {
+            font-weight: bold;
+            color: var(--performance-color);
+        }
+
+        .status-indicator {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-inactive {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .status-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .status-progress {
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--performance-color);
+            transition: width 0.3s ease;
+        }
+
+        .optimization-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .optimization-button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .optimization-button.activate {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .optimization-button.deactivate {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .optimization-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .network-visualization {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            min-height: 200px;
+            position: relative;
+        }
+
+        .node {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: var(--secondary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .node.active {
+            background: var(--success-color);
+        }
+
+        .node.inactive {
+            background: var(--accent-color);
+        }
+
+        .connection {
+            position: absolute;
+            height: 2px;
+            background: #ddd;
+            transform-origin: left center;
+        }
+
+        .connection.active {
+            background: var(--success-color);
+        }
+
+        .connection.inactive {
+            background: var(--accent-color);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .node.optimizing {
+            animation: pulse 1s infinite;
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .method-parameters {
+                grid-template-columns: 1fr;
+            }
+
+            .performance-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .optimization-controls {
+                flex-direction: column;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Scalability & Performance</h1>
+            <p class="experiment-description">Exploring blockchain scalability through optimization techniques and
+                performance monitoring</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="optimization-panel">
+                <h2 class="panel-title">Optimization Methods</h2>
+                <div class="optimization-controls">
+                    <div class="optimization-method">
+                        <div class="method-header">
+                            <span class="method-name">State Channels</span>
+                        </div>
+                        <div class="method-description">
+                            Off-chain transaction processing to reduce blockchain load
+                        </div>
+                        <div class="method-parameters">
+                            <div class="parameter-group">
+                                <label>Channel Capacity</label>
+                                <input type="number" id="channelCapacity" min="100" max="10000" value="1000">
+                            </div>
+                            <div class="parameter-group">
+                                <label>Timeout (blocks)</label>
+                                <input type="number" id="channelTimeout" min="1" max="100" value="10">
+                            </div>
+                        </div>
+                        <button class="button" onclick="createStateChannel()">Create Channel</button>
+                    </div>
+
+                    <div class="optimization-method">
+                        <div class="method-header">
+                            <span class="method-name">Block Size Optimization</span>
+                        </div>
+                        <div class="method-description">
+                            Dynamic block size adjustment based on network load
+                        </div>
+                        <div class="method-parameters">
+                            <div class="parameter-group">
+                                <label>Base Size (KB)</label>
+                                <input type="number" id="baseBlockSize" min="1" max="100" value="2">
+                            </div>
+                            <div class="parameter-group">
+                                <label>Growth Rate</label>
+                                <select id="growthRate">
+                                    <option value="linear">Linear</option>
+                                    <option value="exponential">Exponential</option>
+                                    <option value="adaptive">Adaptive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="button" onclick="optimizeBlockSize()">Optimize Size</button>
+                    </div>
+
+                    <div class="optimization-method">
+                        <div class="method-header">
+                            <span class="method-name">Consensus Optimization</span>
+                        </div>
+                        <div class="method-description">
+                            Consensus mechanism tuning for better performance
+                        </div>
+                        <div class="method-parameters">
+                            <div class="parameter-group">
+                                <label>Consensus Type</label>
+                                <select id="consensusType">
+                                    <option value="pow">Proof of Work</option>
+                                    <option value="pos">Proof of Stake</option>
+                                    <option value="pbft">PBFT</option>
+                                </select>
+                            </div>
+                            <div class="parameter-group">
+                                <label>Block Time (seconds)</label>
+                                <input type="number" id="blockTime" min="1" max="60" value="15">
+                            </div>
+                        </div>
+                        <button class="button" onclick="optimizeConsensus()">Optimize Consensus</button>
+                    </div>
+                </div>
+
+                <div class="optimization-status">
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-name">Network Load</span>
+                            <span class="status-indicator status-active">Optimal</span>
+                        </div>
+                        <div class="status-description">
+                            Current network utilization and performance
+                        </div>
+                        <div class="status-progress">
+                            <div class="progress-bar" id="networkLoadBar" style="width: 45%"></div>
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-name">Optimization Status</span>
+                            <span class="status-indicator status-active">Active</span>
+                        </div>
+                        <div class="status-description">
+                            Current optimization techniques in effect
+                        </div>
+                        <div class="status-progress">
+                            <div class="progress-bar" id="optimizationBar" style="width: 75%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="network-visualization" id="networkVisualization">
+                    
+                </div>
+
+                <div class="performance-log" id="optimizationLog">
+                    
+                </div>
+            </div>
+
+            <div class="performance-panel">
+                <h2 class="panel-title">Performance Metrics</h2>
+                <div class="performance-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Transactions Per Second</div>
+                        <div class="metric-value" id="tps">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Block Time</div>
+                        <div class="metric-value" id="blockTime">0s</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Network Latency</div>
+                        <div class="metric-value" id="latency">0ms</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+
+                <div class="performance-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Active Channels</div>
+                        <div class="metric-value" id="activeChannels">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Block Size</div>
+                        <div class="metric-value" id="blockSize">0 KB</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Optimization Level</div>
+                        <div class="metric-value" id="optimizationLevel">0%</div>
+                    </div>
+                </div>
+
+                <div class="performance-log" id="performanceLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class OptimizationSystem {
+            constructor() {
+                this.metrics = {
+                    tps: 0,
+                    blockTime: 15,
+                    latency: 0,
+                    activeChannels: 0,
+                    blockSize: 2,
+                    optimizationLevel: 0,
+                    networkLoad: 45,
+                    optimizationStatus: 75
+                };
+                this.channels = new Map();
+                this.nodes = new Set();
+                this.performanceData = {
+                    labels: [],
+                    tps: [],
+                    latency: [],
+                    blockSize: []
+                };
+                this.chart = null;
+                this.initializeChart();
+            }
+
+            initializeChart() {
+                const ctx = document.getElementById('performanceChart').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: this.performanceData.labels,
+                        datasets: [{
+                            label: 'TPS',
+                            data: this.performanceData.tps,
+                            borderColor: '#27ae60',
+                            tension: 0.4
+                        }, {
+                            label: 'Latency (ms)',
+                            data: this.performanceData.latency,
+                            borderColor: '#e74c3c',
+                            tension: 0.4
+                        }, {
+                            label: 'Block Size (KB)',
+                            data: this.performanceData.blockSize,
+                            borderColor: '#3498db',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            createStateChannel(capacity, timeout) {
+                const id = Math.random().toString(36).substr(2, 9);
+                const channel = {
+                    id,
+                    capacity,
+                    timeout,
+                    status: 'active',
+                    transactions: 0,
+                    createdAt: Date.now()
+                };
+                this.channels.set(id, channel);
+                this.metrics.activeChannels++;
+                this.updateMetrics();
+                return channel;
+            }
+
+            optimizeBlockSize(baseSize, growthRate) {
+                const currentSize = this.metrics.blockSize;
+                let newSize;
+
+                switch (growthRate) {
+                    case 'linear':
+                        newSize = currentSize + 0.5;
+                        break;
+                    case 'exponential':
+                        newSize = currentSize * 1.2;
+                        break;
+                    case 'adaptive':
+                        newSize = this.metrics.networkLoad > 70 ?
+                            currentSize * 1.1 : currentSize * 0.9;
+                        break;
+                }
+
+                this.metrics.blockSize = Math.min(Math.max(newSize, 1), 100);
+                this.updateMetrics();
+            }
+
+            optimizeConsensus(type, blockTime) {
+                this.metrics.blockTime = blockTime;
+                this.metrics.optimizationLevel =
+                    (this.metrics.activeChannels / 10 +
+                        this.metrics.blockSize / 100 +
+                        (60 - blockTime) / 60) * 100;
+                this.updateMetrics();
+            }
+
+            updateMetrics() {
+                // Update metrics display
+                document.getElementById('tps').textContent =
+                    this.metrics.tps.toFixed(1);
+                document.getElementById('blockTime').textContent =
+                    `${this.metrics.blockTime}s`;
+                document.getElementById('latency').textContent =
+                    `${this.metrics.latency}ms`;
+                document.getElementById('activeChannels').textContent =
+                    this.metrics.activeChannels;
+                document.getElementById('blockSize').textContent =
+                    `${this.metrics.blockSize.toFixed(1)} KB`;
+                document.getElementById('optimizationLevel').textContent =
+                    `${this.metrics.optimizationLevel.toFixed(1)}%`;
+
+                // Update progress bars
+                document.getElementById('networkLoadBar').style.width =
+                    `${this.metrics.networkLoad}%`;
+                document.getElementById('optimizationBar').style.width =
+                    `${this.metrics.optimizationStatus}%`;
+
+                // Update chart
+                this.updateChart();
+
+                // Update network visualization
+                this.updateNetworkVisualization();
+            }
+
+            updateChart() {
+                const now = new Date().toLocaleTimeString();
+                this.performanceData.labels.push(now);
+                this.performanceData.tps.push(this.metrics.tps);
+                this.performanceData.latency.push(this.metrics.latency);
+                this.performanceData.blockSize.push(this.metrics.blockSize);
+
+                if (this.performanceData.labels.length > 20) {
+                    this.performanceData.labels.shift();
+                    this.performanceData.tps.shift();
+                    this.performanceData.latency.shift();
+                    this.performanceData.blockSize.shift();
+                }
+
+                this.chart.update();
+            }
+
+            updateNetworkVisualization() {
+                const container = document.getElementById('networkVisualization');
+                container.innerHTML = '';
+
+                // Add nodes
+                for (let i = 0; i < 5; i++) {
+                    const node = document.createElement('div');
+                    node.className = `node ${i < 3 ? 'active' : 'inactive'}`;
+                    node.textContent = i + 1;
+                    node.style.left = `${20 + i * 15}%`;
+                    node.style.top = `${30 + Math.random() * 40}%`;
+                    container.appendChild(node);
+                }
+
+                // Add connections
+                for (let i = 0; i < 4; i++) {
+                    const connection = document.createElement('div');
+                    connection.className = `connection ${i < 2 ? 'active' : 'inactive'}`;
+                    connection.style.left = `${20 + i * 15}%`;
+                    connection.style.top = '45%';
+                    connection.style.width = '15%';
+                    connection.style.transform = 'rotate(0deg)';
+                    container.appendChild(connection);
+                }
+            }
+
+            simulateNetworkActivity() {
+                setInterval(() => {
+                    this.metrics.tps = Math.random() * 100;
+                    this.metrics.latency = Math.random() * 1000;
+                    this.metrics.networkLoad = Math.random() * 100;
+                    this.updateMetrics();
+                }, 1000);
+            }
+        }
+
+        let optimizationSystem = new OptimizationSystem();
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        async function createStateChannel() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const capacity = parseInt(document.getElementById('channelCapacity').value);
+                const timeout = parseInt(document.getElementById('channelTimeout').value);
+
+                if (capacity < 100) {
+                    throw new Error('Channel capacity must be at least 100');
+                }
+                if (timeout < 1) {
+                    throw new Error('Timeout must be at least 1 block');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const channel = optimizationSystem.createStateChannel(capacity, timeout);
+                addLogEntry(`Created state channel ${channel.id} with capacity ${capacity}`, 'optimization');
+                optimizationSystem.updateMetrics();
+            } catch (error) {
+                showError('channelError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function optimizeBlockSize() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const baseSize = parseInt(document.getElementById('baseBlockSize').value);
+                const growthRate = document.getElementById('growthRate').value;
+
+                if (baseSize < 1) {
+                    throw new Error('Base block size must be at least 1 KB');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                optimizationSystem.optimizeBlockSize(baseSize, growthRate);
+                addLogEntry(`Optimized block size to ${optimizationSystem.metrics.blockSize.toFixed(1)} KB`, 'optimization');
+                optimizationSystem.updateMetrics();
+            } catch (error) {
+                showError('blockSizeError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function optimizeConsensus() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const consensusType = document.getElementById('consensusType').value;
+                const blockTime = parseInt(document.getElementById('blockTime').value);
+
+                if (blockTime < 1) {
+                    throw new Error('Block time must be at least 1 second');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                optimizationSystem.optimizeConsensus(consensusType, blockTime);
+                addLogEntry(`Optimized consensus to ${consensusType} with ${blockTime}s block time`, 'optimization');
+                optimizationSystem.updateMetrics();
+            } catch (error) {
+                showError('consensusError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        function addLogEntry(message, type = '') {
+            const log = document.getElementById('optimizationLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                createStateChannel();
+            } else if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                optimizeBlockSize();
+            } else if (e.ctrlKey && e.key === '3') {
+                e.preventDefault();
+                optimizeConsensus();
+            }
+        });
+
+        // Initialize the optimization system
+        optimizationSystem.simulateNetworkActivity();
+        addLogEntry('Optimization system initialized', 'info');
+    </script>
+</body>
+
+</html>

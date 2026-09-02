@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 10: Backtracking Algorithms</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Backtracking Algorithms</h1>
+        <p style="text-align: center; color: var(--text-secondary);">Interactive visualization of N-Queens and Sudoku problems</p>
+
+        <div class="visualization-container">
+            <div class="card">
+                <h2>N-Queens Problem</h2>
+                <div class="controls">
+                    <input type="number" id="nQueens" min="4" max="8" value="4" placeholder="Board Size (N)">
+                    <button onclick="solveNQueens()">Solve N-Queens</button>
+                    <button onclick="resetNQueens()">Reset</button>
+                </div>
+                <div id="nQueensBoard" style="text-align: center; margin: 20px 0;"></div>
+                <div id="nQueensResult" style="text-align: center; margin: 20px 0; color: var(--text-secondary);"></div>
+                <div class="complexity-chart">
+                    <canvas id="nQueensChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Sudoku Solver</h2>
+                <div class="controls">
+                    <button onclick="generateSudoku()">Generate Sudoku</button>
+                    <button onclick="solveSudoku()">Solve Sudoku</button>
+                    <button onclick="resetSudoku()">Reset</button>
+                </div>
+                <div id="sudokuBoard" style="text-align: center; margin: 20px 0;"></div>
+                <div id="sudokuResult" style="text-align: center; margin: 20px 0; color: var(--text-secondary);"></div>
+                <div class="complexity-chart">
+                    <canvas id="sudokuChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Sum of Subset Problem (Backtracking)</h2>
+                <div class="controls">
+                    <input type="text" id="subsetSet" value="3, 34, 4, 12, 5, 2" placeholder="Set (comma separated)">
+                    <input type="number" id="subsetTarget" value="9" placeholder="Target Sum">
+                    <button onclick="runSumOfSubset()">Find Subsets</button>
+                    <button onclick="resetSumOfSubset()">Reset</button>
+                </div>
+                <div id="subsetVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="subsetResult" style="text-align: center; margin: 20px 0;"></div>
+            </div>
+        </div>
+
+        <div class="card explanation">
+            <h3>Algorithm Analysis</h3>
+            <p><strong>N-Queens:</strong> O(N!) time complexity, O(N²) space complexity - worst case explores all permutations</p>
+            <p><strong>Sudoku:</strong> O(9^(n*n)) time complexity, O(n²) space complexity - where n is the size of the board</p>
+            <p><strong>Note:</strong> Both algorithms use backtracking to explore possible solutions and backtrack when constraints are violated</p>
+        </div>
+    </div>
+
+    <script>
+        let charts = {};
+
+        // N-Queens Implementation
+        function createNQueensBoard(n) {
+            const board = document.getElementById('nQueensBoard');
+            board.innerHTML = '';
+            
+            const table = document.createElement('table');
+            table.style.borderCollapse = 'collapse';
+            table.style.margin = '0 auto';
+            
+            for (let i = 0; i < n; i++) {
+                const row = document.createElement('tr');
+                for (let j = 0; j < n; j++) {
+                    const cell = document.createElement('td');
+                    cell.style.width = '50px';
+                    cell.style.height = '50px';
+                    cell.style.border = '1px solid var(--border-color)';
+                    cell.style.backgroundColor = (i + j) % 2 === 0 ? '#E2E8F0' : '#fff';
+                    cell.style.color = 'var(--primary-color)';
+                    cell.style.fontSize = '2rem';
+                    cell.style.textAlign = 'center';
+                    cell.style.verticalAlign = 'middle';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    row.appendChild(cell);
+                }
+                table.appendChild(row);
+            }
+            
+            board.appendChild(table);
+        }
+
+        function isSafe(board, row, col) {
+            // Check row
+            for (let i = 0; i < col; i++) {
+                if (board[row][i]) return false;
+            }
+            
+            // Check upper diagonal
+            for (let i = row, j = col; i >= 0 && j >= 0; i--, j--) {
+                if (board[i][j]) return false;
+            }
+            
+            // Check lower diagonal
+            for (let i = row, j = col; i < board.length && j >= 0; i++, j--) {
+                if (board[i][j]) return false;
+            }
+            
+            return true;
+        }
+
+        async function solveNQueensUtil(board, col) {
+            if (col >= board.length) return true;
+            
+            for (let i = 0; i < board.length; i++) {
+                if (isSafe(board, i, col)) {
+                    board[i][col] = 1;
+                    
+                    // Visualize placement
+                    const cell = document.querySelector(`td[data-row="${i}"][data-col="${col}"]`);
+                    cell.innerHTML = '<span class="viz-number viz-bar">♕</span>';
+                    
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    if (await solveNQueensUtil(board, col + 1)) return true;
+                    
+                    // Backtrack
+                    board[i][col] = 0;
+                    cell.innerHTML = '';
+                }
+            }
+            
+            return false;
+        }
+
+        async function solveNQueens() {
+            const n = parseInt(document.getElementById('nQueens').value);
+            createNQueensBoard(n);
+            
+            const board = Array(n).fill().map(() => Array(n).fill(0));
+            const result = await solveNQueensUtil(board, 0);
+            
+            document.getElementById('nQueensResult').innerHTML = result ?
+                `<h3>Solution Found!</h3>` :
+                `<h3>No Solution Exists</h3>`;
+        }
+
+        function resetNQueens() {
+            document.getElementById('nQueensBoard').innerHTML = '';
+            document.getElementById('nQueensResult').innerHTML = '';
+        }
+
+        // Sudoku Implementation
+        function createSudokuBoard() {
+            const board = document.getElementById('sudokuBoard');
+            board.innerHTML = '';
+            
+            const table = document.createElement('table');
+            table.style.borderCollapse = 'collapse';
+            table.style.margin = '0 auto';
+            
+            for (let i = 0; i < 9; i++) {
+                const row = document.createElement('tr');
+                for (let j = 0; j < 9; j++) {
+                    const cell = document.createElement('td');
+                    cell.style.width = '40px';
+                    cell.style.height = '40px';
+                    cell.style.border = '1px solid #0072ff';
+                    cell.style.textAlign = 'center';
+                    cell.style.fontSize = '20px';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.maxLength = 1;
+                    input.style.width = '100%';
+                    input.style.height = '100%';
+                    input.style.border = 'none';
+                    input.style.textAlign = 'center';
+                    input.style.backgroundColor = 'transparent';
+                    input.style.color = '#00c6ff';
+                    input.dataset.row = i;
+                    input.dataset.col = j;
+                    
+                    input.className = 'viz-number';
+                    input.style.fontSize = '1.3rem';
+                    input.style.fontWeight = 'bold';
+                    input.style.background = '#E2E8F0';
+                    input.style.color = '#2B6CB0';
+                    
+                    cell.appendChild(input);
+                    row.appendChild(cell);
+                }
+                table.appendChild(row);
+            }
+            
+            board.appendChild(table);
+        }
+
+        function isValid(board, row, col, num) {
+            // Check row
+            for (let i = 0; i < 9; i++) {
+                if (board[row][i] === num) return false;
+            }
+            
+            // Check column
+            for (let i = 0; i < 9; i++) {
+                if (board[i][col] === num) return false;
+            }
+            
+            // Check 3x3 box
+            const boxRow = Math.floor(row / 3) * 3;
+            const boxCol = Math.floor(col / 3) * 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[boxRow + i][boxCol + j] === num) return false;
+                }
+            }
+            
+            return true;
+        }
+
+        async function solveSudokuUtil(board) {
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (board[row][col] === 0) {
+                        for (let num = 1; num <= 9; num++) {
+                            if (isValid(board, row, col, num)) {
+                                board[row][col] = num;
+                                
+                                // Visualize placement
+                                const input = document.querySelector(`input[data-row="${row}"][data-col="${col}"]`);
+                                input.value = num;
+                                input.style.color = '#00c6ff';
+                                
+                                await new Promise(resolve => setTimeout(resolve, 50));
+                                
+                                if (await solveSudokuUtil(board)) return true;
+                                
+                                // Backtrack
+                                board[row][col] = 0;
+                                input.value = '';
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function generateSudoku() {
+            createSudokuBoard();
+            const board = Array(9).fill().map(() => Array(9).fill(0));
+            
+            // Fill diagonal boxes
+            for (let i = 0; i < 9; i += 3) {
+                fillBox(board, i, i);
+            }
+            
+            // Solve the rest
+            solveSudokuUtil(board);
+            
+            // Remove some numbers to create a puzzle
+            const inputs = document.querySelectorAll('#sudokuBoard input');
+            inputs.forEach(input => {
+                if (Math.random() < 0.6) {
+                    input.value = '';
+                }
+            });
+        }
+
+        function fillBox(board, row, col) {
+            const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            shuffle(nums);
+            
+            let index = 0;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    board[row + i][col + j] = nums[index++];
+                }
+            }
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        async function solveSudoku() {
+            const board = Array(9).fill().map(() => Array(9).fill(0));
+            const inputs = document.querySelectorAll('#sudokuBoard input');
+            
+            // Read current board state
+            inputs.forEach(input => {
+                const row = parseInt(input.dataset.row);
+                const col = parseInt(input.dataset.col);
+                board[row][col] = input.value ? parseInt(input.value) : 0;
+            });
+            
+            const result = await solveSudokuUtil(board);
+            document.getElementById('sudokuResult').innerHTML = result ?
+                `<h3>Solution Found!</h3>` :
+                `<h3>No Solution Exists</h3>`;
+        }
+
+        function resetSudoku() {
+            document.getElementById('sudokuBoard').innerHTML = '';
+            document.getElementById('sudokuResult').innerHTML = '';
+        }
+
+        function updateCharts() {
+            const sizes = Array.from({length: 8}, (_, i) => i + 4);
+            
+            ['nQueensChart', 'sudokuChart'].forEach(chartId => {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                if (charts[chartId]) charts[chartId].destroy();
+                charts[chartId] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sizes,
+                        datasets: [{
+                            label: chartId === 'nQueensChart' ? 
+                                'N-Queens (O(N!))' : 
+                                'Sudoku (O(9^(n*n)))',
+                            data: sizes.map(n => chartId === 'nQueensChart' ? 
+                                factorial(n) : 
+                                Math.pow(9, n * n)),
+                            borderColor: 'var(--primary-color)',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'var(--primary-light)',
+                            pointBorderColor: 'var(--primary-color)',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: chartId === 'nQueensChart' ? 
+                                    'N-Queens Complexity' : 
+                                    'Sudoku Complexity',
+                                color: 'var(--text-primary)',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            legend: {
+                                labels: {
+                                    color: 'var(--text-secondary)'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'var(--text-secondary)'
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'var(--text-secondary)'
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function factorial(n) {
+            let result = 1;
+            for (let i = 2; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        function runSumOfSubset() {
+            const setStr = document.getElementById('subsetSet').value;
+            const target = parseInt(document.getElementById('subsetTarget').value);
+            if (!setStr.trim() || isNaN(target)) {
+                alert('Please enter a valid set and target sum.');
+                return;
+            }
+            const set = setStr.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+            let results = [];
+            let path = [];
+            function backtrack(i, currSum) {
+                if (currSum === target) {
+                    results.push([...path]);
+                    return;
+                }
+                if (i >= set.length || currSum > target) return;
+                // Include set[i]
+                path.push(set[i]);
+                visualizeSubset(path, set, i, true);
+                setTimeout(() => {
+                    backtrack(i + 1, currSum + set[i]);
+                    // Exclude set[i]
+                    path.pop();
+                    visualizeSubset(path, set, i, false);
+                    setTimeout(() => backtrack(i + 1, currSum), 200);
+                }, 200);
+            }
+            document.getElementById('subsetResult').innerHTML = 'Searching...';
+            results = [];
+            backtrack(0, 0);
+            setTimeout(() => {
+                document.getElementById('subsetResult').innerHTML = results.length ?
+                    `<h3>Subsets Found:</h3><p>${results.map(r => '[' + r.join(', ') + ']').join('<br>')}</p>` :
+                    '<h3>No subset found.</h3>';
+            }, set.length * 400 + 500);
+        }
+
+        function visualizeSubset(path, set, idx, include) {
+            const container = document.getElementById('subsetVisualization');
+            container.innerHTML = set.map((num, i) =>
+                `<span class="viz-bar" style="background:${path.includes(num) ? (include && i === idx ? '#48BB78' : '#2B6CB0') : '#E2E8F0'}; color:${path.includes(num) ? '#fff' : '#222'}; margin: 4px;">${num}</span>`
+            ).join('');
+        }
+
+        function resetSumOfSubset() {
+            document.getElementById('subsetVisualization').innerHTML = '';
+            document.getElementById('subsetResult').innerHTML = '';
+        }
+
+        // Initialize
+        createNQueensBoard(4);
+        createSudokuBoard();
+        updateCharts();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exploratory Data Analysis (EDA) Visualization</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            /* Colors */
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --warning-color: #f1c40f;
+
+            /* Spacing */
+            --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+            --spacing-sm: clamp(0.5rem, 1vw, 1rem);
+            --spacing-md: clamp(1rem, 2vw, 1.5rem);
+            --spacing-lg: clamp(1.5rem, 3vw, 2rem);
+
+            /* Typography */
+            --font-size-sm: clamp(0.875rem, 1.5vw, 1rem);
+            --font-size-md: clamp(1rem, 2vw, 1.25rem);
+            --font-size-lg: clamp(1.25rem, 2.5vw, 1.5rem);
+            --font-size-xl: clamp(1.5rem, 3vw, 2rem);
+
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-slow: 350ms ease;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+
+            /* Border Radius */
+            --border-radius-sm: 4px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+        }
+
+        body {
+            background-color: var(--background-color);
+            padding: var(--spacing-md);
+            color: var(--text-color);
+            font-size: var(--font-size-md);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: var(--spacing-md);
+        }
+
+        .chart-container {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin: var(--spacing-md) 0;
+            box-shadow: var(--shadow-md);
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        .chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .controls {
+            margin: var(--spacing-md) 0;
+            padding: var(--spacing-md);
+            background-color: var(--card-background);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .input-group {
+            margin: var(--spacing-sm) 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-xs);
+        }
+
+        .input-group label {
+            margin-right: var(--spacing-xs);
+            font-weight: 500;
+        }
+
+        .input-group input[type='number'],
+        .input-group input[type='text'] {
+            width: clamp(80px, 10vw, 120px);
+            padding: var(--spacing-xs);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .explanation {
+            background-color: rgba(52, 152, 219, 0.1);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            margin: var(--spacing-sm) 0;
+            font-size: var(--font-size-sm);
+            transition: background-color var(--transition-normal);
+        }
+
+        .explanation:hover {
+            background-color: rgba(52, 152, 219, 0.15);
+        }
+
+        select {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border-color);
+            background-color: var(--card-background);
+            color: var(--text-color);
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .btn {
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--border-radius-sm);
+            border: none;
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .error-message {
+            background-color: var(--error-color);
+            color: white;
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius-sm);
+            margin: var(--spacing-sm) 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .error-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--spacing-sm);
+            }
+
+            .chart-container {
+                padding: var(--spacing-md);
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .input-group input[type='number'],
+            .input-group input[type='text'] {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center">📊 Exploratory Data Analysis (EDA) Visualization</h1>
+
+        
+        <div class="explanation">
+            <h3>What is EDA?</h3>
+            <p>Exploratory Data Analysis (EDA) is a crucial step in data analysis where we visualize and understand our
+                data through various charts and graphs. This helps us identify patterns, trends, and relationships in
+                the data.</p>
+        </div>
+
+        
+        <div class="controls">
+            <h3>Chart Controls</h3>
+            <div class="mb-3">
+                <label for="chartType" class="form-label">Select Chart Type:</label>
+                <select id="chartType" class="form-select" onchange="updateChart(); showPieInputsIfNeeded();">
+                    <option value="bar">Bar Chart (Subject-wise Scores)</option>
+                    <option value="pie">Pie Chart (Score Distribution)</option>
+                    <option value="line">Line Chart (Score Trends)</option>
+                </select>
+            </div>
+            <div id="pieInputsContainer" class="pie-inputs" style="display:none;"></div>
+            <div id="barInputsContainer" class="bar-inputs" style="display:none;"></div>
+            <div id="lineInputsContainer" class="line-inputs" style="display:none;"></div>
+        </div>
+
+        
+        <div class="chart-container">
+            <canvas id="dataChart"></canvas>
+        </div>
+
+        
+        <div class="explanation" id="chartExplanation">
+            
+        </div>
+    </div>
+
+    <script>
+        // Sample data for visualization
+        const studentData = {
+            // Data for bar chart (subject-wise scores)
+            subjects: ['Math', 'Science', 'English', 'History', 'Geography'],
+            scores: [85, 92, 78, 88, 90],
+
+            // Data for pie chart (score distribution)
+            scoreRanges: ['90-100', '80-89', '70-79', '60-69', 'Below 60'],
+            distribution: [15, 35, 25, 15, 10],
+
+            // Data for line chart (score trends over time)
+            months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            trends: {
+                'Math': [75, 78, 80, 82, 85, 85],
+                'Science': [85, 87, 88, 90, 91, 92],
+                'English': [70, 72, 75, 76, 77, 78]
+            }
+        };
+
+        // Chart configuration
+        let myChart = null;
+
+        // Add for user pie chart input
+        let userPieLabels = null;
+        let userPieData = null;
+        let userPieCount = 5;
+        // Add for user bar chart input
+        let userBarLabels = null;
+        let userBarData = null;
+        let userBarCount = 5;
+        // Add for user line chart input
+        let userLineLabels = null;
+        let userLineData = null;
+        let userLineCount = 6;
+        let userLineSeries = 3;
+        let userLineSeriesLabels = ["Math", "Science", "English"];
+
+        function showPieInputsIfNeeded() {
+            const chartType = document.getElementById('chartType').value;
+            document.getElementById('pieInputsContainer').style.display = (chartType === 'pie') ? '' : 'none';
+            document.getElementById('barInputsContainer').style.display = (chartType === 'bar') ? '' : 'none';
+            document.getElementById('lineInputsContainer').style.display = (chartType === 'line') ? '' : 'none';
+            if (chartType === 'pie') renderPieInputs();
+            if (chartType === 'bar') renderBarInputs();
+            if (chartType === 'line') renderLineInputs();
+        }
+
+        function renderPieInputs() {
+            const pieInputsContainer = document.getElementById('pieInputsContainer');
+            let html = '<label>Number of Parts: <input type="number" id="piePartCount" min="2" max="10" value="' + userPieCount + '" onchange="changePiePartCount()"></label><br>';
+            for (let i = 0; i < userPieCount; i++) {
+                html += `<label>Label <input type="text" id="pieLabel${i}" value="${userPieLabels ? userPieLabels[i] || '' : ''}" placeholder="Label ${i + 1}"></label>`;
+                html += `<label>Percent <input type="number" id="pieValue${i}" min="0" max="100" value="${userPieData ? userPieData[i] || '' : ''}" placeholder="%"></label><br>`;
+            }
+            html += '<button class="btn btn-primary" onclick="applyPieInputs()">Update Pie Chart</button>';
+            pieInputsContainer.innerHTML = html;
+        }
+
+        function changePiePartCount() {
+            const count = parseInt(document.getElementById('piePartCount').value);
+            userPieCount = count;
+            if (userPieLabels) userPieLabels.length = count;
+            if (userPieData) userPieData.length = count;
+            renderPieInputs();
+        }
+
+        function applyPieInputs() {
+            userPieLabels = [];
+            userPieData = [];
+            for (let i = 0; i < userPieCount; i++) {
+                userPieLabels.push(document.getElementById('pieLabel' + i).value || `Part ${i + 1}`);
+                userPieData.push(Number(document.getElementById('pieValue' + i).value) || 0);
+            }
+            updateChart();
+        }
+
+        // BAR CHART INPUTS
+        function renderBarInputs() {
+            const barInputsContainer = document.getElementById('barInputsContainer');
+            let html = '<label>Number of Bars: <input type="number" id="barCount" min="2" max="10" value="' + userBarCount + '" onchange="changeBarCount()"></label><br>';
+            for (let i = 0; i < userBarCount; i++) {
+                html += `<label>Label <input type="text" id="barLabel${i}" value="${userBarLabels ? userBarLabels[i] || '' : ''}" placeholder="Label ${i + 1}"></label>`;
+                html += `<label>Value <input type="number" id="barValue${i}" min="0" max="100" value="${userBarData ? userBarData[i] || '' : ''}" placeholder="Value"></label><br>`;
+            }
+            html += '<button class="btn btn-primary" onclick="applyBarInputs()">Update Bar Chart</button>';
+            barInputsContainer.innerHTML = html;
+        }
+        function changeBarCount() {
+            const count = parseInt(document.getElementById('barCount').value);
+            userBarCount = count;
+            if (userBarLabels) userBarLabels.length = count;
+            if (userBarData) userBarData.length = count;
+            renderBarInputs();
+        }
+        function applyBarInputs() {
+            userBarLabels = [];
+            userBarData = [];
+            for (let i = 0; i < userBarCount; i++) {
+                userBarLabels.push(document.getElementById('barLabel' + i).value || `Bar ${i + 1}`);
+                userBarData.push(Number(document.getElementById('barValue' + i).value) || 0);
+            }
+            updateChart();
+        }
+
+        // LINE CHART INPUTS
+        function renderLineInputs() {
+            const lineInputsContainer = document.getElementById('lineInputsContainer');
+            let html = '<label>Number of Points: <input type="number" id="lineCount" min="2" max="12" value="' + userLineCount + '" onchange="changeLineCount()"></label> ';
+            html += '<label>Number of Series: <input type="number" id="lineSeriesCount" min="1" max="5" value="' + userLineSeries + '" onchange="changeLineSeriesCount()"></label><br>';
+            // X labels
+            html += '<div><b>X-axis Labels:</b> ';
+            for (let i = 0; i < userLineCount; i++) {
+                html += `<input type="text" id="lineLabel${i}" value="${userLineLabels ? userLineLabels[i] || '' : ''}" placeholder="Label ${i + 1}">`;
+            }
+            html += '</div><br>';
+            // Series values
+            for (let s = 0; s < userLineSeries; s++) {
+                html += `<div><b>Series ${s + 1} Label:</b> <input type="text" id="lineSeriesLabel${s}" value="${userLineSeriesLabels[s] || ''}" placeholder="Series ${s + 1}">`;
+                for (let i = 0; i < userLineCount; i++) {
+                    html += `<input type="number" id="lineValue${s}_${i}" min="0" max="100" value="${userLineData && userLineData[s] ? userLineData[s][i] || '' : ''}" placeholder="Val">`;
+                }
+                html += '</div><br>';
+            }
+            html += '<button class="btn btn-primary" onclick="applyLineInputs()">Update Line Chart</button>';
+            lineInputsContainer.innerHTML = html;
+        }
+        function changeLineCount() {
+            const count = parseInt(document.getElementById('lineCount').value);
+            userLineCount = count;
+            if (userLineLabels) userLineLabels.length = count;
+            if (userLineData) for (let s = 0; s < userLineSeries; s++) if (userLineData[s]) userLineData[s].length = count;
+            renderLineInputs();
+        }
+        function changeLineSeriesCount() {
+            const count = parseInt(document.getElementById('lineSeriesCount').value);
+            userLineSeries = count;
+            if (userLineSeriesLabels) userLineSeriesLabels.length = count;
+            if (userLineData) userLineData.length = count;
+            renderLineInputs();
+        }
+        function applyLineInputs() {
+            userLineLabels = [];
+            userLineData = [];
+            userLineSeriesLabels = [];
+            for (let i = 0; i < userLineCount; i++) {
+                userLineLabels.push(document.getElementById('lineLabel' + i).value || `X${i + 1}`);
+            }
+            for (let s = 0; s < userLineSeries; s++) {
+                userLineSeriesLabels.push(document.getElementById('lineSeriesLabel' + s).value || `Series ${s + 1}`);
+                userLineData[s] = [];
+                for (let i = 0; i < userLineCount; i++) {
+                    userLineData[s][i] = Number(document.getElementById(`lineValue${s}_${i}`).value) || 0;
+                }
+            }
+            updateChart();
+        }
+
+        // Add loading state management
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.classList.toggle('loading', isLoading);
+                button.disabled = isLoading;
+            }
+        }
+
+        // Add error handling
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            document.querySelector('.controls').insertAdjacentElement('afterend', errorDiv);
+
+            // Show error
+            setTimeout(() => errorDiv.classList.add('visible'), 10);
+
+            // Remove error after 3 seconds
+            setTimeout(() => {
+                errorDiv.classList.remove('visible');
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Update chart functions with loading states and error handling
+        async function updateChart() {
+            try {
+                setLoading('updateChartBtn', true);
+                const chartType = document.getElementById('chartType').value;
+                const ctx = document.getElementById('dataChart').getContext('2d');
+
+                // Validate data before updating
+                if (!validateChartData(chartType)) {
+                    throw new Error('Invalid chart data. Please check your inputs.');
+                }
+
+                // Destroy existing chart if it exists
+                if (myChart) {
+                    myChart.destroy();
+                }
+
+                // Chart configuration based on selected type
+                let chartConfig = {
+                    type: chartType,
+                    data: {},
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: getChartTitle(chartType)
+                            }
+                        }
+                    }
+                };
+
+                // Set data and options based on chart type
+                switch (chartType) {
+                    case 'bar':
+                        let barLabels = userBarLabels || studentData.subjects;
+                        let barData = userBarData || studentData.scores;
+                        chartConfig.data = {
+                            labels: barLabels,
+                            datasets: [{
+                                label: 'Average Scores',
+                                data: barData,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.7)',
+                                    'rgba(54, 162, 235, 0.7)',
+                                    'rgba(255, 206, 86, 0.7)',
+                                    'rgba(75, 192, 192, 0.7)',
+                                    'rgba(153, 102, 255, 0.7)',
+                                    'rgba(255, 171, 64, 0.7)',
+                                    'rgba(0, 200, 83, 0.7)',
+                                    'rgba(121, 85, 72, 0.7)',
+                                    'rgba(233, 30, 99, 0.7)',
+                                    'rgba(63, 81, 181, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 171, 64, 1)',
+                                    'rgba(0, 200, 83, 1)',
+                                    'rgba(121, 85, 72, 1)',
+                                    'rgba(233, 30, 99, 1)',
+                                    'rgba(63, 81, 181, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        };
+                        break;
+
+                    case 'pie':
+                        let pieLabels = userPieLabels || studentData.scoreRanges;
+                        let pieData = userPieData || studentData.distribution;
+                        chartConfig.data = {
+                            labels: pieLabels,
+                            datasets: [{
+                                data: pieData,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.7)',
+                                    'rgba(54, 162, 235, 0.7)',
+                                    'rgba(255, 206, 86, 0.7)',
+                                    'rgba(75, 192, 192, 0.7)',
+                                    'rgba(153, 102, 255, 0.7)',
+                                    'rgba(255, 171, 64, 0.7)',
+                                    'rgba(0, 200, 83, 0.7)',
+                                    'rgba(121, 85, 72, 0.7)',
+                                    'rgba(233, 30, 99, 0.7)',
+                                    'rgba(63, 81, 181, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 171, 64, 1)',
+                                    'rgba(0, 200, 83, 1)',
+                                    'rgba(121, 85, 72, 1)',
+                                    'rgba(233, 30, 99, 1)',
+                                    'rgba(63, 81, 181, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        };
+                        break;
+
+                    case 'line':
+                        let lineLabels = userLineLabels || studentData.months;
+                        let lineData = userLineData || [studentData.trends.Math, studentData.trends.Science, studentData.trends.English];
+                        let lineSeriesLabels = userLineSeriesLabels || ["Math", "Science", "English"];
+                        let lineColors = [
+                            { border: 'rgba(255, 99, 132, 1)', bg: 'rgba(255, 99, 132, 0.2)' },
+                            { border: 'rgba(54, 162, 235, 1)', bg: 'rgba(54, 162, 235, 0.2)' },
+                            { border: 'rgba(255, 206, 86, 1)', bg: 'rgba(255, 206, 86, 0.2)' },
+                            { border: 'rgba(75, 192, 192, 1)', bg: 'rgba(75, 192, 192, 0.2)' },
+                            { border: 'rgba(153, 102, 255, 1)', bg: 'rgba(153, 102, 255, 0.2)' }
+                        ];
+                        chartConfig.data = {
+                            labels: lineLabels,
+                            datasets: []
+                        };
+                        for (let s = 0; s < lineData.length; s++) {
+                            chartConfig.data.datasets.push({
+                                label: lineSeriesLabels[s] || `Series ${s + 1}`,
+                                data: lineData[s],
+                                borderColor: lineColors[s % lineColors.length].border,
+                                backgroundColor: lineColors[s % lineColors.length].bg,
+                                tension: 0.1
+                            });
+                        }
+                        break;
+                }
+
+                // Create the chart
+                myChart = new Chart(ctx, chartConfig);
+
+                // Update chart explanation
+                updateChartExplanation(chartType);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('updateChartBtn', false);
+            }
+        }
+
+        // Function to get chart title
+        function getChartTitle(chartType) {
+            switch (chartType) {
+                case 'bar':
+                    return 'Subject-wise Average Scores';
+                case 'pie':
+                    return 'Score Distribution';
+                case 'line':
+                    return 'Score Trends Over Time';
+                default:
+                    return 'Data Visualization';
+            }
+        }
+
+        // Function to update chart explanation
+        function updateChartExplanation(chartType) {
+            const explanationDiv = document.getElementById('chartExplanation');
+            let explanation = '';
+
+            switch (chartType) {
+                case 'bar':
+                    explanation = `
+                        <h4>Bar Chart Explanation:</h4>
+                        <p>This bar chart shows the average scores across different subjects. Each bar represents a subject, and its height shows the average score. This visualization helps us:</p>
+                        <ul>
+                            <li>Compare scores across different subjects</li>
+                            <li>Identify subjects with highest and lowest scores</li>
+                            <li>Understand the overall performance distribution</li>
+                        </ul>
+                    `;
+                    break;
+                case 'pie':
+                    explanation = `
+                        <h4>Pie Chart Explanation:</h4>
+                        <p>This pie chart shows the distribution of scores across different ranges. Each slice represents a score range, and its size shows the percentage of students in that range. This helps us:</p>
+                        <ul>
+                            <li>Understand the overall score distribution</li>
+                            <li>Identify the most common score ranges</li>
+                            <li>Spot any potential gaps in performance</li>
+                        </ul>
+                    `;
+                    break;
+                case 'line':
+                    explanation = `
+                        <h4>Line Chart Explanation:</h4>
+                        <p>This line chart shows how scores have changed over time for different subjects. Each line represents a subject, and its path shows the score trend. This helps us:</p>
+                        <ul>
+                            <li>Track progress over time</li>
+                            <li>Compare trends between subjects</li>
+                            <li>Identify any significant changes or patterns</li>
+                        </ul>
+                    `;
+                    break;
+            }
+
+            explanationDiv.innerHTML = explanation;
+        }
+
+        // Add data validation
+        function validateChartData(chartType) {
+            switch (chartType) {
+                case 'bar':
+                    return validateBarData();
+                case 'pie':
+                    return validatePieData();
+                case 'line':
+                    return validateLineData();
+                default:
+                    return false;
+            }
+        }
+
+        function validateBarData() {
+            if (!userBarLabels || !userBarData) return true;
+            if (userBarLabels.length !== userBarData.length) return false;
+            return userBarData.every(val => !isNaN(val) && val >= 0);
+        }
+
+        function validatePieData() {
+            if (!userPieLabels || !userPieData) return true;
+            if (userPieLabels.length !== userPieData.length) return false;
+            const total = userPieData.reduce((sum, val) => sum + val, 0);
+            return Math.abs(total - 100) < 0.01 && userPieData.every(val => !isNaN(val) && val >= 0);
+        }
+
+        function validateLineData() {
+            if (!userLineLabels || !userLineData || !userLineSeriesLabels) return true;
+            if (userLineLabels.length !== userLineData[0]?.length) return false;
+            return userLineData.every(series =>
+                series.length === userLineLabels.length &&
+                series.every(val => !isNaN(val) && val >= 0)
+            );
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case '1':
+                        e.preventDefault();
+                        document.getElementById('chartType').value = 'bar';
+                        showPieInputsIfNeeded();
+                        updateChart();
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        document.getElementById('chartType').value = 'pie';
+                        showPieInputsIfNeeded();
+                        updateChart();
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        document.getElementById('chartType').value = 'line';
+                        showPieInputsIfNeeded();
+                        updateChart();
+                        break;
+                }
+            }
+        });
+
+        // Initialize the chart when the page loads
+        window.onload = function () {
+            // Add update button to controls
+            const updateButton = document.createElement('button');
+            updateButton.id = 'updateChartBtn';
+            updateButton.className = 'btn btn-primary';
+            updateButton.textContent = 'Update Chart';
+            updateButton.onclick = updateChart;
+            document.querySelector('.controls').appendChild(updateButton);
+
+            updateChart();
+            showPieInputsIfNeeded();
+        };
+    </script>
+</body>
+
+</html>

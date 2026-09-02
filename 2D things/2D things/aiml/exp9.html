@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCA Simulation</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            /* Colors */
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #4CAF50;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --warning-color: #f1c40f;
+            --point-color: #4444ff;
+            --pc-arrow-color: #ff4444;
+            --axis-color: #666666;
+
+            /* Spacing */
+            --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+            --spacing-sm: clamp(0.5rem, 1vw, 1rem);
+            --spacing-md: clamp(1rem, 2vw, 1.5rem);
+            --spacing-lg: clamp(1.5rem, 3vw, 2rem);
+
+            /* Typography */
+            --font-size-sm: clamp(0.875rem, 1.5vw, 1rem);
+            --font-size-md: clamp(1rem, 2vw, 1.25rem);
+            --font-size-lg: clamp(1.25rem, 2.5vw, 1.5rem);
+            --font-size-xl: clamp(1.5rem, 3vw, 2rem);
+
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-slow: 350ms ease;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+
+            /* Border Radius */
+            --border-radius-sm: 4px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+
+            /* Canvas */
+            --canvas-padding: clamp(20px, 5vw, 40px);
+            --canvas-border-radius: var(--border-radius-md);
+            --point-radius: clamp(4px, 1vw, 5px);
+            --arrow-size: clamp(8px, 1.5vw, 10px);
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-size: var(--font-size-md);
+            line-height: 1.5;
+            padding: var(--spacing-md);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            flex: 1;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            box-shadow: var(--shadow-md);
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: var(--spacing-md) 0;
+            width: 100%;
+            overflow: hidden;
+            border-radius: var(--canvas-border-radius);
+            background-color: var(--card-background);
+        }
+
+        #pcaCanvas {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            border: 2px solid var(--accent-color);
+            border-radius: var(--canvas-border-radius);
+            background-color: var(--card-background);
+            transition: border-color var(--transition-fast);
+        }
+
+        #pcaCanvas:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .controls {
+            margin: var(--spacing-md) 0;
+            display: flex;
+            gap: var(--spacing-sm);
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .instructions {
+            background-color: rgba(76, 175, 80, 0.1);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            margin: var(--spacing-sm) 0;
+            transition: background-color var(--transition-normal);
+        }
+
+        .instructions:hover {
+            background-color: rgba(76, 175, 80, 0.15);
+        }
+
+        .pca-info {
+            font-family: monospace;
+            margin: var(--spacing-sm) 0;
+            padding: var(--spacing-sm);
+            background-color: var(--background-color);
+            border-radius: var(--border-radius-md);
+            transition: background-color var(--transition-normal);
+        }
+
+        .pca-info:hover {
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: var(--font-size-md);
+            border-radius: var(--border-radius-sm);
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .error-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .success-message {
+            color: var(--success-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .success-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--spacing-sm);
+            }
+
+            .card {
+                padding: var(--spacing-sm);
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                margin: var(--spacing-xs) 0;
+            }
+
+            .instructions,
+            .pca-info {
+                padding: var(--spacing-sm);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">📊 Principal Component Analysis (PCA) Simulation</h1>
+
+        
+        <div class="card">
+            <div class="instructions">
+                <h3>How PCA Works:</h3>
+                <ol>
+                    <li>PCA finds the direction of maximum variance in the data</li>
+                    <li>It rotates the data to align with this direction</li>
+                    <li>The first principal component (red arrow) shows this direction</li>
+                    <li>This helps us understand the main pattern in our data</li>
+                </ol>
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <div class="canvas-container">
+                <canvas id="pcaCanvas" width="800" height="400" tabindex="0" role="img"
+                    aria-label="PCA Visualization Canvas"></canvas>
+            </div>
+
+            <div class="controls">
+                <button onclick="generateData()" class="btn btn-primary" id="generateButton">Generate New Data</button>
+                <button onclick="applyPCA()" class="btn btn-success" id="pcaButton">Apply PCA</button>
+                <button onclick="resetPCA()" class="btn btn-danger" id="resetButton">Reset</button>
+            </div>
+
+            <div class="pca-info" id="pcaInfo" role="status" aria-live="polite"></div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('pcaCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Data and parameters
+        let points = [];
+        let originalPoints = [];
+        let eigenvectors = [];
+        let eigenvalues = [];
+        let animationFrame = null;
+        let currentAngle = 0;
+        let isAnimating = false;
+
+        // Canvas dimensions and scaling
+        const PADDING = 40;
+        const SCALE = 1;
+        const POINT_RADIUS = 4;
+        const ARROW_LENGTH = 100;
+
+        // Initialize canvas
+        function initCanvas() {
+            canvas.width = 800;
+            canvas.height = 400;
+            drawAxes();
+        }
+
+        // Draw coordinate axes
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+
+            // X-axis
+            ctx.moveTo(PADDING, canvas.height - PADDING);
+            ctx.lineTo(canvas.width - PADDING, canvas.height - PADDING);
+
+            // Y-axis
+            ctx.moveTo(PADDING, PADDING);
+            ctx.lineTo(PADDING, canvas.height - PADDING);
+
+            ctx.stroke();
+
+            // Add axis labels
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.fillText('x', canvas.width - PADDING + 5, canvas.height - PADDING + 15);
+            ctx.fillText('y', PADDING - 15, PADDING - 5);
+        }
+
+        // Convert screen coordinates to data coordinates
+        function screenToData(screenX, screenY) {
+            return {
+                x: (screenX - PADDING) / SCALE,
+                y: (canvas.height - PADDING - screenY) / SCALE
+            };
+        }
+
+        // Convert data coordinates to screen coordinates
+        function dataToScreen(dataX, dataY) {
+            return {
+                x: dataX * SCALE + PADDING,
+                y: canvas.height - PADDING - dataY * SCALE
+            };
+        }
+
+        // Generate random data points
+        async function generateData() {
+            try {
+                setLoading('generateButton', true);
+                points = [];
+                for (let i = 0; i < 20; i++) {
+                    const x = Math.random() * 300 + 100;
+                    const y = x * 0.5 + (Math.random() - 0.5) * 100;
+                    points.push({ x, y });
+                }
+                originalPoints = points.map(p => ({ ...p }));
+                drawPoints();
+                resetPCA();
+                showSuccess('Data generated successfully!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('generateButton', false);
+            }
+        }
+
+        // Draw a point
+        function drawPoint(x, y) {
+            const screen = dataToScreen(x, y);
+            ctx.beginPath();
+            ctx.arc(screen.x, screen.y, POINT_RADIUS, 0, 2 * Math.PI);
+            ctx.fillStyle = '#4444ff';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Draw all points
+        function drawPoints() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAxes();
+            points.forEach(p => drawPoint(p.x, p.y));
+        }
+
+        // Calculate mean of points
+        function calculateMean(points) {
+            const sum = points.reduce((acc, p) => ({
+                x: acc.x + p.x,
+                y: acc.y + p.y
+            }), { x: 0, y: 0 });
+            return {
+                x: sum.x / points.length,
+                y: sum.y / points.length
+            };
+        }
+
+        // Center the data
+        function centerData(points) {
+            const mean = calculateMean(points);
+            return points.map(p => ({
+                x: p.x - mean.x,
+                y: p.y - mean.y
+            }));
+        }
+
+        // Calculate covariance matrix
+        function calculateCovarianceMatrix(points) {
+            const n = points.length;
+            let covXX = 0, covXY = 0, covYY = 0;
+
+            points.forEach(p => {
+                covXX += p.x * p.x;
+                covXY += p.x * p.y;
+                covYY += p.y * p.y;
+            });
+
+            return [
+                [covXX / n, covXY / n],
+                [covXY / n, covYY / n]
+            ];
+        }
+
+        // Calculate eigenvalues and eigenvectors
+        function calculateEigenDecomposition(matrix) {
+            const a = matrix[0][0];
+            const b = matrix[0][1];
+            const c = matrix[1][1];
+
+            // Calculate eigenvalues
+            const trace = a + c;
+            const det = a * c - b * b;
+            const discriminant = Math.sqrt(trace * trace - 4 * det);
+
+            const lambda1 = (trace + discriminant) / 2;
+            const lambda2 = (trace - discriminant) / 2;
+
+            // Calculate eigenvectors
+            const v1 = [b, lambda1 - a];
+            const v2 = [b, lambda2 - a];
+
+            // Normalize eigenvectors
+            const norm1 = Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1]);
+            const norm2 = Math.sqrt(v2[0] * v2[0] + v2[1] * v2[1]);
+
+            return {
+                eigenvalues: [lambda1, lambda2],
+                eigenvectors: [
+                    [v1[0] / norm1, v1[1] / norm1],
+                    [v2[0] / norm2, v2[1] / norm2]
+                ]
+            };
+        }
+
+        // Draw principal component arrows
+        function drawPCAArrows() {
+            const center = calculateMean(points);
+            const screenCenter = dataToScreen(center.x, center.y);
+
+            // Draw first principal component
+            const pc1 = eigenvectors[0];
+            const pc1Length = Math.sqrt(eigenvalues[0]) * 2;
+            const pc1End = {
+                x: center.x + pc1[0] * pc1Length,
+                y: center.y + pc1[1] * pc1Length
+            };
+            const pc1ScreenEnd = dataToScreen(pc1End.x, pc1End.y);
+
+            ctx.beginPath();
+            ctx.moveTo(screenCenter.x, screenCenter.y);
+            ctx.lineTo(pc1ScreenEnd.x, pc1ScreenEnd.y);
+            ctx.strokeStyle = '#ff4444';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Add arrowhead
+            const angle = Math.atan2(pc1ScreenEnd.y - screenCenter.y, pc1ScreenEnd.x - screenCenter.x);
+            const arrowSize = 10;
+            ctx.beginPath();
+            ctx.moveTo(pc1ScreenEnd.x, pc1ScreenEnd.y);
+            ctx.lineTo(
+                pc1ScreenEnd.x - arrowSize * Math.cos(angle - Math.PI / 6),
+                pc1ScreenEnd.y - arrowSize * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+                pc1ScreenEnd.x - arrowSize * Math.cos(angle + Math.PI / 6),
+                pc1ScreenEnd.y - arrowSize * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fillStyle = '#ff4444';
+            ctx.fill();
+        }
+
+        // Rotate points around their mean
+        function rotatePoints(angle) {
+            const mean = calculateMean(originalPoints);
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+
+            points = originalPoints.map(p => {
+                const centeredX = p.x - mean.x;
+                const centeredY = p.y - mean.y;
+                return {
+                    x: mean.x + centeredX * cos - centeredY * sin,
+                    y: mean.y + centeredX * sin + centeredY * cos
+                };
+            });
+        }
+
+        // Animate PCA rotation
+        async function animatePCA() {
+            return new Promise((resolve) => {
+                function animate() {
+                    if (!isAnimating) {
+                        resolve();
+                        return;
+                    }
+
+                    const targetAngle = Math.atan2(eigenvectors[0][1], eigenvectors[0][0]);
+                    const angleStep = 0.05;
+
+                    if (Math.abs(currentAngle - targetAngle) < angleStep) {
+                        currentAngle = targetAngle;
+                        isAnimating = false;
+                    } else {
+                        currentAngle += angleStep;
+                    }
+
+                    rotatePoints(currentAngle);
+                    drawPoints();
+                    drawPCAArrows();
+
+                    // Update PCA info
+                    const variance = eigenvalues[0] / (eigenvalues[0] + eigenvalues[1]);
+                    document.getElementById('pcaInfo').textContent =
+                        `Variance explained by first principal component: ${(variance * 100).toFixed(1)}%\n` +
+                        `Rotation angle: ${(currentAngle * 180 / Math.PI).toFixed(1)}°`;
+
+                    if (isAnimating) {
+                        animationFrame = requestAnimationFrame(animate);
+                    } else {
+                        resolve();
+                    }
+                }
+                animate();
+            });
+        }
+
+        // Apply PCA
+        async function applyPCA() {
+            try {
+                if (points.length === 0) {
+                    showError('Please generate data first!');
+                    return;
+                }
+
+                setLoading('pcaButton', true);
+
+                // Center the data
+                const centeredPoints = centerData(points);
+
+                // Calculate covariance matrix
+                const covarianceMatrix = calculateCovarianceMatrix(centeredPoints);
+
+                // Calculate eigenvalues and eigenvectors
+                const { eigenvalues: evals, eigenvectors: evecs } = calculateEigenDecomposition(covarianceMatrix);
+
+                // Sort by eigenvalue
+                const sortedIndices = [0, 1].sort((a, b) => evals[b] - evals[a]);
+                eigenvalues = sortedIndices.map(i => evals[i]);
+                eigenvectors = sortedIndices.map(i => evecs[i]);
+
+                // Start animation
+                currentAngle = 0;
+                isAnimating = true;
+                await animatePCA();
+                showSuccess('PCA applied successfully!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('pcaButton', false);
+            }
+        }
+
+        // Reset PCA
+        async function resetPCA() {
+            try {
+                setLoading('resetButton', true);
+                if (animationFrame) {
+                    cancelAnimationFrame(animationFrame);
+                }
+                isAnimating = false;
+                currentAngle = 0;
+                if (originalPoints.length > 0) {
+                    points = originalPoints.map(p => ({ ...p }));
+                    drawPoints();
+                }
+                document.getElementById('pcaInfo').textContent = '';
+                showSuccess('PCA reset successfully!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('resetButton', false);
+            }
+        }
+
+        // Add loading state management
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.classList.toggle('loading', isLoading);
+                button.disabled = isLoading;
+            }
+        }
+
+        // Add error handling
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            document.querySelector('.canvas-container').insertAdjacentElement('afterbegin', errorDiv);
+
+            // Show error
+            setTimeout(() => errorDiv.classList.add('visible'), 10);
+
+            // Remove error after 3 seconds
+            setTimeout(() => {
+                errorDiv.classList.remove('visible');
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Add success message
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.textContent = message;
+            document.querySelector('.canvas-container').insertAdjacentElement('afterbegin', successDiv);
+
+            // Show success
+            setTimeout(() => successDiv.classList.add('visible'), 10);
+
+            // Remove success after 3 seconds
+            setTimeout(() => {
+                successDiv.classList.remove('visible');
+                setTimeout(() => successDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case 'g':
+                        e.preventDefault();
+                        generateData();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        applyPCA();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        resetPCA();
+                        break;
+                }
+            }
+        });
+
+        // Initialize the page
+        window.onload = function () {
+            // Initialize canvas with responsive sizing
+            function resizeCanvas() {
+                const container = canvas.parentElement;
+                const containerWidth = container.clientWidth;
+                canvas.width = containerWidth;
+                canvas.height = Math.min(containerWidth * 0.5, window.innerHeight * 0.7);
+                drawPoints();
+                if (eigenvectors.length > 0) {
+                    drawPCAArrows();
+                }
+            }
+
+            // Add resize listener
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Add keyboard shortcut hints
+            const shortcutHints = document.createElement('div');
+            shortcutHints.className = 'text-muted mt-2';
+            shortcutHints.style.fontSize = 'var(--font-size-sm)';
+            shortcutHints.innerHTML = 'Keyboard shortcuts:<br>' +
+                'Ctrl + G: Generate data<br>' +
+                'Ctrl + P: Apply PCA<br>' +
+                'Ctrl + R: Reset';
+            document.querySelector('.canvas-container').appendChild(shortcutHints);
+
+            // Add focus styles for keyboard navigation
+            document.querySelectorAll('button, canvas').forEach(element => {
+                element.addEventListener('focus', () => {
+                    element.style.outline = `2px solid var(--accent-color)`;
+                    element.style.outlineOffset = '2px';
+                });
+                element.addEventListener('blur', () => {
+                    element.style.outline = 'none';
+                });
+            });
+
+            // Initial canvas setup
+            initCanvas();
+        };
+    </script>
+</body>
+
+</html>

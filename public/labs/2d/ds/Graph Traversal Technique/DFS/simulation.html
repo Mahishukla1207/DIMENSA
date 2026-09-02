@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Graph Representations</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body { background: linear-gradient(to right, #fc466b, #3f5efb); font-family: 'Poppins', sans-serif; text-align: center; padding: 20px; color: white; }
+    h1 { margin-bottom: 20px; }
+    .controls, table { margin: 20px auto; }
+    input, button { margin: 5px; padding: 10px; border-radius: 5px; }
+    button { background: #6a11cb; color: white; border: none; cursor: pointer; }
+    button:hover { background: #2575fc; }
+    th, td { padding: 10px; border: 1px solid white; }
+    table { border-collapse: collapse; }
+  
+                    .current-page {
+                        text-decoration: underline;
+                        text-decoration-thickness: 2px;
+                        text-decoration-color: var(--primary-color);
+                        font-weight: bold;
+                        color: var(--primary-color);
+                    }
+                    </style>
+</head>
+<body>
+
+<h1>Graph Representations: Adjacency Matrix & List</h1>
+
+<div class="controls">
+  <input id="vertex1" type="text" placeholder="Vertex 1">
+  <input id="vertex2" type="text" placeholder="Vertex 2">
+  <button onclick="addEdge()">Add Edge</button>
+</div>
+
+<div id="matrix"></div>
+<div id="list" style="margin-top: 20px;"></div>
+
+<script>
+const vertices = new Set();
+const edges = [];
+
+function addEdge() {
+  const v1 = document.getElementById('vertex1').value;
+  const v2 = document.getElementById('vertex2').value;
+  if(v1 && v2) {
+    vertices.add(v1);
+    vertices.add(v2);
+    edges.push([v1, v2]);
+    renderGraph();
+  }
+}
+
+function renderGraph() {
+  const vArray = Array.from(vertices);
+  const size = vArray.length;
+  let matrixHTML = "<table><tr><th></th>" + vArray.map(v => `<th>${v}</th>`).join('') + "</tr>";
+  for(let i=0; i<size; i++) {
+    matrixHTML += `<tr><th>${vArray[i]}</th>`;
+    for(let j=0; j<size; j++) {
+      const hasEdge = edges.some(e => (e[0] === vArray[i] && e[1] === vArray[j]) || (e[1] === vArray[i] && e[0] === vArray[j]));
+      matrixHTML += `<td>${hasEdge ? 1 : 0}</td>`;
+    }
+    matrixHTML += "</tr>";
+  }
+  matrixHTML += "</table>";
+  document.getElementById('matrix').innerHTML = "<h3>Adjacency Matrix</h3>" + matrixHTML;
+
+  let listHTML = "<h3>Adjacency List</h3>";
+  vArray.forEach(v => {
+    const neighbors = edges.filter(e => e[0] === v).map(e => e[1]).concat(edges.filter(e => e[1] === v).map(e => e[0]));
+    listHTML += `<p><strong>${v}</strong> → ${neighbors.join(', ')}</p>`;
+  });
+  document.getElementById('list').innerHTML = listHTML;
+}
+</script>
+
+<footer style="margin-top: 30px;">&copy; 2025 Virtual DSA Lab | Graph Visualizer</footer>
+
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 11: Governance & Voting</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --governance-color: #8e44ad;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .proposal-panel,
+        .voting-panel {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: clamp(10px, 2vw, 15px);
+            padding-bottom: clamp(5px, 1.5vw, 10px);
+            border-bottom: 2px solid var(--governance-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .proposal-form {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .proposal-form:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: clamp(10px, 2vw, 15px);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: clamp(8px, 1.5vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: var(--governance-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(142, 68, 173, 0.2);
+        }
+
+        .form-group textarea {
+            height: clamp(100px, 20vw, 150px);
+            resize: vertical;
+        }
+
+        .button {
+            background-color: var(--governance-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #7d3c98;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .proposal-list {
+            margin: 20px 0;
+        }
+
+        .proposal {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .proposal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .proposal-title {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .proposal-status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-pending {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .status-closed {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .proposal-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .voting-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .vote-button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .vote-yes {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .vote-no {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .vote-abstain {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .vote-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .voting-progress {
+            margin: 15px 0;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 20px;
+            display: flex;
+            transition: width 0.3s ease;
+        }
+
+        .progress-yes {
+            background-color: var(--success-color);
+        }
+
+        .progress-no {
+            background-color: var(--accent-color);
+        }
+
+        .progress-abstain {
+            background-color: var(--warning-color);
+        }
+
+        .voting-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--governance-color);
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .voter-list {
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .voter {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        .voter-address {
+            font-family: monospace;
+            color: var(--primary-color);
+        }
+
+        .voter-vote {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .vote-yes {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .vote-no {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .vote-abstain {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .governance-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .metric-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            color: var(--governance-color);
+            font-family: monospace;
+        }
+
+        .governance-log {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .log-entry.success {
+            color: var(--success-color);
+        }
+
+        .log-entry.error {
+            color: var(--accent-color);
+        }
+
+        .log-entry.info {
+            color: var(--governance-color);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .proposal.active {
+            animation: pulse 2s infinite;
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .button {
+                margin-right: 0;
+            }
+
+            .voting-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .governance-metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Governance & Voting</h1>
+            <p class="experiment-description">Understanding blockchain governance through proposal creation and voting
+                mechanisms</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="proposal-panel">
+                <h2 class="panel-title">Proposal Management</h2>
+                <div class="proposal-form">
+                    <div class="form-group">
+                        <label for="proposalTitle">Proposal Title:</label>
+                        <input type="text" id="proposalTitle" placeholder="Enter proposal title">
+                    </div>
+                    <div class="form-group">
+                        <label for="proposalDescription">Description:</label>
+                        <textarea id="proposalDescription" placeholder="Describe your proposal"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="proposalType">Proposal Type:</label>
+                        <select id="proposalType">
+                            <option value="parameter">Parameter Change</option>
+                            <option value="upgrade">Protocol Upgrade</option>
+                            <option value="funding">Funding Request</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <button class="button" onclick="createProposal()">Create Proposal</button>
+                </div>
+                <div class="governance-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Active Proposals</div>
+                        <div class="metric-value" id="activeProposals">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Total Votes Cast</div>
+                        <div class="metric-value" id="totalVotes">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Voter Participation</div>
+                        <div class="metric-value" id="voterParticipation">0%</div>
+                    </div>
+                </div>
+                <div class="proposal-list" id="proposalList">
+                    
+                </div>
+            </div>
+
+            <div class="voting-panel">
+                <h2 class="panel-title">Voting System</h2>
+                <div class="voting-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="yesVotes">0</div>
+                        <div class="stat-label">Yes Votes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="noVotes">0</div>
+                        <div class="stat-label">No Votes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="abstainVotes">0</div>
+                        <div class="stat-label">Abstain</div>
+                    </div>
+                </div>
+                <div class="voting-progress" id="votingProgress">
+                    <div class="progress-bar" style="width: 0%">
+                        <div class="progress-yes" style="width: 0%"></div>
+                        <div class="progress-no" style="width: 0%"></div>
+                        <div class="progress-abstain" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="voter-list" id="voterList">
+                    
+                </div>
+                <div class="governance-log" id="governanceLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Proposal {
+            constructor(title, description, type) {
+                this.id = Math.random().toString(36).substr(2, 9);
+                this.title = title;
+                this.description = description;
+                this.type = type;
+                this.status = 'active';
+                this.timestamp = Date.now();
+                this.votes = {
+                    yes: 0,
+                    no: 0,
+                    abstain: 0
+                };
+                this.voters = new Set();
+            }
+
+            addVote(voter, vote) {
+                if (this.voters.has(voter)) {
+                    return false;
+                }
+
+                this.votes[vote]++;
+                this.voters.add(voter);
+                return true;
+            }
+
+            getVoteStats() {
+                const total = this.votes.yes + this.votes.no + this.votes.abstain;
+                return {
+                    yes: (this.votes.yes / total) * 100 || 0,
+                    no: (this.votes.no / total) * 100 || 0,
+                    abstain: (this.votes.abstain / total) * 100 || 0,
+                    total
+                };
+            }
+        }
+
+        class GovernanceSystem {
+            constructor() {
+                this.proposals = [];
+                this.voters = new Map();
+                this.totalVotes = 0;
+            }
+
+            createProposal(title, description, type) {
+                const proposal = new Proposal(title, description, type);
+                this.proposals.push(proposal);
+                return proposal;
+            }
+
+            castVote(proposalId, voter, vote) {
+                const proposal = this.proposals.find(p => p.id === proposalId);
+                if (!proposal || proposal.status !== 'active') {
+                    return false;
+                }
+
+                if (proposal.addVote(voter, vote)) {
+                    this.totalVotes++;
+                    this.voters.set(voter, vote);
+                    return true;
+                }
+                return false;
+            }
+
+            getMetrics() {
+                return {
+                    activeProposals: this.proposals.filter(p => p.status === 'active').length,
+                    totalVotes: this.totalVotes,
+                    voterParticipation: (this.voters.size / 100) * 100 // Simplified metric
+                };
+            }
+        }
+
+        let governanceSystem = new GovernanceSystem();
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        async function createProposal() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const title = document.getElementById('proposalTitle').value.trim();
+                const description = document.getElementById('proposalDescription').value.trim();
+                const type = document.getElementById('proposalType').value;
+
+                if (!title || !description) {
+                    throw new Error('Please fill in all proposal fields');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const proposal = governanceSystem.createProposal(title, description, type);
+                updateProposalDisplay();
+                addLogEntry(`Created new proposal: ${title}`, 'success');
+
+                // Clear form
+                document.getElementById('proposalTitle').value = '';
+                document.getElementById('proposalDescription').value = '';
+                document.getElementById('proposalType').value = 'parameter';
+            } catch (error) {
+                showError('proposalError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function castVote(proposalId, vote) {
+            const button = event.target;
+            setLoading(button.id, true);
+
+            try {
+                const voter = `0x${Math.random().toString(16).substr(2, 40)}`;
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                if (governanceSystem.castVote(proposalId, voter, vote)) {
+                    updateProposalDisplay();
+                    addLogEntry(`Vote cast: ${vote} for proposal ${proposalId}`, 'info');
+                } else {
+                    throw new Error('Vote casting failed');
+                }
+            } catch (error) {
+                showError('voteError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                createProposal();
+            }
+        });
+
+        function updateProposalDisplay() {
+            const container = document.getElementById('proposalList');
+            container.innerHTML = '';
+
+            governanceSystem.proposals.forEach(proposal => {
+                const stats = proposal.getVoteStats();
+                const div = document.createElement('div');
+                div.className = `proposal ${proposal.status}`;
+                div.innerHTML = `
+                    <div class="proposal-header">
+                        <span class="proposal-title">${proposal.title}</span>
+                        <span class="proposal-status status-${proposal.status}">${proposal.status}</span>
+                    </div>
+                    <div class="proposal-details">
+                        <div>Type: ${proposal.type}</div>
+                        <div>${proposal.description}</div>
+                    </div>
+                    <div class="voting-progress">
+                        <div class="progress-bar" style="width: 100%">
+                            <div class="progress-yes" style="width: ${stats.yes}%"></div>
+                            <div class="progress-no" style="width: ${stats.no}%"></div>
+                            <div class="progress-abstain" style="width: ${stats.abstain}%"></div>
+                        </div>
+                    </div>
+                    <div class="voting-controls">
+                        <button class="vote-button vote-yes" onclick="castVote('${proposal.id}', 'yes')">Yes</button>
+                        <button class="vote-button vote-no" onclick="castVote('${proposal.id}', 'no')">No</button>
+                        <button class="vote-button vote-abstain" onclick="castVote('${proposal.id}', 'abstain')">Abstain</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            updateMetricsDisplay();
+            updateVoterList();
+        }
+
+        function updateMetricsDisplay() {
+            const metrics = governanceSystem.getMetrics();
+            document.getElementById('activeProposals').textContent =
+                metrics.activeProposals;
+            document.getElementById('totalVotes').textContent =
+                metrics.totalVotes;
+            document.getElementById('voterParticipation').textContent =
+                `${metrics.voterParticipation.toFixed(1)}%`;
+
+            // Update voting stats
+            let yes = 0, no = 0, abstain = 0;
+            governanceSystem.proposals.forEach(proposal => {
+                yes += proposal.votes.yes;
+                no += proposal.votes.no;
+                abstain += proposal.votes.abstain;
+            });
+
+            document.getElementById('yesVotes').textContent = yes;
+            document.getElementById('noVotes').textContent = no;
+            document.getElementById('abstainVotes').textContent = abstain;
+        }
+
+        function updateVoterList() {
+            const container = document.getElementById('voterList');
+            container.innerHTML = '';
+
+            Array.from(governanceSystem.voters.entries()).slice(-10).forEach(([voter, vote]) => {
+                const div = document.createElement('div');
+                div.className = 'voter';
+                div.innerHTML = `
+                    <span class="voter-address">${voter}</span>
+                    <span class="voter-vote vote-${vote}">${vote}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addLogEntry(message, type = '') {
+            const log = document.getElementById('governanceLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Initialize the governance system
+        addLogEntry('Governance system initialized', 'info');
+    </script>
+</body>
+
+</html>

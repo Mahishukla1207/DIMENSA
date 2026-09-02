@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Means Clustering Visualizer</title>
+    <style>
+        :root {
+            /* Colors */
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #4CAF50;
+            --background-color: #f0f8ff;
+            --card-background: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --warning-color: #f1c40f;
+            --cluster-colors: [ '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+                '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB'
+                ];
+            --point-color: #4CAF50;
+            --centroid-stroke: #333333;
+
+            /* Spacing */
+            --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+            --spacing-sm: clamp(0.5rem, 1vw, 1rem);
+            --spacing-md: clamp(1rem, 2vw, 1.5rem);
+            --spacing-lg: clamp(1.5rem, 3vw, 2rem);
+
+            /* Typography */
+            --font-size-sm: clamp(0.875rem, 1.5vw, 1rem);
+            --font-size-md: clamp(1rem, 2vw, 1.25rem);
+            --font-size-lg: clamp(1.25rem, 2.5vw, 1.5rem);
+            --font-size-xl: clamp(1.5rem, 3vw, 2rem);
+
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-slow: 350ms ease;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+
+            /* Border Radius */
+            --border-radius-sm: 4px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+
+            /* Canvas */
+            --canvas-padding: clamp(20px, 5vw, 40px);
+            --canvas-border-radius: var(--border-radius-md);
+            --point-radius: clamp(4px, 1vw, 5px);
+            --centroid-radius: clamp(6px, 1.2vw, 8px);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-size: var(--font-size-md);
+            line-height: 1.5;
+            padding: var(--spacing-md);
+        }
+
+        .container {
+            text-align: center;
+            padding: var(--spacing-md);
+            background-color: var(--card-background);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: flex-start;
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        .container:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .visualization {
+            flex: 2;
+            min-width: 0;
+        }
+
+        .explanation-panel {
+            flex: 1;
+            text-align: left;
+            padding: var(--spacing-md);
+            background-color: var(--background-color);
+            border-radius: var(--border-radius-md);
+            min-width: 300px;
+            transition: background-color var(--transition-normal);
+        }
+
+        .explanation-panel:hover {
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+
+        .step {
+            margin-bottom: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius-md);
+            background-color: var(--card-background);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-normal);
+        }
+
+        .step:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .step.active {
+            background-color: rgba(76, 175, 80, 0.1);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        #clusteringCanvas {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            border: 2px solid var(--accent-color);
+            border-radius: var(--canvas-border-radius);
+            margin: var(--spacing-md) 0;
+            background-color: var(--card-background);
+            cursor: crosshair;
+            transition: border-color var(--transition-fast);
+        }
+
+        #clusteringCanvas:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .controls {
+            margin: var(--spacing-md) 0;
+            display: flex;
+            gap: var(--spacing-sm);
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        #clusterCount {
+            padding: var(--spacing-sm);
+            width: 60px;
+            border: 2px solid var(--accent-color);
+            border-radius: var(--border-radius-sm);
+            text-align: center;
+            font-size: var(--font-size-md);
+            transition: border-color var(--transition-fast);
+        }
+
+        #clusterCount:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin: var(--spacing-sm) 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #speedSlider {
+            width: clamp(150px, 20vw, 200px);
+            cursor: pointer;
+        }
+
+        button {
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: var(--font-size-md);
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        button:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        h1 {
+            color: var(--text-color);
+            margin-bottom: var(--spacing-md);
+            font-size: var(--font-size-xl);
+        }
+
+        h2 {
+            color: var(--text-color);
+            margin-bottom: var(--spacing-sm);
+            font-size: var(--font-size-lg);
+        }
+
+        label {
+            font-size: var(--font-size-md);
+            color: var(--text-color);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .error-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .success-message {
+            color: var(--success-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .success-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                padding: var(--spacing-sm);
+            }
+
+            .visualization,
+            .explanation-panel {
+                width: 100%;
+            }
+
+            .explanation-panel {
+                min-width: unset;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            button {
+                width: 100%;
+                margin: var(--spacing-xs) 0;
+            }
+
+            #clusterCount {
+                width: 100%;
+            }
+
+            .speed-control {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #speedSlider {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="visualization">
+            <h1>K-Means Clustering Visualizer</h1>
+            <canvas id="clusteringCanvas" width="600" height="400"></canvas>
+            <div class="controls">
+                <label for="clusterCount">Number of Clusters:</label>
+                <input type="number" id="clusterCount" min="2" max="8" value="3">
+                <button id="runButton">Run Clustering</button>
+                <button id="resetButton">Reset</button>
+            </div>
+            <div class="speed-control">
+                <label for="speedSlider">Animation Speed:</label>
+                <input type="range" id="speedSlider" min="100" max="2000" value="500" step="100">
+                <span id="speedValue">500ms</span>
+            </div>
+        </div>
+        <div class="explanation-panel">
+            <h2>Current Step</h2>
+            <div id="stepExplanation" class="step">
+                Click on the canvas to add points, then click "Run Clustering" to start.
+            </div>
+            <h2>Steps</h2>
+            <div id="stepsList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Get references to our HTML elements
+        const canvas = document.getElementById('clusteringCanvas');
+        const ctx = canvas.getContext('2d');
+        const runButton = document.getElementById('runButton');
+        const resetButton = document.getElementById('resetButton');
+        const clusterCountInput = document.getElementById('clusterCount');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const stepExplanation = document.getElementById('stepExplanation');
+        const stepsList = document.getElementById('stepsList');
+
+        // Store our data points and centroids
+        let points = [];
+        let centroids = [];
+        let isClustering = false;
+        let currentStep = 0;
+
+        // Colors for different clusters
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+            '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB'
+        ];
+
+        // Update speed value display
+        speedSlider.addEventListener('input', () => {
+            speedValue.textContent = `${speedSlider.value}ms`;
+        });
+
+        // Function to update step explanation
+        function updateStepExplanation(step, isActive = false) {
+            const stepDiv = document.createElement('div');
+            stepDiv.className = `step ${isActive ? 'active' : ''}`;
+            stepDiv.textContent = step;
+            stepsList.appendChild(stepDiv);
+            stepExplanation.textContent = step;
+        }
+
+        // Function to clear steps
+        function clearSteps() {
+            stepsList.innerHTML = '';
+            stepExplanation.textContent = 'Click on the canvas to add points, then click "Run Clustering" to start.';
+        }
+
+        // Function to draw a point
+        function drawPoint(x, y, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // Function to draw a centroid
+        function drawCentroid(x, y, color) {
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.closePath();
+        }
+
+        // Function to calculate distance between two points
+        function calculateDistance(point1, point2) {
+            return Math.sqrt(
+                Math.pow(point2.x - point1.x, 2) +
+                Math.pow(point2.y - point1.y, 2)
+            );
+        }
+
+        // Function to initialize centroids randomly
+        function initializeCentroids(k) {
+            centroids = [];
+            for (let i = 0; i < k; i++) {
+                centroids.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    color: colors[i]
+                });
+            }
+            updateStepExplanation(`Step ${currentStep}: Initialized ${k} random centroids`, true);
+        }
+
+        // Function to assign points to nearest centroid
+        function assignPointsToCentroids() {
+            points.forEach(point => {
+                let minDistance = Infinity;
+                let closestCentroid = 0;
+
+                centroids.forEach((centroid, index) => {
+                    const distance = calculateDistance(point, centroid);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestCentroid = index;
+                    }
+                });
+
+                point.cluster = closestCentroid;
+            });
+            updateStepExplanation(`Step ${currentStep}: Assigned points to nearest centroids`, true);
+        }
+
+        // Function to update centroid positions
+        function updateCentroids() {
+            let moved = false;
+
+            centroids.forEach((centroid, index) => {
+                const clusterPoints = points.filter(p => p.cluster === index);
+                if (clusterPoints.length === 0) return;
+
+                const newX = clusterPoints.reduce((sum, p) => sum + p.x, 0) / clusterPoints.length;
+                const newY = clusterPoints.reduce((sum, p) => sum + p.y, 0) / clusterPoints.length;
+
+                if (Math.abs(centroid.x - newX) > 0.1 || Math.abs(centroid.y - newY) > 0.1) {
+                    moved = true;
+                }
+
+                centroid.x = newX;
+                centroid.y = newY;
+            });
+
+            updateStepExplanation(`Step ${currentStep}: Updated centroid positions`, true);
+            return moved;
+        }
+
+        // Function to draw everything
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw points
+            points.forEach(point => {
+                drawPoint(point.x, point.y, centroids[point.cluster]?.color || '#4CAF50');
+            });
+
+            // Draw centroids
+            centroids.forEach(centroid => {
+                drawCentroid(centroid.x, centroid.y, centroid.color);
+            });
+        }
+
+        // Function to run one step of clustering
+        async function clusteringStep() {
+            currentStep++;
+            assignPointsToCentroids();
+            const moved = updateCentroids();
+            draw();
+
+            if (moved) {
+                await new Promise(resolve => setTimeout(resolve, parseInt(speedSlider.value)));
+                clusteringStep();
+            } else {
+                isClustering = false;
+                runButton.disabled = false;
+                updateStepExplanation(`Step ${currentStep}: Clustering complete! Centroids have converged.`, true);
+            }
+        }
+
+        // Add loading state management
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.classList.toggle('loading', isLoading);
+                button.disabled = isLoading;
+            }
+        }
+
+        // Add error handling
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            document.querySelector('.visualization').insertAdjacentElement('afterbegin', errorDiv);
+
+            // Show error
+            setTimeout(() => errorDiv.classList.add('visible'), 10);
+
+            // Remove error after 3 seconds
+            setTimeout(() => {
+                errorDiv.classList.remove('visible');
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Add success message
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.textContent = message;
+            document.querySelector('.visualization').insertAdjacentElement('afterbegin', successDiv);
+
+            // Show success
+            setTimeout(() => successDiv.classList.add('visible'), 10);
+
+            // Remove success after 3 seconds
+            setTimeout(() => {
+                successDiv.classList.remove('visible');
+                setTimeout(() => successDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Update startClustering function with loading state and error handling
+        async function startClustering() {
+            try {
+                if (points.length < 2) {
+                    showError('Please add at least 2 points first!');
+                    return;
+                }
+
+                const k = parseInt(clusterCountInput.value);
+                if (k < 2 || k > 8) {
+                    showError('Please choose between 2 and 8 clusters!');
+                    return;
+                }
+
+                setLoading('runButton', true);
+                isClustering = true;
+                currentStep = 0;
+                clearSteps();
+                initializeCentroids(k);
+                await clusteringStep();
+                showSuccess('Clustering completed successfully!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('runButton', false);
+            }
+        }
+
+        // Update reset function with confirmation and loading state
+        async function reset() {
+            if (points.length > 0 && !confirm('Are you sure you want to reset the canvas?')) {
+                return;
+            }
+
+            try {
+                setLoading('resetButton', true);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                points = [];
+                centroids = [];
+                isClustering = false;
+                currentStep = 0;
+                clearSteps();
+                showSuccess('Canvas reset successfully!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('resetButton', false);
+            }
+        }
+
+        // Event listener for canvas clicks
+        canvas.addEventListener('click', (event) => {
+            if (isClustering) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            points.push({ x, y });
+            drawPoint(x, y, '#4CAF50');
+            updateStepExplanation(`Added point at (${Math.round(x)}, ${Math.round(y)})`);
+        });
+
+        // Event listeners for buttons
+        runButton.addEventListener('click', startClustering);
+        resetButton.addEventListener('click', reset);
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        startClustering();
+                        break;
+                    case 'c':
+                        e.preventDefault();
+                        reset();
+                        break;
+                }
+            }
+        });
+
+        // Initialize the page
+        window.onload = function () {
+            // Add IDs to buttons
+            document.getElementById('runButton').id = 'runButton';
+            document.getElementById('resetButton').id = 'resetButton';
+
+            // Add keyboard shortcut hints
+            const shortcutHints = document.createElement('div');
+            shortcutHints.className = 'text-muted mt-2';
+            shortcutHints.style.fontSize = 'var(--font-size-sm)';
+            shortcutHints.innerHTML = 'Keyboard shortcuts:<br>' +
+                'Ctrl + R: Run clustering<br>' +
+                'Ctrl + C: Reset canvas';
+            document.querySelector('.visualization').appendChild(shortcutHints);
+
+            // Initialize canvas with responsive sizing
+            function resizeCanvas() {
+                const container = canvas.parentElement;
+                const containerWidth = container.clientWidth;
+                canvas.width = containerWidth;
+                canvas.height = Math.min(containerWidth * 0.5, window.innerHeight * 0.7);
+                draw();
+            }
+
+            // Add resize listener
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Add focus styles for keyboard navigation
+            document.querySelectorAll('button, input').forEach(element => {
+                element.addEventListener('focus', () => {
+                    element.style.outline = `2px solid var(--accent-color)`;
+                    element.style.outlineOffset = '2px';
+                });
+                element.addEventListener('blur', () => {
+                    element.style.outline = 'none';
+                });
+            });
+
+            // Initial canvas clear
+            reset();
+        };
+    </script>
+</body>
+
+</html>

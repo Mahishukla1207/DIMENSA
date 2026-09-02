@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 6: Greedy Algorithms</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Greedy Algorithms</h1>
+        <p style="text-align: center; color: white;">Interactive visualization of Activity Selection and Knapsack (Greedy) problems</p>
+
+        <div class="visualization-container">
+            <div class="card">
+                <h2>Activity Selection Problem</h2>
+                <div class="controls">
+                    <input type="number" id="numActivities" min="3" max="10" value="5" placeholder="Number of Activities">
+                    <button onclick="generateActivities()">Generate Activities</button>
+                    <button onclick="solveActivitySelection()">Solve</button>
+                </div>
+                <div id="activitiesVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="activitySolution" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Fractional Knapsack Problem</h2>
+                <div class="controls">
+                    <input type="number" id="numItems" min="3" max="10" value="5" placeholder="Number of Items">
+                    <input type="number" id="knapsackCapacity" min="10" max="100" value="50" placeholder="Knapsack Capacity">
+                    <button onclick="generateItems()">Generate Items</button>
+                    <button onclick="solveKnapsack()">Solve</button>
+                </div>
+                <div id="itemsVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="knapsackSolution" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="knapsackChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card explanation">
+            <h3>Algorithm Analysis</h3>
+            <p><strong>Activity Selection:</strong> O(n log n) time complexity - sorting activities by finish time</p>
+            <p><strong>Fractional Knapsack:</strong> O(n log n) time complexity - sorting items by value/weight ratio</p>
+            <p><strong>Space Complexity:</strong> O(n) for both algorithms - storing input and solution</p>
+            <p><strong>Note:</strong> Both algorithms use greedy approach - making locally optimal choices at each step</p>
+        </div>
+    </div>
+
+    <script>
+        let activities = [];
+        let items = [];
+        let charts = {};
+
+        function generateActivities() {
+            const num = parseInt(document.getElementById('numActivities').value);
+            activities = Array.from({length: num}, () => {
+                const start = Math.floor(Math.random() * 20);
+                const duration = Math.floor(Math.random() * 10) + 1;
+                return {
+                    start: start,
+                    end: start + duration,
+                    id: activities.length
+                };
+            });
+            visualizeActivities();
+            updateActivityChart();
+        }
+
+        function generateItems() {
+            const num = parseInt(document.getElementById('numItems').value);
+            items = Array.from({length: num}, () => ({
+                weight: Math.floor(Math.random() * 20) + 1,
+                value: Math.floor(Math.random() * 50) + 10,
+                id: items.length
+            }));
+            visualizeItems();
+            updateKnapsackChart();
+        }
+
+        function visualizeActivities() {
+            const container = document.getElementById('activitiesVisualization');
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.justifyContent = 'flex-start';
+            container.style.alignItems = 'flex-start';
+            container.style.maxWidth = '100%';
+            container.style.overflowX = 'auto';
+            container.style.gap = '12px';
+            container.innerHTML = activities.map(activity => `
+                <div class="viz-bar" style="width: 120px; height: 48px; max-width: 120px; min-width: 100px; min-height: 48px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; text-align: center; font-size: 1rem; background: #E2E8F0; border: 1px solid #2B6CB0;">
+                    <div class="viz-number" style="font-size: 1rem; padding: 0; background: none; color: #222; white-space: normal; line-height: 1.1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        Activity ${activity.id + 1}<br>(${activity.start}-${activity.end})
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function visualizeItems() {
+            const container = document.getElementById('itemsVisualization');
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.justifyContent = 'center';
+            container.innerHTML = items.map(item => `
+                <div class="viz-bar">
+                    <span class="viz-number viz-bar">Item ${item.id + 1}: W=${item.weight}, V=${item.value}, R=${(item.value/item.weight).toFixed(2)}</span>
+                </div>
+            `).join('');
+        }
+
+        async function solveActivitySelection() {
+            // Sort activities by finish time
+            const sortedActivities = [...activities].sort((a, b) => a.end - b.end);
+            const selected = [sortedActivities[0]];
+            let lastSelected = 0;
+            // Animate selection
+            for (let i = 1; i < sortedActivities.length; i++) {
+                const activityDivs = document.querySelectorAll('#activitiesVisualization .viz-bar');
+                await anime({
+                    targets: activityDivs[i],
+                    backgroundColor: '#2563eb',
+                    duration: 300,
+                    easing: 'easeInOutQuad'
+                }).finished;
+                await new Promise(res => setTimeout(res, 200));
+                if (sortedActivities[i].start >= sortedActivities[lastSelected].end) {
+                    selected.push(sortedActivities[i]);
+                    lastSelected = i;
+                    await anime({
+                        targets: activityDivs[i],
+                        backgroundColor: '#22c55e',
+                        duration: 400,
+                        easing: 'easeInOutQuad'
+                    }).finished;
+                } else {
+                    await anime({
+                        targets: activityDivs[i],
+                        backgroundColor: '#f87171',
+                        duration: 200,
+                        easing: 'easeInOutQuad'
+                    }).finished;
+                }
+            }
+            const solution = document.getElementById('activitySolution');
+            solution.innerHTML = `
+                <h3>Selected Activities: ${selected.length}</h3>
+                ${selected.map(a => `Activity ${a.id + 1} (${a.start}-${a.end})`).join('<br>')}
+            `;
+        }
+
+        async function solveKnapsack() {
+            const capacity = parseInt(document.getElementById('knapsackCapacity').value);
+            const sortedItems = [...items].sort((a, b) => (b.value/b.weight) - (a.value/a.weight));
+            let currentWeight = 0;
+            let totalValue = 0;
+            const selectedItems = [];
+            const itemDivs = document.querySelectorAll('#itemsVisualization .viz-bar');
+            for (let i = 0; i < sortedItems.length; i++) {
+                const item = sortedItems[i];
+                await anime({
+                    targets: itemDivs[i],
+                    backgroundColor: '#2563eb',
+                    duration: 300,
+                    easing: 'easeInOutQuad'
+                }).finished;
+                await new Promise(res => setTimeout(res, 200));
+                if (currentWeight + item.weight <= capacity) {
+                    selectedItems.push({...item, fraction: 1});
+                    currentWeight += item.weight;
+                    totalValue += item.value;
+                    await anime({
+                        targets: itemDivs[i],
+                        backgroundColor: '#22c55e',
+                        duration: 400,
+                        easing: 'easeInOutQuad'
+                    }).finished;
+                } else {
+                    const remaining = capacity - currentWeight;
+                    const fraction = remaining / item.weight;
+                    if (fraction > 0) {
+                        selectedItems.push({...item, fraction});
+                        currentWeight += remaining;
+                        totalValue += item.value * fraction;
+                        await anime({
+                            targets: itemDivs[i],
+                            backgroundColor: '#fbbf24',
+                            duration: 400,
+                            easing: 'easeInOutQuad'
+                        }).finished;
+                    } else {
+                        await anime({
+                            targets: itemDivs[i],
+                            backgroundColor: '#f87171',
+                            duration: 200,
+                            easing: 'easeInOutQuad'
+                        }).finished;
+                    }
+                    break;
+                }
+            }
+            const solution = document.getElementById('knapsackSolution');
+            solution.innerHTML = `
+                <h3>Knapsack Solution</h3>
+                <p>Total Value: ${totalValue.toFixed(2)}</p>
+                <p>Total Weight: ${currentWeight.toFixed(2)}</p>
+                <p>Selected Items:</p>
+                ${selectedItems.map(item => 
+                    `Item ${item.id + 1}: ${(item.fraction * 100).toFixed(0)}% (Weight: ${item.weight}, Value: ${item.value})`
+                ).join('<br>')}
+            `;
+        }
+
+        function updateActivityChart() {
+            const sizes = Array.from({length: 20}, (_, i) => i + 1);
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            
+            if (charts.activityChart) charts.activityChart.destroy();
+            charts.activityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sizes,
+                    datasets: [{
+                        label: 'Activity Selection (O(n log n))',
+                        data: sizes.map(n => n * Math.log2(n)),
+                        borderColor: '#0072ff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Activity Selection Complexity'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateKnapsackChart() {
+            const sizes = Array.from({length: 20}, (_, i) => i + 1);
+            const ctx = document.getElementById('knapsackChart').getContext('2d');
+            
+            if (charts.knapsackChart) charts.knapsackChart.destroy();
+            charts.knapsackChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sizes,
+                    datasets: [{
+                        label: 'Fractional Knapsack (O(n log n))',
+                        data: sizes.map(n => n * Math.log2(n)),
+                        borderColor: '#00c6ff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Knapsack Problem Complexity'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize
+        generateActivities();
+        generateItems();
+    </script>
+</body>
+</html> 

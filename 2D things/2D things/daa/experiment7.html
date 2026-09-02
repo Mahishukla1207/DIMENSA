@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 7: Dynamic Programming</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Dynamic Programming</h1>
+        <p style="text-align: center; color: white;">Interactive visualization of Fibonacci and Longest Common Subsequence (LCS) algorithms</p>
+
+        <div class="visualization-container">
+            <div class="card">
+                <h2>Fibonacci Sequence</h2>
+                <div class="controls">
+                    <input type="number" id="fibNumber" min="0" max="40" value="10" placeholder="nth Fibonacci Number">
+                    <button onclick="calculateFibonacci()">Calculate</button>
+                    <button onclick="resetFibonacci()">Reset</button>
+                </div>
+                <div id="fibVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="fibSolution" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="fibChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Longest Common Subsequence</h2>
+                <div class="controls">
+                    <input type="text" id="sequence1" value="ABCDGH" placeholder="First Sequence">
+                    <input type="text" id="sequence2" value="AEDFHR" placeholder="Second Sequence">
+                    <button onclick="calculateLCS()">Calculate LCS</button>
+                    <button onclick="resetLCS()">Reset</button>
+                </div>
+                <div id="lcsVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="lcsSolution" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="lcsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>0/1 Knapsack Problem (DP)</h2>
+                <div class="controls">
+                    <input type="text" id="knapsackWeights" value="2,3,4,5" placeholder="Weights (comma separated)">
+                    <input type="text" id="knapsackValues" value="3,4,5,6" placeholder="Values (comma separated)">
+                    <input type="number" id="knapsackCapacity" value="5" min="1" placeholder="Capacity">
+                    <button onclick="solveKnapsackDP()">Solve</button>
+                    <button onclick="resetKnapsackDP()">Reset</button>
+                </div>
+                <div id="knapsackDPVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="knapsackDPSolution" style="text-align: center; margin: 20px 0;"></div>
+            </div>
+        </div>
+
+        <div class="card explanation">
+            <h3>Algorithm Analysis</h3>
+            <p><strong>Fibonacci (DP):</strong> O(n) time complexity, O(n) space complexity - using memoization</p>
+            <p><strong>LCS (DP):</strong> O(mn) time complexity, O(mn) space complexity - where m and n are lengths of sequences</p>
+            <p><strong>Note:</strong> Both algorithms use dynamic programming to avoid redundant calculations</p>
+        </div>
+    </div>
+
+    <script>
+        let fibMemo = {};
+        let lcsMemo = {};
+        let charts = {};
+
+        async function calculateFibonacci() {
+            const n = parseInt(document.getElementById('fibNumber').value);
+            fibMemo = {};
+            const container = document.getElementById('fibVisualization');
+            container.innerHTML = '';
+            let prevDiv = null;
+            for (let i = 0; i <= n; i++) {
+                const value = fibDP(i);
+                const div = document.createElement('div');
+                div.style.display = 'inline-block';
+                div.style.margin = '5px';
+                div.style.padding = '10px';
+                div.style.background = '#e5e7eb';
+                div.style.color = '#222';
+                div.style.borderRadius = '5px';
+                div.textContent = `F(${i}) = ${value}`;
+                container.appendChild(div);
+                await anime({ targets: div, backgroundColor: '#2563eb', color: '#fff', duration: 350, easing: 'easeInOutQuad' }).finished;
+                if (prevDiv) await anime({ targets: prevDiv, backgroundColor: '#e5e7eb', color: '#222', duration: 200, easing: 'easeInOutQuad' }).finished;
+                prevDiv = div;
+                await new Promise(res => setTimeout(res, 100));
+            }
+            await anime({ targets: prevDiv, backgroundColor: '#22c55e', duration: 400, easing: 'easeInOutQuad' }).finished;
+            const solution = document.getElementById('fibSolution');
+            solution.innerHTML = `<h3>Fibonacci(${n}) = ${fibMemo[n]}</h3>`;
+            updateFibChart();
+        }
+
+        function fibDP(n) {
+            if (n in fibMemo) return fibMemo[n];
+            if (n <= 1) return n;
+            fibMemo[n] = fibDP(n-1) + fibDP(n-2);
+            return fibMemo[n];
+        }
+
+        function resetFibonacci() {
+            fibMemo = {};
+            document.getElementById('fibSolution').innerHTML = '';
+            document.getElementById('fibVisualization').innerHTML = '';
+        }
+
+        async function calculateLCS() {
+            const s1 = document.getElementById('sequence1').value.toUpperCase();
+            const s2 = document.getElementById('sequence2').value.toUpperCase();
+            lcsMemo = {};
+            const m = s1.length;
+            const n = s2.length;
+            const dp = Array(m + 1).fill().map(() => Array(n + 1).fill(0));
+            const container = document.getElementById('lcsVisualization');
+            container.innerHTML = '';
+            // Build DP table with animation
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    if (s1[i-1] === s2[j-1]) {
+                        dp[i][j] = dp[i-1][j-1] + 1;
+                    } else {
+                        dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+                    }
+                    // Animate cell update
+                    let table = container.querySelector('table');
+                    if (!table) {
+                        table = document.createElement('table');
+                        table.style.margin = '0 auto';
+                        table.style.borderCollapse = 'collapse';
+                        for (let x = 0; x <= m; x++) {
+                            const row = document.createElement('tr');
+                            for (let y = 0; y <= n; y++) {
+                                const cell = document.createElement('td');
+                                cell.style.width = '36px';
+                                cell.style.height = '36px';
+                                cell.style.textAlign = 'center';
+                                cell.style.border = '1px solid #2B6CB0';
+                                cell.textContent = dp[x][y];
+                                cell.id = `lcs-cell-${x}-${y}`;
+                                row.appendChild(cell);
+                            }
+                            table.appendChild(row);
+                        }
+                        container.appendChild(table);
+                    } else {
+                        table.rows[i].cells[j].textContent = dp[i][j];
+                    }
+                    const cell = document.getElementById(`lcs-cell-${i}-${j}`);
+                    if (cell) await anime({ targets: cell, backgroundColor: '#2563eb', color: '#fff', duration: 250, easing: 'easeInOutQuad' }).finished;
+                    await new Promise(res => setTimeout(res, 80));
+                    if (cell) await anime({ targets: cell, backgroundColor: '#e5e7eb', color: '#222', duration: 150, easing: 'easeInOutQuad' }).finished;
+                }
+            }
+            // Traceback for LCS
+            let i = m, j = n, lcs = '';
+            while (i > 0 && j > 0) {
+                const cell = document.getElementById(`lcs-cell-${i}-${j}`);
+                if (s1[i-1] === s2[j-1]) {
+                    lcs = s1[i-1] + lcs;
+                    if (cell) await anime({ targets: cell, backgroundColor: '#22c55e', duration: 300, easing: 'easeInOutQuad' }).finished;
+                    i--; j--;
+                } else if (dp[i-1][j] > dp[i][j-1]) {
+                    i--;
+                } else {
+                    j--;
+                }
+            }
+            const solution = document.getElementById('lcsSolution');
+            solution.innerHTML = `<h3>LCS Length: ${lcs.length}</h3><p>LCS: ${lcs}</p>`;
+            updateLCSChart();
+        }
+
+        function resetLCS() {
+            lcsMemo = {};
+            document.getElementById('lcsSolution').innerHTML = '';
+            document.getElementById('lcsVisualization').innerHTML = '';
+        }
+
+        function visualizeFibonacci() {
+            const container = document.getElementById('fibVisualization');
+            const values = Object.entries(fibMemo).map(([n, value]) => 
+                `<div style="display: inline-block; margin: 5px; padding: 10px; 
+                  background: #0072ff; color: white; border-radius: 5px;">
+                    F(${n}) = ${value}
+                </div>`
+            );
+            container.innerHTML = values.join('');
+        }
+
+        function visualizeLCS(s1, s2, lcs) {
+            const container = document.getElementById('lcsVisualization');
+            const s1HTML = s1.split('').map(c => 
+                `<span class=\"viz-bar\"><span class=\"viz-number viz-bar\">${c}</span></span>`
+            ).join('');
+            const s2HTML = s2.split('').map(c => 
+                `<span class=\"viz-bar\"><span class=\"viz-number viz-bar\">${c}</span></span>`
+            ).join('');
+            container.innerHTML = `
+                <div style="margin-bottom: 10px; display: flex; justify-content: center; flex-wrap: wrap;">${s1HTML}</div>
+                <div style="display: flex; justify-content: center; flex-wrap: wrap;">${s2HTML}</div>
+            `;
+        }
+
+        function updateFibChart() {
+            const sizes = Array.from({length: 20}, (_, i) => i + 1);
+            const ctx = document.getElementById('fibChart').getContext('2d');
+            
+            if (charts.fibChart) charts.fibChart.destroy();
+            charts.fibChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sizes,
+                    datasets: [{
+                        label: 'Fibonacci DP (O(n))',
+                        data: sizes,
+                        borderColor: '#0072ff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Fibonacci Complexity'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateLCSChart() {
+            const sizes = Array.from({length: 20}, (_, i) => i + 1);
+            const ctx = document.getElementById('lcsChart').getContext('2d');
+            
+            if (charts.lcsChart) charts.lcsChart.destroy();
+            charts.lcsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sizes,
+                    datasets: [{
+                        label: 'LCS DP (O(mn))',
+                        data: sizes.map(n => n * n),
+                        borderColor: '#00c6ff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'LCS Complexity'
+                        }
+                    }
+                }
+            });
+        }
+
+        async function solveKnapsackDP() {
+            const weights = document.getElementById('knapsackWeights').value.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+            const values = document.getElementById('knapsackValues').value.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+            const capacity = parseInt(document.getElementById('knapsackCapacity').value);
+            const n = weights.length;
+            if (n === 0 || values.length !== n || isNaN(capacity) || capacity <= 0) {
+                document.getElementById('knapsackDPSolution').innerHTML = '<span style="color:red">Invalid input.</span>';
+                return;
+            }
+            // DP table
+            const dp = Array(n+1).fill().map(() => Array(capacity+1).fill(0));
+            const container = document.getElementById('knapsackDPVisualization');
+            container.innerHTML = '';
+            // Create table
+            const table = document.createElement('table');
+            table.style.margin = '0 auto';
+            table.style.borderCollapse = 'collapse';
+            for (let i = 0; i <= n; i++) {
+                const row = document.createElement('tr');
+                for (let w = 0; w <= capacity; w++) {
+                    const cell = document.createElement('td');
+                    cell.style.width = '36px';
+                    cell.style.height = '36px';
+                    cell.style.textAlign = 'center';
+                    cell.style.border = '1px solid #2B6CB0';
+                    cell.textContent = dp[i][w];
+                    cell.id = `knapsack-cell-${i}-${w}`;
+                    row.appendChild(cell);
+                }
+                table.appendChild(row);
+            }
+            container.appendChild(table);
+            // Fill DP table with animation
+            for (let i = 1; i <= n; i++) {
+                for (let w = 0; w <= capacity; w++) {
+                    if (weights[i-1] <= w) {
+                        dp[i][w] = Math.max(dp[i-1][w], values[i-1] + dp[i-1][w-weights[i-1]]);
+                    } else {
+                        dp[i][w] = dp[i-1][w];
+                    }
+                    const cell = document.getElementById(`knapsack-cell-${i}-${w}`);
+                    cell.textContent = dp[i][w];
+                    if (cell) await anime({ targets: cell, backgroundColor: '#2563eb', color: '#fff', duration: 200, easing: 'easeInOutQuad' }).finished;
+                    await new Promise(res => setTimeout(res, 60));
+                    if (cell) await anime({ targets: cell, backgroundColor: '#e5e7eb', color: '#222', duration: 120, easing: 'easeInOutQuad' }).finished;
+                }
+            }
+            // Traceback to find selected items
+            let res = dp[n][capacity];
+            let w = capacity;
+            let selected = [];
+            for (let i = n; i > 0 && res > 0; i--) {
+                if (res !== dp[i-1][w]) {
+                    selected.push(i-1);
+                    const cell = document.getElementById(`knapsack-cell-${i}-${w}`);
+                    if (cell) await anime({ targets: cell, backgroundColor: '#22c55e', duration: 250, easing: 'easeInOutQuad' }).finished;
+                    res -= values[i-1];
+                    w -= weights[i-1];
+                }
+            }
+            selected.reverse();
+            document.getElementById('knapsackDPSolution').innerHTML = `<h3>Max Value: ${dp[n][capacity]}</h3><p>Selected Items: ${selected.map(i => `#${i+1} (W=${weights[i]}, V=${values[i]})`).join(', ')}</p>`;
+        }
+
+        function resetKnapsackDP() {
+            document.getElementById('knapsackDPVisualization').innerHTML = '';
+            document.getElementById('knapsackDPSolution').innerHTML = '';
+        }
+
+        // Initialize
+        updateFibChart();
+        updateLCSChart();
+    </script>
+</body>
+</html> 

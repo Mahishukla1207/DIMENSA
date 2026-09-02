@@ -1,0 +1,707 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minimum Spanning Tree Visualization</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body { 
+      background: linear-gradient(to right, #00c6ff, #0072ff); 
+      font-family: 'Poppins', sans-serif; 
+      text-align: center; 
+      padding: 20px; 
+      color: white; 
+    }
+    h1 { margin-bottom: 20px; }
+    .controls { 
+      margin: 20px; 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    input, button { 
+      padding: 10px; 
+      border-radius: 5px;
+      border: none;
+    }
+    button { 
+      background: #0288d1; 
+      color: white; 
+      cursor: pointer; 
+      transition: all 0.3s ease;
+    }
+    button:hover { 
+      background: #0277bd;
+      transform: scale(1.05);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #graph-container {
+      width: 800px;
+      height: 500px;
+      margin: 20px auto;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .node {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 3;
+    }
+    .node:hover {
+      transform: scale(1.1);
+    }
+    .edge {
+      position: absolute;
+      height: 3px;
+      background: #fff;
+      transform-origin: 0 0;
+      transition: all 0.3s ease;
+      z-index: 1;
+    }
+    .edge-weight {
+      position: absolute;
+      color: white;
+      font-size: 14px;
+      background: rgba(0,0,0,0.7);
+      padding: 2px 8px;
+      border-radius: 4px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .mst-edge {
+      background: #4CAF50;
+      height: 3px;
+    }
+    .mst-node {
+      background: #4CAF50;
+      color: white;
+    }
+    #algorithm-info {
+      margin: 20px;
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      text-align: left;
+    }
+    .step-highlight {
+      animation: highlight 1s ease-in-out;
+    }
+    @keyframes highlight {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+  
+                    .current-page {
+                        text-decoration: underline;
+                        text-decoration-thickness: 2px;
+                        text-decoration-color: var(--primary-color);
+                        font-weight: bold;
+                        color: var(--primary-color);
+                    }
+                    </style>
+</head>
+<body>
+
+<h1>Minimum Spanning Tree Visualization</h1>
+
+<div class="controls">
+  <div class="input-group">
+    <input id="node1" type="text" placeholder="Node 1">
+    <input id="node2" type="text" placeholder="Node 2">
+    <input id="weight" type="number" placeholder="Weight" min="1">
+    <button onclick="addEdge()">Add Edge</button>
+  </div>
+  <div class="input-group">
+    <button onclick="startPrims()">Run Prim's Algorithm</button>
+    <button onclick="startStepByStepPrims()">Step-by-Step Prim's</button>
+    <button onclick="startKruskals()">Run Kruskal's Algorithm</button>
+    <button onclick="startStepByStepKruskals()">Step-by-Step Kruskal's</button>
+    <button onclick="resetGraph()">Reset Graph</button>
+  </div>
+</div>
+
+<div id="graph-container"></div>
+<div id="algorithm-info"></div>
+
+<script>
+class Graph {
+  constructor() {
+    this.nodes = new Set();
+    this.edges = [];
+    this.adjacencyList = new Map();
+  }
+
+  addNode(node) {
+    this.nodes.add(node);
+    this.adjacencyList.set(node, []);
+  }
+
+  addEdge(node1, node2, weight) {
+    if (!this.nodes.has(node1)) this.addNode(node1);
+    if (!this.nodes.has(node2)) this.addNode(node2);
+    
+    this.edges.push({ node1, node2, weight });
+    this.adjacencyList.get(node1).push({ node: node2, weight });
+    this.adjacencyList.get(node2).push({ node: node1, weight });
+  }
+
+  getEdges() {
+    return this.edges;
+  }
+
+  getNodes() {
+    return Array.from(this.nodes);
+  }
+}
+
+const graph = new Graph();
+let animationSpeed = 1000; // ms
+
+function addEdge() {
+  const node1 = document.getElementById('node1').value;
+  const node2 = document.getElementById('node2').value;
+  const weight = parseInt(document.getElementById('weight').value);
+
+  if (node1 && node2 && weight) {
+    graph.addEdge(node1, node2, weight);
+    renderGraph();
+    document.getElementById('node1').value = '';
+    document.getElementById('node2').value = '';
+    document.getElementById('weight').value = '';
+  }
+}
+
+function renderGraph() {
+  const container = document.getElementById('graph-container');
+  container.innerHTML = '';
+  
+  const nodes = graph.getNodes();
+  const edges = graph.getEdges();
+  
+  // Position nodes in a circle
+  const centerX = container.clientWidth / 2;
+  const centerY = container.clientHeight / 2;
+  const radius = Math.min(centerX, centerY) * 0.8;
+  
+  // Create nodes first
+  const nodeElements = {};
+  nodes.forEach((node, index) => {
+    const angle = (index * 2 * Math.PI) / nodes.length;
+    const x = centerX + radius * Math.cos(angle);
+    const y = centerY + radius * Math.sin(angle);
+    
+    const nodeElement = document.createElement('div');
+    nodeElement.className = 'node';
+    nodeElement.textContent = node;
+    nodeElement.style.left = `${x}px`;
+    nodeElement.style.top = `${y}px`;
+    container.appendChild(nodeElement);
+    nodeElements[node] = nodeElement;
+  });
+
+  // Create edges after nodes
+  edges.forEach(edge => {
+    const node1Element = nodeElements[edge.node1];
+    const node2Element = nodeElements[edge.node2];
+    
+    if (node1Element && node2Element) {
+      const x1 = parseFloat(node1Element.style.left) + 20; // Center of node1
+      const y1 = parseFloat(node1Element.style.top) + 20;  // Center of node1
+      const x2 = parseFloat(node2Element.style.left) + 20; // Center of node2
+      const y2 = parseFloat(node2Element.style.top) + 20;  // Center of node2
+      
+      // Calculate edge length and angle
+      const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+      const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+      
+      // Create edge element
+      const edgeElement = document.createElement('div');
+      edgeElement.className = 'edge';
+      edgeElement.style.left = `${x1}px`;
+      edgeElement.style.top = `${y1}px`;
+      edgeElement.style.width = `${length}px`;
+      edgeElement.style.transform = `rotate(${angle}deg)`;
+      
+      // Create weight element
+      const weightElement = document.createElement('div');
+      weightElement.className = 'edge-weight';
+      weightElement.textContent = edge.weight;
+      
+      // Position weight at the middle of the edge
+      const weightX = length/2 - 15;
+      const weightY = -15;
+      weightElement.style.left = `${weightX}px`;
+      weightElement.style.top = `${weightY}px`;
+      
+      edgeElement.appendChild(weightElement);
+      container.appendChild(edgeElement);
+    }
+  });
+}
+
+async function startPrims() {
+  const nodes = graph.getNodes();
+  if (nodes.length === 0) return;
+  
+  const mst = new Set();
+  const visited = new Set();
+  const edges = graph.getEdges();
+  
+  // Start with first node
+  visited.add(nodes[0]);
+  document.getElementById('algorithm-info').innerHTML = 'Starting Prim\'s Algorithm...';
+  
+  while (visited.size < nodes.length) {
+    let minEdge = null;
+    let minWeight = Infinity;
+    
+    // Find minimum weight edge connecting visited and unvisited nodes
+    for (const edge of edges) {
+      if ((visited.has(edge.node1) && !visited.has(edge.node2)) ||
+          (visited.has(edge.node2) && !visited.has(edge.node1))) {
+        if (edge.weight < minWeight) {
+          minWeight = edge.weight;
+          minEdge = edge;
+        }
+      }
+    }
+    
+    if (minEdge) {
+      mst.add(minEdge);
+      visited.add(visited.has(minEdge.node1) ? minEdge.node2 : minEdge.node1);
+      
+      // Highlight the edge and nodes
+      const edgeElement = document.querySelector(`.edge:has(.edge-weight:contains('${minEdge.weight}'))`);
+      const node1Element = document.querySelector(`.node:contains('${minEdge.node1}')`);
+      const node2Element = document.querySelector(`.node:contains('${minEdge.node2}')`);
+      
+      if (edgeElement && node1Element && node2Element) {
+        edgeElement.classList.add('mst-edge');
+        node1Element.classList.add('mst-node');
+        node2Element.classList.add('mst-node');
+        
+        document.getElementById('algorithm-info').innerHTML = 
+          `Adding edge ${minEdge.node1}-${minEdge.node2} with weight ${minEdge.weight}`;
+        
+        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+      }
+    }
+  }
+  
+  document.getElementById('algorithm-info').innerHTML += '<br>MST Complete!';
+}
+
+let kruskalState = {
+  edges: [],
+  currentStep: 0,
+  mstEdges: [],
+  parent: {},
+  rank: {},
+  isRunning: false
+};
+
+function startStepByStepKruskals() {
+  // Reset previous state
+  kruskalState = {
+    edges: [...graph.getEdges()].sort((a, b) => a.weight - b.weight),
+    currentStep: 0,
+    mstEdges: [],
+    parent: {},
+    rank: {},
+    isRunning: true
+  };
+
+  // Initialize Union-Find
+  graph.getNodes().forEach(node => {
+    kruskalState.parent[node] = node;
+    kruskalState.rank[node] = 0;
+  });
+
+  // Reset visual state
+  document.querySelectorAll('.edge').forEach(edge => {
+    edge.classList.remove('mst-edge');
+    edge.style.opacity = '1';
+  });
+  document.querySelectorAll('.node').forEach(node => {
+    node.classList.remove('mst-node');
+    node.style.opacity = '1';
+  });
+
+  document.getElementById('algorithm-info').innerHTML = 
+    'Kruskal\'s Algorithm (Step-by-Step Mode)<br>Press Right Arrow to advance, Left Arrow to go back';
+  
+  // Enable keyboard controls
+  document.addEventListener('keydown', handleKruskalStep);
+}
+
+function handleKruskalStep(event) {
+  if (!kruskalState.isRunning) return;
+
+  if (event.key === 'ArrowRight') {
+    advanceKruskalStep();
+  } else if (event.key === 'ArrowLeft') {
+    goBackKruskalStep();
+  }
+}
+
+async function advanceKruskalStep() {
+  if (kruskalState.currentStep >= kruskalState.edges.length) {
+    document.getElementById('algorithm-info').innerHTML += 
+      '<br>Algorithm Complete! Final MST Weight: ' + 
+      kruskalState.mstEdges.reduce((sum, edge) => sum + edge.weight, 0);
+    kruskalState.isRunning = false;
+    document.removeEventListener('keydown', handleKruskalStep);
+    return;
+  }
+
+  const edge = kruskalState.edges[kruskalState.currentStep];
+  
+  // Highlight current edge being considered
+  const edgeElements = document.querySelectorAll('.edge');
+  const currentEdgeElement = Array.from(edgeElements).find(el => {
+    const weightEl = el.querySelector('.edge-weight');
+    return weightEl && weightEl.textContent === edge.weight.toString();
+  });
+
+  if (currentEdgeElement) {
+    currentEdgeElement.style.opacity = '0.5';
+    document.getElementById('algorithm-info').innerHTML = 
+      `Step ${kruskalState.currentStep + 1}: Considering edge ${edge.node1}-${edge.node2} with weight ${edge.weight}`;
+    
+    await new Promise(resolve => setTimeout(resolve, 300));
+  }
+
+  if (union(edge.node1, edge.node2)) {
+    kruskalState.mstEdges.push(edge);
+    
+    if (currentEdgeElement) {
+      currentEdgeElement.classList.add('mst-edge');
+      currentEdgeElement.style.opacity = '1';
+      
+      const node1Element = document.querySelector(`.node:contains('${edge.node1}')`);
+      const node2Element = document.querySelector(`.node:contains('${edge.node2}')`);
+      
+      if (node1Element && node2Element) {
+        node1Element.classList.add('mst-node');
+        node2Element.classList.add('mst-node');
+        
+        document.getElementById('algorithm-info').innerHTML = 
+          `Step ${kruskalState.currentStep + 1}: Added edge ${edge.node1}-${edge.node2} to MST`;
+        
+        currentEdgeElement.classList.add('step-highlight');
+        node1Element.classList.add('step-highlight');
+        node2Element.classList.add('step-highlight');
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        currentEdgeElement.classList.remove('step-highlight');
+        node1Element.classList.remove('step-highlight');
+        node2Element.classList.remove('step-highlight');
+      }
+    }
+  } else {
+    if (currentEdgeElement) {
+      currentEdgeElement.style.opacity = '0.3';
+      document.getElementById('algorithm-info').innerHTML = 
+        `Step ${kruskalState.currentStep + 1}: Skipped edge ${edge.node1}-${edge.node2} (would create cycle)`;
+    }
+  }
+
+  kruskalState.currentStep++;
+}
+
+function goBackKruskalStep() {
+  if (kruskalState.currentStep <= 0) return;
+
+  kruskalState.currentStep--;
+  const edge = kruskalState.edges[kruskalState.currentStep];
+  
+  // Reset visual state for this step
+  const edgeElements = document.querySelectorAll('.edge');
+  const currentEdgeElement = Array.from(edgeElements).find(el => {
+    const weightEl = el.querySelector('.edge-weight');
+    return weightEl && weightEl.textContent === edge.weight.toString();
+  });
+
+  if (currentEdgeElement) {
+    currentEdgeElement.style.opacity = '1';
+    currentEdgeElement.classList.remove('mst-edge');
+    
+    const node1Element = document.querySelector(`.node:contains('${edge.node1}')`);
+    const node2Element = document.querySelector(`.node:contains('${edge.node2}')`);
+    
+    if (node1Element && node2Element) {
+      node1Element.classList.remove('mst-node');
+      node2Element.classList.remove('mst-node');
+    }
+  }
+
+  // Update algorithm state
+  if (kruskalState.mstEdges.length > 0 && 
+      kruskalState.mstEdges[kruskalState.mstEdges.length - 1] === edge) {
+    kruskalState.mstEdges.pop();
+    // Reset Union-Find state
+    graph.getNodes().forEach(node => {
+      kruskalState.parent[node] = node;
+      kruskalState.rank[node] = 0;
+    });
+    // Rebuild Union-Find state up to current step
+    for (let i = 0; i < kruskalState.currentStep; i++) {
+      const e = kruskalState.edges[i];
+      if (kruskalState.mstEdges.includes(e)) {
+        union(e.node1, e.node2);
+      }
+    }
+  }
+
+  document.getElementById('algorithm-info').innerHTML = 
+    `Step ${kruskalState.currentStep + 1}: Ready to consider edge ${edge.node1}-${edge.node2}`;
+}
+
+function union(node1, node2) {
+  const root1 = find(node1);
+  const root2 = find(node2);
+  
+  if (root1 !== root2) {
+    if (kruskalState.rank[root1] > kruskalState.rank[root2]) {
+      kruskalState.parent[root2] = root1;
+    } else if (kruskalState.rank[root1] < kruskalState.rank[root2]) {
+      kruskalState.parent[root1] = root2;
+    } else {
+      kruskalState.parent[root2] = root1;
+      kruskalState.rank[root1]++;
+    }
+    return true;
+  }
+  return false;
+}
+
+function find(node) {
+  if (kruskalState.parent[node] !== node) {
+    kruskalState.parent[node] = find(kruskalState.parent[node]);
+  }
+  return kruskalState.parent[node];
+}
+
+function resetGraph() {
+  graph.nodes.clear();
+  graph.edges = [];
+  graph.adjacencyList.clear();
+  document.getElementById('graph-container').innerHTML = '';
+  document.getElementById('algorithm-info').innerHTML = '';
+}
+
+// Helper function for element selection
+Element.prototype.contains = function(text) {
+  return this.textContent.includes(text);
+};
+
+let primState = {
+  nodes: [],
+  edges: [],
+  visited: new Set(),
+  mstEdges: [],
+  currentStep: 0,
+  isRunning: false,
+  minEdge: null
+};
+
+function startStepByStepPrims() {
+  // Reset previous state
+  primState = {
+    nodes: graph.getNodes(),
+    edges: graph.getEdges(),
+    visited: new Set(),
+    mstEdges: [],
+    currentStep: 0,
+    isRunning: true,
+    minEdge: null
+  };
+
+  // Start with first node
+  if (primState.nodes.length > 0) {
+    primState.visited.add(primState.nodes[0]);
+  }
+
+  // Reset visual state
+  document.querySelectorAll('.edge').forEach(edge => {
+    edge.classList.remove('mst-edge');
+    edge.style.opacity = '1';
+  });
+  document.querySelectorAll('.node').forEach(node => {
+    node.classList.remove('mst-node');
+    node.style.opacity = '1';
+  });
+
+  document.getElementById('algorithm-info').innerHTML = 
+    'Prim\'s Algorithm (Step-by-Step Mode)<br>Press Right Arrow to advance, Left Arrow to go back';
+  
+  // Enable keyboard controls
+  document.addEventListener('keydown', handlePrimStep);
+}
+
+function handlePrimStep(event) {
+  if (!primState.isRunning) return;
+
+  if (event.key === 'ArrowRight') {
+    advancePrimStep();
+  } else if (event.key === 'ArrowLeft') {
+    goBackPrimStep();
+  }
+}
+
+async function advancePrimStep() {
+  if (primState.visited.size === primState.nodes.length) {
+    const totalWeight = primState.mstEdges.reduce((sum, edge) => sum + edge.weight, 0);
+    document.getElementById('algorithm-info').innerHTML += 
+      `<br>Algorithm Complete! Final MST Weight: ${totalWeight}`;
+    primState.isRunning = false;
+    document.removeEventListener('keydown', handlePrimStep);
+    return;
+  }
+
+  // Find minimum weight edge connecting visited and unvisited nodes
+  let minEdge = null;
+  let minWeight = Infinity;
+
+  for (const edge of primState.edges) {
+    if ((primState.visited.has(edge.node1) && !primState.visited.has(edge.node2)) ||
+        (primState.visited.has(edge.node2) && !primState.visited.has(edge.node1))) {
+      if (edge.weight < minWeight) {
+        minWeight = edge.weight;
+        minEdge = edge;
+      }
+    }
+  }
+
+  if (minEdge) {
+    // Highlight the edge being considered
+    const edgeElements = document.querySelectorAll('.edge');
+    const currentEdgeElement = Array.from(edgeElements).find(el => {
+      const weightEl = el.querySelector('.edge-weight');
+      return weightEl && weightEl.textContent === minEdge.weight.toString();
+    });
+
+    if (currentEdgeElement) {
+      currentEdgeElement.style.opacity = '0.5';
+      document.getElementById('algorithm-info').innerHTML = 
+        `Step ${primState.currentStep + 1}: Considering edge ${minEdge.node1}-${minEdge.node2} with weight ${minEdge.weight}`;
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Add edge to MST
+      primState.mstEdges.push(minEdge);
+      const newNode = primState.visited.has(minEdge.node1) ? minEdge.node2 : minEdge.node1;
+      primState.visited.add(newNode);
+
+      currentEdgeElement.classList.add('mst-edge');
+      currentEdgeElement.style.opacity = '1';
+      
+      const node1Element = document.querySelector(`.node:contains('${minEdge.node1}')`);
+      const node2Element = document.querySelector(`.node:contains('${minEdge.node2}')`);
+      
+      if (node1Element && node2Element) {
+        node1Element.classList.add('mst-node');
+        node2Element.classList.add('mst-node');
+        
+        document.getElementById('algorithm-info').innerHTML = 
+          `Step ${primState.currentStep + 1}: Added edge ${minEdge.node1}-${minEdge.node2} to MST`;
+        
+        currentEdgeElement.classList.add('step-highlight');
+        node1Element.classList.add('step-highlight');
+        node2Element.classList.add('step-highlight');
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        currentEdgeElement.classList.remove('step-highlight');
+        node1Element.classList.remove('step-highlight');
+        node2Element.classList.remove('step-highlight');
+      }
+    }
+  }
+
+  primState.currentStep++;
+}
+
+function goBackPrimStep() {
+  if (primState.currentStep <= 0) return;
+
+  primState.currentStep--;
+  const lastEdge = primState.mstEdges[primState.mstEdges.length - 1];
+  
+  if (lastEdge) {
+    // Reset visual state
+    const edgeElements = document.querySelectorAll('.edge');
+    const currentEdgeElement = Array.from(edgeElements).find(el => {
+      const weightEl = el.querySelector('.edge-weight');
+      return weightEl && weightEl.textContent === lastEdge.weight.toString();
+    });
+
+    if (currentEdgeElement) {
+      currentEdgeElement.classList.remove('mst-edge');
+      currentEdgeElement.style.opacity = '1';
+      
+      const node1Element = document.querySelector(`.node:contains('${lastEdge.node1}')`);
+      const node2Element = document.querySelector(`.node:contains('${lastEdge.node2}')`);
+      
+      if (node1Element && node2Element) {
+        // Only remove mst-node class if the node isn't connected by other MST edges
+        if (!isNodeConnectedByOtherMSTEdges(lastEdge.node1, lastEdge)) {
+          node1Element.classList.remove('mst-node');
+        }
+        if (!isNodeConnectedByOtherMSTEdges(lastEdge.node2, lastEdge)) {
+          node2Element.classList.remove('mst-node');
+        }
+      }
+    }
+
+    // Update algorithm state
+    primState.mstEdges.pop();
+    const removedNode = primState.visited.has(lastEdge.node1) ? lastEdge.node2 : lastEdge.node1;
+    primState.visited.delete(removedNode);
+
+    document.getElementById('algorithm-info').innerHTML = 
+      `Step ${primState.currentStep + 1}: Ready to consider next edge`;
+  }
+}
+
+function isNodeConnectedByOtherMSTEdges(node, currentEdge) {
+  return primState.mstEdges.some(edge => 
+    edge !== currentEdge && (edge.node1 === node || edge.node2 === node)
+  );
+}
+</script>
+
+<footer style="margin-top: 30px;">&copy; 2025 Virtual DSA Lab | MST Visualization</footer>
+
+</body>
+</html>
+
+
+
+

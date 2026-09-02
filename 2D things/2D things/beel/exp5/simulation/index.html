@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXPERIMENT</title>
+    <link rel="stylesheet" href="/beel/exp5/simulation/css/style.css">
+    <link href="/beel/exp5/simulation/CDN_folder/Font(zacbel-x).css" rel="stylesheet">
+    <link href="/beel/exp5/simulation/CDN_folder/Font(foco-trial).css" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/seven-segment" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@firestitch/jsplumb@2.12.0/dist/js/jsplumb.min.js"></script>
+    <script src="/beel/exp5/simulation/CDN_folder/ChartCDN.js"></script>
+
+    
+
+
+    <style>
+        footer {
+
+            position: absolute;
+            font-size: larger;
+            margin-top: 1px;
+            text-align: center;
+            width: 1500px;
+            background-color: #1e1e1e;
+            color: white;
+            font-size: 18px;
+
+        }
+    </style>
+
+
+    
+</head>
+
+
+
+
+<body>
+    <div class="container">
+
+        
+        <div style="margin-left: 50px;" class="heading">
+            
+            <p style="  padding: 8px;  color:white; border-radius: 10px; background-color:#1e1e1e;">Torque Speed
+                Characteristics of 3-&#981; Induction Motor</p>
+        </div>
+
+        <div class="instructions" id="instTab">
+            <div class="insHeading">
+                <p>Instructions</p>
+
+                <ul type="none" class="steps">
+                    <li><b>Step 1:</b> Make connections as per the instructions given below:
+                    </li>
+                    </br>
+                    <li> (a) (1-4), (2-5), (3-6)</li></br>
+                    <li> (b) (7-10), (8-11)</li></br>
+                    <li> (c) (7-12), (13-14)</li></br>
+                    <li> (d) (8-15), (9-16)</li>
+                    <br />
+
+                    <li><b>Step 2:</b> Check the connections by clicking on the <b> ‘CHECK’</b> button. </li></br>
+                    <li><b>Step 3:</b> Select the first weight from w1 and w2.</li></br>
+
+                    <li><b>Step 4:</b> Turn on the MCB. </li></br>
+                    <li><b>Step 5 </b> Click on the <b>'ADD'</b> button to add the reading in the observation table.
+                    </li></br>
+                    <li><b>Step 6:</b> Vary the values of <b>w1 and w2</b> and add the readings to the observation table
+                        using <b>ADD</b> button.</li></br>
+                    <li><b>Step 7:</b> Take atleast 6 readings in the table. </li></br>
+                    <li><b>Step 8:</b> Click on the <b> ‘PLOT’</b> button to plot the graph. </li></br>
+                    <li><b>Step 9:</b> Click on the <b> ‘PRINT’</b> button to takeout the print of the webpage. </li>
+                    </br>
+                    <li><b>Step 10:</b> Click on <b> 'RESET'</b> to reset the experiment.</li></br>
+
+                </ul>
+
+            </div>
+            <div class="MyLabel">
+                <p>
+                    Instructions
+                </p>
+            </div>
+        </div>
+
+        <div class="clear"></div>
+        
+        <div class="r2">
+
+            <div class="r2c1">
+
+                
+
+                <div class="action-buttons">
+                    <p style="  padding: 8px; color:white; border-radius: 10px; background-color:#1e1e1e;">ACTION
+                        BUTTONS</p>
+                    <div class="control-panel-buttons">
+                        <button id="check">CHECK</button>
+                        <button id="add" disabled="true">ADD</button>
+                        <button id="plot" disabled="true">PLOT</button>
+                        <button id="reset" onclick='window.location.reload();'>RESET</button>
+                        <button id="print" disabled="true" onclick=' window.print();'>PRINT</button>
+                    </div>
+                </div>
+
+                
+
+
+                <div class="formulas">
+                    <p style=" padding: 8px;  color:white; border-radius: 10px; background-color:#1e1e1e;">FORMULAS</p>
+
+                    \[Torque = 9.81 \times ({W_1} - {W_2}) \times r\]
+                    <p style="font-family: zacbel-x; font-weight: 500;"> r = radius of the break drum</p>
+                    \[r = 0.15m\]
+
+
+                    
+
+                    
+                </div>
+
+                
+
+
+                <div class="o_table">
+                    <p style=" padding: 8px; color:white; border-radius: 10px; background-color:#1e1e1e;">OBSERVATION
+                        TABLE</p>
+                    <div style="width:100px" class="table">
+                        <table id="valTable">
+                            <tr>
+                                <th>S.No</th>
+                                <th>Volt(V)</th>
+                                <th>Amp(A)</th>
+                                <th>W1(Kg)</th>
+                                <th>W2(Kg)</th>
+                                <th>Mechanical Torque(N-m)</th>
+                                <th>Speed(RPM)</th>
+
+                            </tr>
+
+                        </table>
+                    </div>
+                </div>
+
+                
+            </div>
+
+
+            <div class="r2c2">
+
+                <div class="circuit">
+                    <p>&nbsp;</p>
+                    <div class="c-diag">
+
+                        <div class="mcb">
+                            <img src="images/MCB_Off.png" id="M" height="120" width="100" alt="">
+                            <button id="on_power" disabled="true"></button>
+                            <button id="mcb_r"><label style="z-index: 2;" id="label1"
+                                    onclick="disconnect(0)">1</label></button>
+                            <button id="mcb_b"><label style="z-index: 2;" id="label2"
+                                    onclick="disconnect(1)">2</label></button>
+                            <button id="mcb_y"><label style="z-index: 2;" id="label3"
+                                    onclick="disconnect(2)">3</label></button>
+                        </div>
+
+                        <div class="motor-starter">
+                            <button id="i_r"><label style="z-index: 2;" id="label4"
+                                    onclick="disconnect(3)">4</label></button>
+                            <button id="i_b"><label style="z-index: 2;" id="label5"
+                                    onclick="disconnect(4)">5</label></button>
+                            <button id="i_y"><label style="z-index: 2;" id="label6"
+                                    onclick="disconnect(5)">6</label></button>
+
+                            <img src="images/motor-starter.png" id="starter" height="250" width="250" alt="">
+
+                            <button id="o_r"><label style="z-index: 2;" id="label7"
+                                    onclick="disconnect(6)">7</label></button>
+                            <button id="o_b"><label style="z-index: 2;" id="label8"
+                                    onclick="disconnect(7)">8</label></button>
+                            <button id="o_y"><label style="z-index: 2;" id="label9"
+                                    onclick="disconnect(8)">9</label></button>
+
+
+                        </div>
+                        
+                        <div class="voltmeter">
+
+                            <img src="images/V1.png" id="V" height="180" width="180" alt="">
+                            <img src="images/Pointer.png" height="11" width="44" id="P_V" alt="">
+                            <button id="p_v"><label style="z-index: 2;" id="label10"
+                                    onclick="disconnect(9)">10</label></button>
+                            <button id="n_v"><label style="z-index: 2;" id="label11"
+                                    onclick="disconnect(10)">11</label></button>
+
+                        </div>
+
+                        
+
+                        <div class="ammeter">
+
+                            <img src="images/A1.png" id="A" height="180" width="180" alt="">
+                            <img src="images/Pointer.png" height="11" width="44" id="P_A" alt="">
+                            <button id="p_a"><label style="z-index: 2;" id="label12"
+                                    onclick="disconnect(11)">12</label></button>
+                            <button id="n_a"><label style="z-index: 2;" id="label13"
+                                    onclick="disconnect(12)">13</label></button>
+                        </div>
+                        
+
+                        
+
+                        
+
+                        
+
+                    </div>
+                    <div class="motor-view">
+                        <p>MOTOR VIEW</p>
+                        <button id="motor-1"><label style="z-index: 2;" id="label14"
+                                onclick="disconnect(13)">14</label></button>
+                        <button id="motor-2"><label style="z-index: 2;" id="label15"
+                                onclick="disconnect(14)">15</label></button>
+                        <button id="motor-3"><label style="z-index: 2;" id="label16"
+                                onclick="disconnect(15)">16</label></button>
+                        <br>
+                        
+                        <img src="images/3-phase induction motor copy.png" alt="" height="280" width="280" id="motor">
+
+                    </div>
+                    <div style="position: absolute; margin-top: 225px; margin-left: 500px;" class="rotor-view">
+                        <p>ROTOR VIEW</p>
+                        
+                        <form id="w1_motor_form">
+                            <select id="w1_motor" disabled="true">
+                                <option value="W1"> -
+                                </option>
+                                <option value="0"> 0
+                                </option>
+                                <option value="2.5"> 2.5
+                                </option>
+                                <option value="3.7"> 3.7
+                                </option>
+                                <option value="5.4"> 5.4
+                                </option>
+                                <option value="6"> 6
+                                </option>
+                                <option value="6.6"> 6.6
+                                </option>
+                            </select>
+                        </form>
+                        
+                        <form id="w2_motor_form">
+                            <select id="w2_motor" disabled="true">
+                                <option value="W2"> -
+                                </option>
+                                <option value="0"> 0
+                                </option>
+                                <option value="1.8"> 1.8
+                                </option>
+                                <option value="1.9"> 1.9
+                                </option>
+                                <option value="2.3"> 2.3
+                                </option>
+                                <option value="2.4"> 2.4
+                                </option>
+                                <option value="2.4"> 2.4
+                                </option>
+                            </select>
+                        </form>
+                        <img src="images/2.png" alt="" height="270" width="270" id="rotor1"
+                            style="transform: rotate(0deg);">
+                        <img src="images/1.png" alt="" height="270" width="270" id="rotor2"
+                            style="transform: rotate(0deg);">
+
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="clear"></div>
+
+        
+
+        <div style="margin-left: 50px;" class="graph" id="plotContiner">
+            <div class="graph-heading">
+                <p style=" font-size: 22px; padding: 8px; color:white; border-radius: 10px; background-color:#1e1e1e;">
+                    GRAPH</p>
+            </div>
+            <div style="height:430px" class="chart-container">
+                <canvas id="myPlot" class="MyCanvas" height="70px" width="200px">
+
+                </canvas>
+            </div>
+
+
+        </div>
+
+        
+
+    </div>
+
+    
+
+
+    
+
+
+    
+
+
+</body>
+
+
+
+<script src="/beel/exp5/simulation/js/function.js"></script>
+
+
+<script type="text/javascript" async
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-MML-AM_CHTML"></script>
+
+
+
+
+</html>

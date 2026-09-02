@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frequency Analysis Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: clamp(300px, 40vw, 400px);
+            margin: 20px 0;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .stat-card h3 {
+            color: #1a73e8;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .letter-frequency {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .letter-box {
+            background-color: #e8f0fe;
+            padding: 12px 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-family: monospace;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .letter-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .letter-box .letter {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #1a73e8;
+            margin-bottom: 4px;
+        }
+
+        .letter-box .count {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .letter-box .percentage {
+            font-size: 0.8em;
+            color: #34a853;
+            font-weight: bold;
+        }
+
+        .letter-box .expected {
+            font-size: 0.7em;
+            color: #666;
+            margin-top: 2px;
+            opacity: 0.7;
+        }
+
+        .letter-box.highlight {
+            background-color: #1a73e8;
+            color: white;
+        }
+
+        .letter-box.highlight .letter,
+        .letter-box.highlight .count,
+        .letter-box.highlight .percentage,
+        .letter-box.highlight .expected {
+            color: white;
+        }
+
+        .explanation {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e8f0fe;
+            border-radius: 8px;
+            color: #1a73e8;
+        }
+
+        .common-letters {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .common-letters h3 {
+            color: #1a73e8;
+            margin-top: 0;
+        }
+
+        .common-letters ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+        }
+
+        .common-letters li {
+            background-color: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .common-letters li:hover {
+            background-color: #e8f0fe;
+        }
+
+        .common-letters li .letter {
+            font-weight: bold;
+            color: #1a73e8;
+        }
+
+        .common-letters li .frequency {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Frequency Analysis Tool</h1>
+
+        <div class="input-group">
+            <label for="encryptedText">Enter encrypted text:</label>
+            <textarea id="encryptedText" placeholder="Type or paste your encrypted text here..."
+                oninput="analyzeFrequency()"></textarea>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Characters</h3>
+                <div id="totalChars">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Letters Only</h3>
+                <div id="totalLetters">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Most Common</h3>
+                <div id="mostCommon">-</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="frequencyChart"></canvas>
+        </div>
+
+        <div class="letter-frequency" id="letterFrequency">
+            
+        </div>
+
+        <div class="common-letters">
+            <h3>Common Letter Frequencies in English</h3>
+            <ul>
+                <li>E (12.7%)</li>
+                <li>T (9.1%)</li>
+                <li>A (8.2%)</li>
+                <li>O (7.5%)</li>
+                <li>I (7.0%)</li>
+                <li>N (6.7%)</li>
+                <li>S (6.3%)</li>
+                <li>H (6.1%)</li>
+                <li>R (6.0%)</li>
+                <li>D (4.3%)</li>
+            </ul>
+        </div>
+
+        <div class="explanation">
+            <h3>How Frequency Analysis Works:</h3>
+            <p>In English, some letters appear more often than others. For example:</p>
+            <ul>
+                <li>E is the most common letter (about 12.7% of all letters)</li>
+                <li>T, A, O, I, N, S, H, R, and D are also very common</li>
+                <li>Q, X, and Z are the least common</li>
+            </ul>
+            <p>When you encrypt a message, these patterns often remain. By counting how often each letter appears in
+                your encrypted text, you can make educated guesses about which letters might be which!</p>
+        </div>
+    </div>
+
+    <script>
+        let frequencyChart = null;
+
+        function analyzeFrequency() {
+            const text = document.getElementById('encryptedText').value.toUpperCase();
+            const letterCounts = {};
+            let totalChars = text.length;
+            let totalLetters = 0;
+
+            // Expected frequencies in English
+            const expectedFreq = {
+                'E': 12.7, 'T': 9.1, 'A': 8.2, 'O': 7.5, 'I': 7.0,
+                'N': 6.7, 'S': 6.3, 'H': 6.1, 'R': 6.0, 'D': 4.3,
+                'L': 4.0, 'C': 2.8, 'U': 2.8, 'M': 2.4, 'W': 2.4,
+                'F': 2.2, 'G': 2.0, 'Y': 2.0, 'P': 1.9, 'B': 1.5,
+                'V': 1.0, 'K': 0.8, 'J': 0.2, 'X': 0.2, 'Q': 0.1,
+                'Z': 0.1
+            };
+
+            // Initialize counts for all letters
+            for (let i = 65; i <= 90; i++) {
+                letterCounts[String.fromCharCode(i)] = 0;
+            }
+
+            // Count letters
+            for (let char of text) {
+                if (char.match(/[A-Z]/)) {
+                    letterCounts[char]++;
+                    totalLetters++;
+                }
+            }
+
+            // Update stats
+            document.getElementById('totalChars').textContent = totalChars;
+            document.getElementById('totalLetters').textContent = totalLetters;
+
+            // Find most common letter
+            let mostCommon = Object.entries(letterCounts)
+                .sort((a, b) => b[1] - a[1])[0];
+            document.getElementById('mostCommon').textContent =
+                mostCommon ? `${mostCommon[0]} (${mostCommon[1]} times, ${((mostCommon[1] / totalLetters) * 100).toFixed(1)}%)` : '-';
+
+            // Update letter frequency boxes
+            const letterFrequency = document.getElementById('letterFrequency');
+            letterFrequency.innerHTML = '';
+
+            Object.entries(letterCounts)
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([letter, count]) => {
+                    const percentage = totalLetters ? ((count / totalLetters) * 100).toFixed(1) : 0;
+                    const expected = expectedFreq[letter].toFixed(1);
+                    const diff = Math.abs(percentage - expected);
+                    const isHighlighted = diff < 2; // Highlight if within 2% of expected
+
+                    const box = document.createElement('div');
+                    box.className = `letter-box${isHighlighted ? ' highlight' : ''}`;
+                    box.innerHTML = `
+                        <div class="letter">${letter}</div>
+                        <div class="count">${count}</div>
+                        <div class="percentage">${percentage}%</div>
+                        <div class="expected">Expected: ${expected}%</div>
+                    `;
+                    box.onclick = () => {
+                        document.querySelectorAll('.letter-box').forEach(b => b.classList.remove('highlight'));
+                        box.classList.add('highlight');
+                    };
+                    letterFrequency.appendChild(box);
+                });
+
+            // Update chart
+            if (frequencyChart) {
+                frequencyChart.destroy();
+            }
+
+            const ctx = document.getElementById('frequencyChart').getContext('2d');
+            frequencyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(letterCounts),
+                    datasets: [{
+                        label: 'Actual Frequency',
+                        data: Object.values(letterCounts).map(count =>
+                            totalLetters ? (count / totalLetters) * 100 : 0),
+                        backgroundColor: '#1a73e8',
+                        borderColor: '#1557b0',
+                        borderWidth: 1
+                    }, {
+                        label: 'Expected Frequency',
+                        data: Object.keys(letterCounts).map(letter => expectedFreq[letter]),
+                        type: 'line',
+                        borderColor: '#34a853',
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Frequency (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Letters'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return `${context.dataset.label}: ${context.raw.toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initial analysis
+        analyzeFrequency();
+    </script>
+</body>
+
+</html>

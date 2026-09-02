@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 7: Consensus & Network</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .network-panel,
+        .consensus-panel {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .network-visualization {
+            position: relative;
+            height: clamp(300px, 50vh, 400px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            margin: clamp(15px, 3vw, 20px) 0;
+            overflow: hidden;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .network-visualization:hover {
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .node {
+            position: absolute;
+            width: clamp(50px, 8vw, 60px);
+            height: clamp(50px, 8vw, 60px);
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            z-index: 1;
+        }
+
+        .node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .node.active {
+            background: var(--success-color);
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .node.mining {
+            background: var(--warning-color);
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        .node.validator {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .node-label {
+            font-size: clamp(0.7em, 1.5vw, 0.8em);
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .connection {
+            position: absolute;
+            background: #ddd;
+            height: 2px;
+            transform-origin: 0 0;
+            pointer-events: none;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .connection.active {
+            background: var(--success-color);
+            animation: flow 2s infinite;
+        }
+
+        @keyframes flow {
+            0% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .consensus-controls {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .consensus-controls:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: clamp(12px, 2.5vw, 15px);
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: clamp(8px, 1.5vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .button.success {
+            background-color: var(--success-color);
+        }
+
+        .button.success:hover {
+            background-color: #27ae60;
+        }
+
+        .button.warning {
+            background-color: var(--warning-color);
+        }
+
+        .button.warning:hover {
+            background-color: #f39c12;
+        }
+
+        .network-stats {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .network-stats:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+            margin: clamp(8px, 1.5vw, 10px) 0;
+            padding: clamp(8px, 1.5vw, 10px);
+            background: white;
+            border-radius: 5px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .stat-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .stat-value {
+            font-family: 'Consolas', monospace;
+            color: var(--secondary-color);
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            word-break: break-all;
+        }
+
+        .consensus-log {
+            height: clamp(200px, 30vh, 250px);
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: var(--border-radius);
+            margin: clamp(15px, 3vw, 20px) 0;
+            font-family: 'Consolas', monospace;
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary-color) #f8f9fa;
+        }
+
+        .consensus-log::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .consensus-log::-webkit-scrollbar-track {
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .consensus-log::-webkit-scrollbar-thumb {
+            background-color: var(--secondary-color);
+            border-radius: 4px;
+        }
+
+        .log-entry {
+            margin-bottom: clamp(4px, 1vw, 5px);
+            padding: clamp(4px, 1vw, 5px);
+            border-bottom: 1px solid #eee;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .log-entry:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .log-entry.success {
+            color: var(--success-color);
+        }
+
+        .log-entry.error {
+            color: var(--error-color);
+        }
+
+        .log-entry.info {
+            color: var(--secondary-color);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .button {
+                margin-right: 0;
+            }
+
+            .stat-item {
+                flex-direction: column;
+            }
+
+            .node {
+                width: clamp(40px, 12vw, 50px);
+                height: clamp(40px, 12vw, 50px);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Consensus & Network</h1>
+            <p class="experiment-description">Understanding blockchain consensus mechanisms and network simulation</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="network-panel">
+                <h2 class="panel-title">Network Visualization</h2>
+                <div class="network-visualization" id="networkVisualization">
+                    
+                </div>
+                <div class="network-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Active Nodes</span>
+                        <span class="stat-value" id="activeNodes">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Network Hashrate</span>
+                        <span class="stat-value" id="networkHashrate">0 H/s</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Block Time</span>
+                        <span class="stat-value" id="blockTime">0s</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="consensus-panel">
+                <h2 class="panel-title">Consensus Controls</h2>
+                <div class="consensus-controls">
+                    <div class="control-group">
+                        <label for="consensusType">Consensus Type</label>
+                        <select id="consensusType" onchange="updateConsensusType()">
+                            <option value="pow">Proof of Work</option>
+                            <option value="pos">Proof of Stake</option>
+                            <option value="pbft">Practical Byzantine Fault Tolerance</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="nodeCount">Number of Nodes</label>
+                        <input type="number" id="nodeCount" min="3" max="10" value="5" onchange="updateNodeCount()">
+                    </div>
+                    <button class="button success" onclick="startSimulation()" id="startBtn">
+                        <span class="button-text">Start Simulation</span>
+                    </button>
+                    <button class="button warning" onclick="stopSimulation()" id="stopBtn" disabled>
+                        <span class="button-text">Stop Simulation</span>
+                    </button>
+                    <div class="error-message" id="simulationError"></div>
+                </div>
+                <div class="consensus-log" id="consensusLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Node {
+            constructor(id, type = 'regular') {
+                this.id = id;
+                this.type = type;
+                this.x = Math.random() * 800;
+                this.y = Math.random() * 300;
+                this.connections = [];
+                this.status = 'active';
+                this.stake = type === 'validator' ? Math.random() * 1000 : 0;
+                this.hashRate = type === 'miner' ? Math.random() * 100 : 0;
+            }
+
+            connect(node) {
+                if (!this.connections.includes(node)) {
+                    this.connections.push(node);
+                    node.connections.push(this);
+                }
+            }
+        }
+
+        class Network {
+            constructor() {
+                this.nodes = [];
+                this.consensusType = 'pow';
+                this.blockTime = 0;
+                this.lastBlockTime = Date.now();
+                this.totalHashRate = 0;
+            }
+
+            addNode(type = 'regular') {
+                const node = new Node(this.nodes.length, type);
+                this.nodes.push(node);
+                this.updateConnections();
+                this.updateStats();
+                return node;
+            }
+
+            updateConnections() {
+                // Clear existing connections
+                this.nodes.forEach(node => node.connections = []);
+
+                // Create new connections (each node connects to 2-3 other nodes)
+                this.nodes.forEach(node => {
+                    const numConnections = Math.floor(Math.random() * 2) + 2;
+                    const availableNodes = this.nodes.filter(n =>
+                        n !== node && node.connections.length < numConnections
+                    );
+
+                    for (let i = 0; i < numConnections && i < availableNodes.length; i++) {
+                        const targetNode = availableNodes[i];
+                        node.connect(targetNode);
+                    }
+                });
+            }
+
+            updateStats() {
+                this.totalHashRate = this.nodes.reduce((sum, node) => sum + node.hashRate, 0);
+                this.blockTime = this.calculateBlockTime();
+            }
+
+            calculateBlockTime() {
+                // Simplified block time calculation based on consensus type
+                switch (this.consensusType) {
+                    case 'pow':
+                        return Math.max(1, 10 - (this.totalHashRate / 100));
+                    case 'pos':
+                        return 5; // Fixed block time for PoS
+                    case 'pbft':
+                        return 2; // Faster block time for PBFT
+                    default:
+                        return 10;
+                }
+            }
+
+            changeConsensus(type) {
+                this.consensusType = type;
+                this.nodes.forEach(node => {
+                    if (type === 'pos') {
+                        node.type = 'validator';
+                        node.stake = Math.random() * 1000;
+                        node.hashRate = 0;
+                    } else if (type === 'pow') {
+                        node.type = Math.random() < 0.3 ? 'miner' : 'regular';
+                        node.hashRate = node.type === 'miner' ? Math.random() * 100 : 0;
+                        node.stake = 0;
+                    } else if (type === 'pbft') {
+                        node.type = 'validator';
+                        node.stake = 0;
+                        node.hashRate = 0;
+                    }
+                });
+                this.updateStats();
+                this.updateNetworkDisplay();
+            }
+        }
+
+        let network = new Network();
+        let selectedNode = null;
+
+        function initializeNetwork() {
+            // Add initial nodes
+            for (let i = 0; i < 5; i++) {
+                network.addNode(i < 2 ? 'miner' : 'regular');
+            }
+            updateNetworkDisplay();
+            addLogEntry('Network initialized with 5 nodes', 'info');
+        }
+
+        function updateNetworkDisplay() {
+            const canvas = document.getElementById('networkVisualization');
+            canvas.innerHTML = '';
+
+            // Draw connections
+            network.nodes.forEach(node => {
+                node.connections.forEach(targetNode => {
+                    const connection = document.createElement('div');
+                    connection.className = 'connection';
+
+                    const dx = targetNode.x - node.x;
+                    const dy = targetNode.y - node.y;
+                    const length = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                    connection.style.width = `${length}px`;
+                    connection.style.left = `${node.x + 30}px`;
+                    connection.style.top = `${node.y + 30}px`;
+                    connection.style.transform = `rotate(${angle}deg)`;
+
+                    if (node.status === 'active' && targetNode.status === 'active') {
+                        connection.classList.add('active');
+                    }
+
+                    canvas.appendChild(connection);
+                });
+            });
+
+            // Draw nodes
+            network.nodes.forEach(node => {
+                const nodeElement = document.createElement('div');
+                nodeElement.className = `node ${node.type} ${node.status}`;
+                nodeElement.style.left = `${node.x}px`;
+                nodeElement.style.top = `${node.y}px`;
+                nodeElement.innerHTML = `
+                    <div class="node-label">
+                        ${node.type === 'miner' ? '⛏️' : node.type === 'validator' ? '✓' : '○'}<br>
+                        Node ${node.id}
+                    </div>
+                `;
+                nodeElement.onclick = () => selectNode(node);
+                canvas.appendChild(nodeElement);
+            });
+
+            // Update stats
+            document.getElementById('activeNodes').textContent =
+                network.nodes.filter(n => n.status === 'active').length;
+            document.getElementById('networkHashrate').textContent =
+                `${Math.round(network.totalHashRate)} H/s`;
+            document.getElementById('blockTime').textContent =
+                `${network.blockTime.toFixed(1)}s`;
+        }
+
+        function selectNode(node) {
+            if (selectedNode) {
+                selectedNode.element?.classList.remove('active');
+            }
+            selectedNode = node;
+            node.element?.classList.add('active');
+            addLogEntry(`Selected Node ${node.id} (${node.type})`, 'info');
+            updateValidatorList();
+        }
+
+        function addNode() {
+            const type = network.consensusType === 'pos' ? 'validator' :
+                network.consensusType === 'pow' ? 'miner' : 'validator';
+            network.addNode(type);
+            updateNetworkDisplay();
+            addLogEntry(`Added new ${type} node`, 'success');
+        }
+
+        function changeConsensus() {
+            const type = document.getElementById('consensusType').value;
+            network.changeConsensus(type);
+            addLogEntry(`Changed consensus mechanism to ${type.toUpperCase()}`, 'info');
+        }
+
+        function updateNetwork() {
+            const count = parseInt(document.getElementById('nodeCount').value);
+            while (network.nodes.length < count) {
+                addNode();
+            }
+            while (network.nodes.length > count) {
+                network.nodes.pop();
+            }
+            network.updateConnections();
+            updateNetworkDisplay();
+        }
+
+        function simulateAttack() {
+            const attacker = network.addNode('attacker');
+            attacker.status = 'inactive';
+            network.nodes.forEach(node => {
+                if (Math.random() < 0.3) {
+                    node.status = 'inactive';
+                }
+            });
+            updateNetworkDisplay();
+            addLogEntry('Simulated network attack - some nodes went offline', 'error');
+        }
+
+        function updateValidatorList() {
+            const container = document.getElementById('validatorList');
+            container.innerHTML = '<h3>Validators</h3>';
+
+            network.nodes.forEach(node => {
+                if (node.type === 'validator' || node.type === 'miner') {
+                    const div = document.createElement('div');
+                    div.className = 'validator-item';
+                    div.innerHTML = `
+                        <div>
+                            <strong>Node ${node.id}</strong>
+                            <div>${node.type === 'miner' ? 'Hash Rate: ' + Math.round(node.hashRate) + ' H/s' :
+                            'Stake: ' + Math.round(node.stake) + ' tokens'}</div>
+                        </div>
+                        <span class="validator-status status-${node.status}">${node.status}</span>
+                    `;
+                    container.appendChild(div);
+                }
+            });
+        }
+
+        function addLogEntry(message, type = '') {
+            const log = document.getElementById('consensusLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        function updateButtonStates(isRunning) {
+            document.getElementById('startBtn').disabled = isRunning;
+            document.getElementById('stopBtn').disabled = !isRunning;
+        }
+
+        async function startSimulation() {
+            setLoading('startBtn', true);
+
+            try {
+                const nodeCount = parseInt(document.getElementById('nodeCount').value);
+                const consensusType = document.getElementById('consensusType').value;
+
+                if (nodeCount < 3 || nodeCount > 10) {
+                    throw new Error('Number of nodes must be between 3 and 10');
+                }
+
+                await network.startSimulation(nodeCount, consensusType);
+                updateButtonStates(true);
+                addLogEntry('Simulation started', 'success');
+            } catch (error) {
+                showError('simulationError', error.message);
+                addLogEntry(`Failed to start simulation: ${error.message}`, 'error');
+            } finally {
+                setLoading('startBtn', false);
+            }
+        }
+
+        async function stopSimulation() {
+            setLoading('stopBtn', true);
+
+            try {
+                await network.stopSimulation();
+                updateButtonStates(false);
+                addLogEntry('Simulation stopped', 'info');
+            } catch (error) {
+                showError('simulationError', error.message);
+                addLogEntry(`Failed to stop simulation: ${error.message}`, 'error');
+            } finally {
+                setLoading('stopBtn', false);
+            }
+        }
+
+        function updateConsensusType() {
+            const consensusType = document.getElementById('consensusType').value;
+            network.updateConsensusType(consensusType);
+            addLogEntry(`Consensus type updated to ${consensusType.toUpperCase()}`, 'info');
+        }
+
+        function updateNodeCount() {
+            const nodeCount = parseInt(document.getElementById('nodeCount').value);
+            if (nodeCount >= 3 && nodeCount <= 10) {
+                network.updateNodeCount(nodeCount);
+                addLogEntry(`Node count updated to ${nodeCount}`, 'info');
+            }
+        }
+
+        // Initialize network and event listeners
+        const network = new Network();
+        updateButtonStates(false);
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 's') {
+                if (document.getElementById('startBtn').disabled) {
+                    stopSimulation();
+                } else {
+                    startSimulation();
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

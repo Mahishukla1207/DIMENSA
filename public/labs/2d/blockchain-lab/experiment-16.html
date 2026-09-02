@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 16: Interoperability & Cross-Chain Bridges</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --bridge-color: #9b59b6;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .bridge-panel,
+        .network-panel {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: clamp(10px, 2vw, 15px);
+            padding-bottom: clamp(5px, 1.5vw, 10px);
+            border-bottom: 2px solid var(--bridge-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .bridge-controls {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+        }
+
+        .bridge-method {
+            margin-bottom: clamp(15px, 3vw, 20px);
+            padding: clamp(12px, 2.5vw, 15px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .bridge-method:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .method-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .method-name {
+            font-weight: bold;
+            color: var(--bridge-color);
+            font-size: clamp(1em, 1.5vw, 1.2em);
+        }
+
+        .method-description {
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .method-parameters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+            gap: clamp(8px, 1.5vw, 10px);
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .parameter-group {
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .parameter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+        }
+
+        .parameter-group input,
+        .parameter-group select {
+            width: 100%;
+            padding: clamp(8px, 1.5vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .parameter-group input:focus,
+        .parameter-group select:focus {
+            border-color: var(--bridge-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2);
+        }
+
+        .button {
+            background-color: var(--bridge-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #8e44ad;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bridge-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            color: var(--bridge-color);
+            font-family: monospace;
+        }
+
+        .bridge-visualization {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            position: relative;
+            height: 300px;
+            overflow: hidden;
+        }
+
+        .chain-node {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .chain-node.active {
+            box-shadow: 0 0 15px var(--success-color);
+        }
+
+        .chain-node.warning {
+            box-shadow: 0 0 15px var(--warning-color);
+        }
+
+        .chain-node.error {
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        .chain-name {
+            font-weight: bold;
+            color: var(--bridge-color);
+            margin-bottom: 5px;
+        }
+
+        .chain-status {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .bridge-path {
+            position: absolute;
+            height: 2px;
+            background: var(--bridge-color);
+            transform-origin: left center;
+            transition: all 0.3s ease;
+        }
+
+        .bridge-path.active {
+            background: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+        }
+
+        .bridge-path.warning {
+            background: var(--warning-color);
+            box-shadow: 0 0 10px var(--warning-color);
+        }
+
+        .bridge-path.error {
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .transfer-list {
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .transfer-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .transfer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .transfer-title {
+            font-weight: bold;
+            color: var(--bridge-color);
+        }
+
+        .transfer-status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .status-completed {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-failed {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .transfer-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .transfer-progress {
+            height: 4px;
+            background: #f8f9fa;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--bridge-color);
+            transition: width 0.3s ease;
+        }
+
+        .bridge-log {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .log-entry.transfer {
+            color: var(--bridge-color);
+        }
+
+        .log-entry.success {
+            color: var(--success-color);
+        }
+
+        .log-entry.warning {
+            color: var(--warning-color);
+        }
+
+        .log-entry.error {
+            color: var(--accent-color);
+        }
+
+        .network-status {
+            margin: 20px 0;
+        }
+
+        .status-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .status-title {
+            font-weight: bold;
+            color: var(--bridge-color);
+        }
+
+        .status-value {
+            font-family: monospace;
+            color: var(--secondary-color);
+        }
+
+        .status-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .indicator-online {
+            background-color: var(--success-color);
+        }
+
+        .indicator-offline {
+            background-color: var(--accent-color);
+        }
+
+        .indicator-warning {
+            background-color: var(--warning-color);
+        }
+
+        @keyframes transfer {
+            0% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translateX(100%);
+                opacity: 1;
+            }
+        }
+
+        .transfer-animation {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--bridge-color);
+            border-radius: 50%;
+            animation: transfer 2s linear infinite;
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .method-parameters {
+                grid-template-columns: 1fr;
+            }
+
+            .bridge-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .bridge-visualization {
+                height: 200px;
+            }
+
+            .chain-node {
+                width: 80px;
+                height: 80px;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Interoperability & Cross-Chain Bridges</h1>
+            <p class="experiment-description">Understanding blockchain interoperability and cross-chain bridges through
+                interactive simulation</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="bridge-panel">
+                <h2 class="panel-title">Bridge System</h2>
+                <div class="bridge-controls">
+                    <div class="bridge-method">
+                        <div class="method-header">
+                            <span class="method-name">Create Bridge</span>
+                        </div>
+                        <div class="method-description">
+                            Create a new bridge between two blockchain networks
+                        </div>
+                        <div class="method-parameters">
+                            <div class="parameter-group">
+                                <label>Source Chain</label>
+                                <select id="sourceChain">
+                                    <option value="ethereum">Ethereum</option>
+                                    <option value="bitcoin">Bitcoin</option>
+                                    <option value="polkadot">Polkadot</option>
+                                    <option value="cosmos">Cosmos</option>
+                                </select>
+                            </div>
+                            <div class="parameter-group">
+                                <label>Target Chain</label>
+                                <select id="targetChain">
+                                    <option value="ethereum">Ethereum</option>
+                                    <option value="bitcoin">Bitcoin</option>
+                                    <option value="polkadot">Polkadot</option>
+                                    <option value="cosmos">Cosmos</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="button" onclick="createBridge()">Create Bridge</button>
+                    </div>
+
+                    <div class="bridge-method">
+                        <div class="method-header">
+                            <span class="method-name">Transfer Assets</span>
+                        </div>
+                        <div class="method-description">
+                            Transfer assets between connected chains
+                        </div>
+                        <div class="method-parameters">
+                            <div class="parameter-group">
+                                <label>Amount</label>
+                                <input type="number" id="transferAmount" min="0.1" step="0.1" value="1.0">
+                            </div>
+                            <div class="parameter-group">
+                                <label>Asset Type</label>
+                                <select id="assetType">
+                                    <option value="native">Native Token</option>
+                                    <option value="wrapped">Wrapped Token</option>
+                                    <option value="custom">Custom Token</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="button" onclick="initiateTransfer()">Initiate Transfer</button>
+                    </div>
+                </div>
+
+                <div class="bridge-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Total Transfers</div>
+                        <div class="metric-value" id="totalTransfers">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Bridge Utilization</div>
+                        <div class="metric-value" id="bridgeUtilization">0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Success Rate</div>
+                        <div class="metric-value" id="successRate">100%</div>
+                    </div>
+                </div>
+
+                <div class="bridge-visualization" id="bridgeVisualization">
+                    
+                </div>
+
+                <div class="transfer-list" id="transferList">
+                    
+                </div>
+
+                <div class="bridge-log" id="bridgeLog">
+                    
+                </div>
+            </div>
+
+            <div class="network-panel">
+                <h2 class="panel-title">Network Status</h2>
+                <div class="network-status">
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-title">Network Health</span>
+                            <span class="status-value">
+                                <span class="status-indicator indicator-online"></span>
+                                Healthy
+                            </span>
+                        </div>
+                        <div class="status-description">
+                            Overall health status of connected networks
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-title">Bridge Security</span>
+                            <span class="status-value">
+                                <span class="status-indicator indicator-online"></span>
+                                Secure
+                            </span>
+                        </div>
+                        <div class="status-description">
+                            Security status of active bridges
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-title">Network Latency</span>
+                            <span class="status-value">150ms</span>
+                        </div>
+                        <div class="status-description">
+                            Average latency between networks
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="networkChart"></canvas>
+                </div>
+
+                <div class="bridge-log" id="networkLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class BridgeSystem {
+            constructor() {
+                this.bridges = new Map();
+                this.transfers = new Map();
+                this.metrics = {
+                    totalTransfers: 0,
+                    bridgeUtilization: 0,
+                    successRate: 100,
+                    networkHealth: 'healthy',
+                    bridgeSecurity: 'secure',
+                    networkLatency: 150
+                };
+                this.networkData = {
+                    labels: [],
+                    latency: [],
+                    utilization: [],
+                    success: []
+                };
+                this.chart = null;
+                this.initializeChart();
+                this.initializeVisualization();
+            }
+
+            initializeChart() {
+                const ctx = document.getElementById('networkChart').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: this.networkData.labels,
+                        datasets: [{
+                            label: 'Network Latency',
+                            data: this.networkData.latency,
+                            borderColor: '#3498db',
+                            tension: 0.4
+                        }, {
+                            label: 'Bridge Utilization',
+                            data: this.networkData.utilization,
+                            borderColor: '#9b59b6',
+                            tension: 0.4
+                        }, {
+                            label: 'Success Rate',
+                            data: this.networkData.success,
+                            borderColor: '#2ecc71',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            initializeVisualization() {
+                const container = document.getElementById('bridgeVisualization');
+                const chains = ['ethereum', 'bitcoin', 'polkadot', 'cosmos'];
+
+                chains.forEach((chain, index) => {
+                    const node = document.createElement('div');
+                    node.className = 'chain-node';
+                    node.id = `chain-${chain}`;
+                    node.style.left = `${(index * 30) + 5}%`;
+                    node.style.top = '50%';
+                    node.style.transform = 'translateY(-50%)';
+
+                    node.innerHTML = `
+                        <div class="chain-name">${chain}</div>
+                        <div class="chain-status">Online</div>
+                    `;
+
+                    container.appendChild(node);
+                });
+
+                this.updateBridgePaths();
+            }
+
+            createBridge(sourceChain, targetChain) {
+                const id = `${sourceChain}-${targetChain}`;
+                const bridge = {
+                    id,
+                    sourceChain,
+                    targetChain,
+                    status: 'active',
+                    transfers: 0,
+                    createdAt: Date.now()
+                };
+                this.bridges.set(id, bridge);
+                this.updateBridgePaths();
+                return bridge;
+            }
+
+            initiateTransfer(amount, assetType) {
+                const id = Math.random().toString(36).substr(2, 9);
+                const transfer = {
+                    id,
+                    amount,
+                    assetType,
+                    status: 'pending',
+                    progress: 0,
+                    createdAt: Date.now()
+                };
+                this.transfers.set(id, transfer);
+                this.simulateTransfer(transfer);
+                this.updateTransferList();
+                return transfer;
+            }
+
+            simulateTransfer(transfer) {
+                const steps = ['Locking', 'Verifying', 'Bridging', 'Confirming', 'Completing'];
+                let currentStep = 0;
+
+                const interval = setInterval(() => {
+                    if (currentStep >= steps.length) {
+                        clearInterval(interval);
+                        transfer.status = 'completed';
+                        transfer.progress = 100;
+                        this.metrics.totalTransfers++;
+                        this.updateMetrics();
+                        this.updateTransferList();
+                        addLogEntry(`Transfer ${transfer.id} completed`, 'transfer');
+                        return;
+                    }
+
+                    transfer.progress = (currentStep / steps.length) * 100;
+                    addLogEntry(`Transfer ${transfer.id}: ${steps[currentStep]}`, 'transfer');
+                    this.updateTransferList();
+                    currentStep++;
+                }, 2000);
+            }
+
+            updateBridgePaths() {
+                const container = document.getElementById('bridgeVisualization');
+                const existingPaths = container.querySelectorAll('.bridge-path');
+                existingPaths.forEach(path => path.remove());
+
+                this.bridges.forEach(bridge => {
+                    const sourceNode = document.getElementById(`chain-${bridge.sourceChain}`);
+                    const targetNode = document.getElementById(`chain-${bridge.targetChain}`);
+
+                    if (sourceNode && targetNode) {
+                        const path = document.createElement('div');
+                        path.className = 'bridge-path';
+                        path.id = `bridge-${bridge.id}`;
+
+                        const sourceRect = sourceNode.getBoundingClientRect();
+                        const targetRect = targetNode.getBoundingClientRect();
+                        const containerRect = container.getBoundingClientRect();
+
+                        const x1 = sourceRect.left + sourceRect.width / 2 - containerRect.left;
+                        const y1 = sourceRect.top + sourceRect.height / 2 - containerRect.top;
+                        const x2 = targetRect.left + targetRect.width / 2 - containerRect.left;
+                        const y2 = targetRect.top + targetRect.height / 2 - containerRect.top;
+
+                        const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+                        path.style.width = `${length}px`;
+                        path.style.left = `${x1}px`;
+                        path.style.top = `${y1}px`;
+                        path.style.transform = `rotate(${angle}deg)`;
+
+                        container.appendChild(path);
+                    }
+                });
+            }
+
+            updateMetrics() {
+                // Update metrics display
+                document.getElementById('totalTransfers').textContent =
+                    this.metrics.totalTransfers.toLocaleString();
+                document.getElementById('bridgeUtilization').textContent =
+                    `${this.metrics.bridgeUtilization}%`;
+                document.getElementById('successRate').textContent =
+                    `${this.metrics.successRate}%`;
+
+                // Update chart
+                this.updateChart();
+
+                // Update transfer list
+                this.updateTransferList();
+            }
+
+            updateChart() {
+                const now = new Date().toLocaleTimeString();
+                this.networkData.labels.push(now);
+                this.networkData.latency.push(this.metrics.networkLatency);
+                this.networkData.utilization.push(this.metrics.bridgeUtilization);
+                this.networkData.success.push(this.metrics.successRate);
+
+                if (this.networkData.labels.length > 20) {
+                    this.networkData.labels.shift();
+                    this.networkData.latency.shift();
+                    this.networkData.utilization.shift();
+                    this.networkData.success.shift();
+                }
+
+                this.chart.update();
+            }
+
+            updateTransferList() {
+                const container = document.getElementById('transferList');
+                container.innerHTML = '';
+
+                this.transfers.forEach((transfer, id) => {
+                    const card = document.createElement('div');
+                    card.className = 'transfer-card';
+
+                    card.innerHTML = `
+                        <div class="transfer-header">
+                            <span class="transfer-title">Transfer ${id}</span>
+                            <span class="transfer-status status-${transfer.status}">${transfer.status}</span>
+                        </div>
+                        <div class="transfer-details">
+                            ${transfer.amount} ${transfer.assetType} tokens
+                        </div>
+                        <div class="transfer-progress">
+                            <div class="progress-bar" style="width: ${transfer.progress}%"></div>
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+            }
+
+            simulateNetworkActivity() {
+                setInterval(() => {
+                    this.metrics.networkLatency = Math.max(50,
+                        this.metrics.networkLatency * (1 + (Math.random() - 0.5) * 0.1));
+                    this.metrics.bridgeUtilization = Math.min(100,
+                        this.metrics.bridgeUtilization + (Math.random() - 0.5) * 5);
+                    this.metrics.successRate = Math.max(95,
+                        this.metrics.successRate + (Math.random() - 0.5) * 2);
+                    this.updateMetrics();
+                }, 1000);
+            }
+        }
+
+        let bridgeSystem = new BridgeSystem();
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        async function createBridge() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const sourceChain = document.getElementById('sourceChain').value;
+                const targetChain = document.getElementById('targetChain').value;
+
+                if (sourceChain === targetChain) {
+                    throw new Error('Source and target chains must be different');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const bridge = bridgeSystem.createBridge(sourceChain, targetChain);
+                addLogEntry(`Created bridge between ${sourceChain} and ${targetChain}`, 'transfer');
+                bridgeSystem.updateMetrics();
+            } catch (error) {
+                showError('bridgeError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function initiateTransfer() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const amount = parseFloat(document.getElementById('transferAmount').value);
+                const assetType = document.getElementById('assetType').value;
+
+                if (amount <= 0) {
+                    throw new Error('Transfer amount must be greater than 0');
+                }
+                if (amount > 1000) {
+                    throw new Error('Transfer amount cannot exceed 1000');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const transfer = bridgeSystem.initiateTransfer(amount, assetType);
+                addLogEntry(`Initiated transfer of ${amount} ${assetType} tokens`, 'transfer');
+                bridgeSystem.updateMetrics();
+            } catch (error) {
+                showError('transferError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                createBridge();
+            } else if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                initiateTransfer();
+            }
+        });
+
+        // Initialize the bridge system
+        bridgeSystem.simulateNetworkActivity();
+        addLogEntry('Bridge system initialized', 'info');
+
+        // Update button text elements
+        document.querySelectorAll('.button').forEach(button => {
+            const text = button.textContent;
+            button.innerHTML = `<span class="button-text">${text}</span>`;
+        });
+
+        // Add error message elements
+        const bridgeControls = document.querySelector('.bridge-controls');
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'bridgeError';
+        errorDiv.className = 'error-message';
+        bridgeControls.appendChild(errorDiv);
+
+        const transferControls = document.querySelector('.bridge-method:last-child');
+        const transferErrorDiv = document.createElement('div');
+        transferErrorDiv.id = 'transferError';
+        transferErrorDiv.className = 'error-message';
+        transferControls.appendChild(transferErrorDiv);
+    </script>
+</body>
+
+</html>

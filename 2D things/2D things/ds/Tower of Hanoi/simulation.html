@@ -1,0 +1,491 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Interactive Tower of Hanoi</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body { 
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      font-family: 'Poppins', sans-serif; 
+      text-align: center; 
+      padding: 20px; 
+      color: white; 
+      min-height: 100vh;
+    }
+    h1 { 
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .controls {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    input, button {
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    input {
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      width: 200px;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .towers-container {
+      display: flex;
+      justify-content: center;
+      gap: 150px;
+      margin-top: 30px;
+      position: relative;
+      min-height: 400px;
+      padding: 0 50px;
+    }
+    .tower {
+      width: 20px;
+      height: 300px;
+      background: linear-gradient(to bottom, #8B4513, #A0522D);
+      position: relative;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+    .tower::before {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: -140px;
+      width: 300px;
+      height: 20px;
+      background: linear-gradient(to right, #8B4513, #A0522D);
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    .tower::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+      border-radius: 10px;
+      pointer-events: none;
+    }
+    .disk {
+      height: 30px;
+      background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+      position: absolute;
+      border-radius: 15px;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      border: 2px solid rgba(255,255,255,0.2);
+      transform-origin: center;
+      z-index: 1;
+      will-change: transform;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .disk::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+      border-radius: 15px;
+      pointer-events: none;
+    }
+    .disk.moving {
+      animation: moveDisk 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      z-index: 2;
+    }
+    @keyframes moveDisk {
+      0% {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      }
+      25% {
+        transform: translateY(-100px) scale(1.1);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+      }
+      50% {
+        transform: translateY(-100px) scale(1.1);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+      }
+      75% {
+        transform: translateY(0) scale(1.1);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+      }
+      100% {
+        transform: translateY(0) scale(1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      }
+    }
+    .disk.landing {
+      animation: landDisk 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    @keyframes landDisk {
+      0% {
+        transform: scale(1.1);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      }
+    }
+    .algorithm-info {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      text-align: left;
+      backdrop-filter: blur(10px);
+    }
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .stat-box {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      min-width: 150px;
+      backdrop-filter: blur(10px);
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+    .speed-control input {
+      width: 200px;
+    }
+    .speed-control label {
+      font-weight: bold;
+    }
+    .tower-label {
+      position: absolute;
+      bottom: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+  
+                    .current-page {
+                        text-decoration: underline;
+                        text-decoration-thickness: 2px;
+                        text-decoration-color: var(--primary-color);
+                        font-weight: bold;
+                        color: var(--primary-color);
+                    }
+                    </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Interactive Tower of Hanoi</h1>
+
+  <div class="controls">
+    <div class="input-group">
+      <input type="number" id="diskCount" min="1" max="8" value="3" placeholder="Number of disks">
+      <button onclick="startHanoi()">Start Simulation</button>
+      <button onclick="resetHanoi()">Reset</button>
+    </div>
+    <div class="speed-control">
+      <label for="speedSlider">Animation Speed:</label>
+      <input type="range" id="speedSlider" min="1" max="100" value="50">
+    </div>
+  </div>
+
+  <div class="towers-container">
+    <div class="tower" id="tower1">
+      <div class="tower-label">Source</div>
+    </div>
+    <div class="tower" id="tower2">
+      <div class="tower-label">Auxiliary</div>
+    </div>
+    <div class="tower" id="tower3">
+      <div class="tower-label">Destination</div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-box">
+      <div>Moves</div>
+      <div class="stat-value" id="moves">0</div>
+    </div>
+    <div class="stat-box">
+      <div>Minimum Moves</div>
+      <div class="stat-value" id="minMoves">0</div>
+    </div>
+    <div class="stat-box">
+      <div>Time (ms)</div>
+      <div class="stat-value" id="time">0</div>
+    </div>
+  </div>
+
+  <div class="algorithm-info" id="algorithmInfo">
+    Enter the number of disks and click "Start Simulation" to begin.
+  </div>
+</div>
+
+<script>
+let disks = [];
+let moves = [];
+let currentMove = 0;
+let animationSpeed = 100;
+let isAnimating = false;
+let startTime = 0;
+
+// Update animation speed when slider changes
+document.getElementById('speedSlider').addEventListener('input', function(e) {
+  animationSpeed = 101 - e.target.value; // Invert the value for more intuitive control
+});
+
+function createDisk(size) {
+  const disk = document.createElement('div');
+  disk.className = 'disk';
+  disk.style.width = `${size * 40 + 40}px`;
+  disk.textContent = size;
+  disk.dataset.size = size;
+  return disk;
+}
+
+function renderTowers() {
+  const towers = [document.getElementById('tower1'), 
+                 document.getElementById('tower2'), 
+                 document.getElementById('tower3')];
+  
+  // Clear all towers
+  towers.forEach(tower => {
+    while (tower.firstChild && tower.firstChild.className !== 'tower-label') {
+      tower.removeChild(tower.firstChild);
+    }
+  });
+  
+  // Add disks to source tower
+  disks.forEach(disk => {
+    const diskElement = createDisk(disk);
+    diskElement.style.bottom = `${(disk - 1) * 35}px`;
+    towers[0].insertBefore(diskElement, towers[0].firstChild);
+  });
+}
+
+function startHanoi() {
+  const diskCount = parseInt(document.getElementById('diskCount').value);
+  if (diskCount < 1 || diskCount > 8) {
+    alert('Please enter a number between 1 and 8');
+    return;
+  }
+  
+  resetHanoi();
+  disks = Array.from({length: diskCount}, (_, i) => i + 1).reverse();
+  document.getElementById('minMoves').textContent = Math.pow(2, diskCount) - 1;
+  renderTowers();
+  
+  // Generate moves
+  moves = [];
+  towerOfHanoi(diskCount, 0, 2, 1);
+  
+  // Start animation
+  startTime = Date.now();
+  animateNextMove();
+}
+
+function resetHanoi() {
+  disks = [];
+  moves = [];
+  currentMove = 0;
+  isAnimating = false;
+  document.getElementById('moves').textContent = '0';
+  document.getElementById('time').textContent = '0';
+  document.getElementById('algorithmInfo').innerHTML = 
+    'Enter the number of disks and click "Start Simulation" to begin.';
+  renderTowers();
+}
+
+function towerOfHanoi(n, source, destination, auxiliary) {
+  if (n === 1) {
+    moves.push({from: source, to: destination});
+    return;
+  }
+  towerOfHanoi(n - 1, source, auxiliary, destination);
+  moves.push({from: source, to: destination});
+  towerOfHanoi(n - 1, auxiliary, destination, source);
+}
+
+async function animateNextMove() {
+  if (currentMove >= moves.length) {
+    isAnimating = false;
+    const timeElapsed = Date.now() - startTime;
+    document.getElementById('time').textContent = timeElapsed;
+    document.getElementById('algorithmInfo').innerHTML += 
+      '<br>Simulation Complete!';
+    return;
+  }
+  
+  isAnimating = true;
+  const move = moves[currentMove];
+  const towers = [document.getElementById('tower1'), 
+                 document.getElementById('tower2'), 
+                 document.getElementById('tower3')];
+  
+  const sourceTower = towers[move.from];
+  const destinationTower = towers[move.to];
+  
+  // Get the top disk from source tower
+  const disk = sourceTower.querySelector('.disk');
+  if (!disk) return;
+  
+  // Update algorithm info
+  document.getElementById('algorithmInfo').innerHTML = 
+    `Move ${currentMove + 1}: Moving disk ${disk.textContent} from Tower ${move.from + 1} to Tower ${move.to + 1}`;
+  
+  // Calculate positions
+  const sourceRect = sourceTower.getBoundingClientRect();
+  const destRect = destinationTower.getBoundingClientRect();
+  const diskRect = disk.getBoundingClientRect();
+  
+  // Start the move animation
+  disk.classList.add('moving');
+  
+  // Wait for the move animation to complete
+  await new Promise(resolve => {
+    disk.addEventListener('animationend', () => {
+      disk.classList.remove('moving');
+      resolve();
+    }, { once: true });
+  });
+  
+  // Remove from source tower
+  sourceTower.removeChild(disk);
+  
+  // Add to destination tower
+  const destDisks = destinationTower.querySelectorAll('.disk');
+  const bottomPosition = destDisks.length * 35;
+  disk.style.bottom = `${bottomPosition}px`;
+  disk.style.left = '50%';
+  disk.style.transform = 'translateX(-50%)';
+  destinationTower.insertBefore(disk, destinationTower.firstChild);
+  
+  // Add landing animation
+  disk.classList.add('landing');
+  
+  // Wait for landing animation to complete
+  await new Promise(resolve => {
+    disk.addEventListener('animationend', () => {
+      disk.classList.remove('landing');
+      resolve();
+    }, { once: true });
+  });
+  
+  // Update moves count
+  currentMove++;
+  document.getElementById('moves').textContent = currentMove;
+  
+  // Continue with next move
+  setTimeout(animateNextMove, animationSpeed);
+}
+
+// Keyboard controls
+document.addEventListener('keydown', function(event) {
+  if (!isAnimating) return;
+  
+  if (event.key === 'ArrowRight') {
+    // Skip to next move
+    const currentDisk = document.querySelector('.disk.moving, .disk.landing');
+    if (currentDisk) {
+      currentDisk.style.animation = 'none';
+      currentDisk.offsetHeight; // Trigger reflow
+      currentDisk.style.animation = null;
+      currentDisk.classList.remove('moving', 'landing');
+    }
+    animateNextMove();
+  } else if (event.key === 'ArrowLeft' && currentMove > 0) {
+    // Go back one move
+    currentMove--;
+    const move = moves[currentMove];
+    const towers = [document.getElementById('tower1'), 
+                   document.getElementById('tower2'), 
+                   document.getElementById('tower3')];
+    
+    const sourceTower = towers[move.to];
+    const destinationTower = towers[move.from];
+    const disk = sourceTower.querySelector('.disk');
+    
+    if (disk) {
+      sourceTower.removeChild(disk);
+      disk.style.bottom = `${(destinationTower.querySelectorAll('.disk').length) * 35}px`;
+      destinationTower.insertBefore(disk, destinationTower.firstChild);
+      
+      document.getElementById('moves').textContent = currentMove;
+      document.getElementById('algorithmInfo').innerHTML = 
+        `Move ${currentMove + 1}: Moving disk ${disk.textContent} from Tower ${move.from + 1} to Tower ${move.to + 1}`;
+    }
+  }
+});
+</script>
+
+<footer style="margin-top: 30px;">&copy; 2025 Virtual DSA Lab | Interactive Tower of Hanoi</footer>
+
+</body>
+</html>
+
+
+
+

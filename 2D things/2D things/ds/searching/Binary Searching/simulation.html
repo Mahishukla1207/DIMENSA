@@ -1,0 +1,354 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Experiment 2: Searching Techniques</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #ff7e5f, #feb47b);
+      margin: 0;
+      padding: 20px;
+      color: #fff;
+      text-align: center;
+      min-height: 100vh;
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .controls {
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      backdrop-filter: blur(10px);
+    }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    input, button {
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    input {
+      background: rgba(255,255,255,0.9);
+      color: #333;
+      width: 200px;
+    }
+    button {
+      background: #fff;
+      color: #ff7e5f;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    button:hover {
+      background: #ffd8c2;
+      color: #d84315;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .array-visual {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 30px 0 20px 0;
+      flex-wrap: wrap;
+    }
+    .array-bar {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #fffde4, #ffb88c);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ff7e5f;
+      font-weight: bold;
+      font-size: 22px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      border: 3px solid #fff;
+      transition: background 0.3s, border 0.3s, transform 0.3s;
+      position: relative;
+      user-select: none;
+    }
+    .array-bar.current {
+      background: #FFC107;
+      border-color: #fff176;
+      color: #fff;
+      transform: scale(1.1);
+      z-index: 2;
+    }
+    .array-bar.found {
+      background: #4CAF50;
+      border-color: #a5d6a7;
+      color: #fff;
+      transform: scale(1.15);
+      z-index: 2;
+    }
+    .array-bar.searched {
+      background: #FF5722;
+      border-color: #ffab91;
+      color: #fff;
+      z-index: 2;
+    }
+    .step-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 10px 0 20px 0;
+    }
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      background: rgba(255,255,255,0.1);
+      padding: 12px 20px;
+      border-radius: 10px;
+      min-width: 120px;
+      backdrop-filter: blur(10px);
+    }
+    .stat-value {
+      font-size: 22px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    .algorithm-info {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      text-align: left;
+      min-height: 40px;
+      backdrop-filter: blur(10px);
+    }
+  
+                    .current-page {
+                        text-decoration: underline;
+                        text-decoration-thickness: 2px;
+                        text-decoration-color: var(--primary-color);
+                        font-weight: bold;
+                        color: var(--primary-color);
+                    }
+                    </style>
+</head>
+<body>
+<h1>Experiment 2: Searching Techniques</h1>
+<div class="controls">
+  <div class="input-group">
+    <input type="text" id="arrayInput" placeholder="Enter array elements (comma separated)">
+    <input type="number" id="keyInput" placeholder="Enter key to search">
+    <button onclick="generateArray()">Generate Array</button>
+  </div>
+  <div class="input-group">
+    <button onclick="startLinearSearch()">Linear Search</button>
+    <button onclick="startBinarySearchIterative()">Binary Search (Iterative)</button>
+    <button onclick="startBinarySearchRecursive()">Binary Search (Recursive)</button>
+    <button onclick="resetSearch()">Reset</button>
+  </div>
+  <div class="step-controls">
+    <button onclick="prevStep()">&#8592; Prev</button>
+    <button onclick="playPause()" id="playPauseBtn">Play</button>
+    <button onclick="nextStep()">Next &#8594;</button>
+  </div>
+</div>
+<div class="array-visual" id="arrayVisual"></div>
+<div class="stats">
+  <div class="stat-box">
+    <div>Comparisons</div>
+    <div class="stat-value" id="comparisons">0</div>
+  </div>
+  <div class="stat-box">
+    <div>Steps</div>
+    <div class="stat-value" id="steps">0</div>
+  </div>
+</div>
+<div class="algorithm-info" id="algorithmInfo">Enter array and key, then select a search algorithm.</div>
+<footer style="margin-top: 30px;">&copy; 2025 Virtual DSA Lab | Searching Techniques</footer>
+<script>
+let arr = [], key = null, steps = [], currentStep = 0, playInterval = null, comparisons = 0;
+
+function generateArray() {
+  const input = document.getElementById('arrayInput').value;
+  arr = input ? input.split(',').map(Number).filter(x => !isNaN(x)) : Array.from({length: 8}, () => Math.floor(Math.random()*90)+10);
+  renderArray([]);
+  document.getElementById('algorithmInfo').innerHTML = 'Array generated. Enter key and select a search algorithm.';
+  steps = [];
+  currentStep = 0;
+  comparisons = 0;
+  updateStats();
+}
+function resetSearch() {
+  arr = [];
+  key = null;
+  steps = [];
+  currentStep = 0;
+  comparisons = 0;
+  renderArray([]);
+  document.getElementById('algorithmInfo').innerHTML = 'Enter array and key, then select a search algorithm.';
+  updateStats();
+}
+function updateStats() {
+  document.getElementById('comparisons').textContent = comparisons;
+  document.getElementById('steps').textContent = steps.length;
+}
+function renderArray(highlight = [], foundIdx = null, searchedIdxs = []) {
+  const container = document.getElementById('arrayVisual');
+  container.innerHTML = '';
+  arr.forEach((val, idx) => {
+    const bar = document.createElement('div');
+    bar.className = 'array-bar';
+    if (highlight.includes(idx)) bar.classList.add('current');
+    if (foundIdx === idx) bar.classList.add('found');
+    if (searchedIdxs.includes(idx)) bar.classList.add('searched');
+    bar.textContent = val;
+    container.appendChild(bar);
+  });
+}
+function recordStep(highlight, foundIdx, searchedIdxs, info) {
+  steps.push({highlight: [...highlight], foundIdx, searchedIdxs: [...searchedIdxs], info, arr: [...arr], comparisons});
+}
+function showStep(idx) {
+  if (idx < 0 || idx >= steps.length) return;
+  const step = steps[idx];
+  arr = [...step.arr];
+  renderArray(step.highlight, step.foundIdx, step.searchedIdxs);
+  document.getElementById('algorithmInfo').innerHTML = step.info;
+  comparisons = step.comparisons;
+  updateStats();
+}
+function nextStep() {
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    showStep(currentStep);
+  } else if (playInterval) {
+    playPause();
+  }
+}
+function prevStep() {
+  if (currentStep > 0) {
+    currentStep--;
+    showStep(currentStep);
+  }
+}
+function playPause() {
+  const btn = document.getElementById('playPauseBtn');
+  if (playInterval) {
+    clearInterval(playInterval);
+    playInterval = null;
+    btn.textContent = 'Play';
+  } else {
+    playInterval = setInterval(nextStep, 600);
+    btn.textContent = 'Pause';
+  }
+}
+function startLinearSearch() {
+  key = parseInt(document.getElementById('keyInput').value);
+  if (isNaN(key) || arr.length === 0) return;
+  steps = [];
+  currentStep = 0;
+  comparisons = 0;
+  let found = false;
+  let searchedIdxs = [];
+  for (let i = 0; i < arr.length; i++) {
+    comparisons++;
+    recordStep([i], null, searchedIdxs, `Comparing key ${key} with element at index ${i}`);
+    if (arr[i] === key) {
+      recordStep([i], i, searchedIdxs, `Key ${key} found at index ${i} using Linear Search.`);
+      found = true;
+      break;
+    }
+    searchedIdxs.push(i);
+  }
+  if (!found) {
+    recordStep([], null, searchedIdxs, `Key ${key} not found in array.`);
+  }
+  showStep(0);
+}
+function startBinarySearchIterative() {
+  key = parseInt(document.getElementById('keyInput').value);
+  if (isNaN(key) || arr.length === 0) return;
+  arr.sort((a, b) => a - b);
+  steps = [];
+  currentStep = 0;
+  comparisons = 0;
+  let low = 0, high = arr.length - 1;
+  let found = false;
+  let searchedIdxs = [];
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    comparisons++;
+    recordStep([mid], null, searchedIdxs, `Comparing key ${key} with element at index ${mid}`);
+    if (arr[mid] === key) {
+      recordStep([mid], mid, searchedIdxs, `Key ${key} found at index ${mid} using Binary Search (Iterative).`);
+      found = true;
+      break;
+    } else if (arr[mid] < key) {
+      searchedIdxs.push(mid);
+      low = mid + 1;
+    } else {
+      searchedIdxs.push(mid);
+      high = mid - 1;
+    }
+  }
+  if (!found) {
+    recordStep([], null, searchedIdxs, `Key ${key} not found in array.`);
+  }
+  showStep(0);
+}
+function startBinarySearchRecursive() {
+  key = parseInt(document.getElementById('keyInput').value);
+  if (isNaN(key) || arr.length === 0) return;
+  arr.sort((a, b) => a - b);
+  steps = [];
+  currentStep = 0;
+  comparisons = 0;
+  let searchedIdxs = [];
+  function recurse(low, high) {
+    if (low > high) {
+      recordStep([], null, searchedIdxs, `Key ${key} not found in array.`);
+      return;
+    }
+    const mid = Math.floor((low + high) / 2);
+    comparisons++;
+    recordStep([mid], null, searchedIdxs, `Comparing key ${key} with element at index ${mid}`);
+    if (arr[mid] === key) {
+      recordStep([mid], mid, searchedIdxs, `Key ${key} found at index ${mid} using Binary Search (Recursive).`);
+      return;
+    } else if (arr[mid] < key) {
+      searchedIdxs.push(mid);
+      recurse(mid + 1, high);
+    } else {
+      searchedIdxs.push(mid);
+      recurse(low, mid - 1);
+    }
+  }
+  recurse(0, arr.length - 1);
+  showStep(0);
+}
+</script>
+</body>
+</html>
+
+
+
+

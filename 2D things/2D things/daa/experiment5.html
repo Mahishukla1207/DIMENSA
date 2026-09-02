@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 5: Shell Sort</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Shell Sort</h1>
+        <p style="text-align: center; color: white;">Interactive visualization of Shell Sort with different gap sequences</p>
+
+        <div class="card">
+            <h2>Array Setup</h2>
+            <div class="controls">
+                <input type="number" id="arraySize" min="5" max="20" value="10" placeholder="Array Size">
+                <select id="gapSequence">
+                    <option value="shell">Shell's Sequence (n/2, n/4, ...)</option>
+                    <option value="knuth">Knuth's Sequence (3^k-1)/2</option>
+                    <option value="hibbard">Hibbard's Sequence (2^k-1)</option>
+                </select>
+                <button onclick="generateArray()">Generate Array</button>
+                <button onclick="startShellSort()">Start Sort</button>
+            </div>
+            <div id="arrayVisualization" style="text-align: center; margin: 20px 0;"></div>
+        </div>
+
+        <div class="visualization-container">
+            <div class="card">
+                <h2>Shell Sort Visualization</h2>
+                <div class="controls">
+                    <button onclick="resetShellSort()">Reset</button>
+                </div>
+                <div id="shellSortVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="shellSortChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Gap Sequence Analysis</h2>
+                <div id="gapSequenceInfo" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="gapSequenceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card explanation">
+            <h3>Algorithm Analysis</h3>
+            <p><strong>Shell Sort:</strong> Time complexity varies based on gap sequence - generally between O(n log² n) and O(n²)</p>
+            <p><strong>Shell's Sequence:</strong> O(n²) worst case, O(n log² n) average case</p>
+            <p><strong>Knuth's Sequence:</strong> O(n^(3/2)) worst case, O(n^(3/2)) average case</p>
+            <p><strong>Hibbard's Sequence:</strong> O(n^(3/2)) worst case, O(n^(3/2)) average case</p>
+            <p><strong>Space Complexity:</strong> O(1) - in-place sorting algorithm</p>
+        </div>
+    </div>
+
+    <script>
+        let originalArray = [];
+        let shellArray = [];
+        let charts = {};
+
+        function generateArray() {
+            const size = parseInt(document.getElementById('arraySize').value);
+            originalArray = Array.from({length: size}, () => Math.floor(Math.random() * 100));
+            resetShellSort();
+            updateCharts();
+        }
+
+        function resetShellSort() {
+            shellArray = [...originalArray];
+            visualizeArray(shellArray, 'shellSortVisualization');
+            updateGapSequenceInfo();
+        }
+
+        function visualizeArray(array, containerId, highlightIndices = [], swapIndices = [], sortedIndices = []) {
+            const container = document.getElementById(containerId);
+            let isShellSort = containerId === 'shellSortVisualization';
+            if (isShellSort) {
+                container.style.display = 'flex';
+                container.style.flexWrap = 'nowrap';
+                container.style.justifyContent = 'center';
+                container.style.alignItems = 'center';
+                container.style.gap = '8px';
+                container.style.minHeight = '60px';
+            } else {
+                container.style.display = 'flex';
+                container.style.flexWrap = 'wrap';
+                container.style.justifyContent = 'center';
+                container.style.alignItems = 'center';
+                container.style.gap = '';
+                container.style.minHeight = '';
+            }
+            container.innerHTML = array.map((num, i) => {
+                let bg = '#e5e7eb';
+                if (sortedIndices.includes(i)) bg = '#22c55e';
+                else if (swapIndices.includes(i)) bg = '#fbbf24';
+                else if (highlightIndices.includes(i)) bg = '#2563eb';
+                return `<div class=\"viz-bar\" id=\"bar-${containerId}-${i}\" style=\"${isShellSort ? 'width:36px;height:48px;min-width:36px;min-height:48px;font-size:1rem;display:flex;align-items:center;justify-content:center;' : ''}margin:2px; background:${bg}; transition:background 0.3s;\"><span class=\"viz-number viz-bar\">${num}</span></div>`;
+            }).join('');
+        }
+
+        async function animateSwap(containerId, i, j) {
+            const barI = document.getElementById(`bar-${containerId}-${i}`);
+            const barJ = document.getElementById(`bar-${containerId}-${j}`);
+            if (!barI || !barJ) return;
+            const rectI = barI.getBoundingClientRect();
+            const rectJ = barJ.getBoundingClientRect();
+            const dx = rectJ.left - rectI.left;
+            await Promise.all([
+                anime({ targets: barI, translateX: dx, backgroundColor: '#fbbf24', duration: 350, easing: 'easeInOutQuad' }).finished,
+                anime({ targets: barJ, translateX: -dx, backgroundColor: '#fbbf24', duration: 350, easing: 'easeInOutQuad' }).finished
+            ]);
+            barI.style.transform = '';
+            barJ.style.transform = '';
+        }
+
+        function getGapSequence(n) {
+            const sequence = [];
+            const type = document.getElementById('gapSequence').value;
+            
+            switch(type) {
+                case 'shell':
+                    for (let gap = Math.floor(n/2); gap > 0; gap = Math.floor(gap/2)) {
+                        sequence.push(gap);
+                    }
+                    break;
+                case 'knuth':
+                    let k = 1;
+                    while ((Math.pow(3, k) - 1) / 2 < n) {
+                        sequence.unshift((Math.pow(3, k) - 1) / 2);
+                        k++;
+                    }
+                    break;
+                case 'hibbard':
+                    let i = 1;
+                    while (Math.pow(2, i) - 1 < n) {
+                        sequence.unshift(Math.pow(2, i) - 1);
+                        i++;
+                    }
+                    break;
+            }
+            
+            return sequence;
+        }
+
+        function updateGapSequenceInfo() {
+            const sequence = getGapSequence(shellArray.length);
+            const info = document.getElementById('gapSequenceInfo');
+            info.innerHTML = `
+                <p>Selected Gap Sequence: ${document.getElementById('gapSequence').value}</p>
+                <p>Gaps: ${sequence.join(', ')}</p>
+            `;
+        }
+
+        async function shellSort(arr) {
+            const n = arr.length;
+            const gaps = getGapSequence(n);
+            for (const gap of gaps) {
+                for (let i = gap; i < n; i++) {
+                    const temp = arr[i];
+                    let j;
+                    visualizeArray(arr, 'shellSortVisualization', [i], [], []);
+                    await new Promise(res => setTimeout(res, 250));
+                    for (j = i; j >= gap && arr[j - gap] > temp; j -= gap) {
+                        [arr[j], arr[j-gap]] = [arr[j-gap], arr[j]];
+                        visualizeArray(arr, 'shellSortVisualization', [j, j-gap], [j, j-gap], []);
+                        await animateSwap('shellSortVisualization', j, j-gap);
+                        await new Promise(res => setTimeout(res, 200));
+                    }
+                    arr[j] = temp;
+                    visualizeArray(arr, 'shellSortVisualization', [j], [], []);
+                    await new Promise(res => setTimeout(res, 150));
+                }
+            }
+            visualizeArray(arr, 'shellSortVisualization', [], [], Array.from({length: arr.length}, (_, k) => k));
+        }
+
+        async function startShellSort() {
+            await shellSort(shellArray);
+        }
+
+        function updateCharts() {
+            const sizes = Array.from({length: 20}, (_, i) => i + 1);
+            const type = document.getElementById('gapSequence').value;
+            
+            let complexityData;
+            switch(type) {
+                case 'shell':
+                    complexityData = sizes.map(n => n * Math.log2(n) * Math.log2(n));
+                    break;
+                case 'knuth':
+                case 'hibbard':
+                    complexityData = sizes.map(n => Math.pow(n, 1.5));
+                    break;
+            }
+            
+            const datasets = [
+                {
+                    label: `Shell Sort (${type} sequence)`,
+                    data: complexityData,
+                    borderColor: '#0072ff'
+                }
+            ];
+
+            ['shellSortChart', 'gapSequenceChart'].forEach(chartId => {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                if (charts[chartId]) charts[chartId].destroy();
+                charts[chartId] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sizes,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: chartId === 'shellSortChart' ? 
+                                    'Shell Sort Complexity' : 
+                                    'Gap Sequence Analysis'
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        // Initialize
+        generateArray();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 4: Chain Tampering & Validation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .blockchain-visualization,
+        .tampering-controls {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .blockchain-container {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(15px, 3vw, 20px);
+            margin: clamp(15px, 3vw, 20px) 0;
+        }
+
+        .block {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            border: 2px solid transparent;
+            overflow: hidden;
+        }
+
+        .block:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .block::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--secondary-color);
+            opacity: 0;
+            transition: opacity var(--transition-speed) ease;
+        }
+
+        .block:hover::after {
+            opacity: 1;
+        }
+
+        .block.tampered {
+            border-color: var(--accent-color);
+            animation: shake 0.5s ease-in-out;
+        }
+
+        .block.valid {
+            border-color: var(--success-color);
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .block-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .block-number {
+            font-size: clamp(1em, 2vw, 1.2em);
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .block-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: clamp(0.7em, 1.5vw, 0.8em);
+            font-weight: bold;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .status-valid {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-invalid {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .block-data {
+            margin: 15px 0;
+            padding: clamp(10px, 2vw, 15px);
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-family: 'Consolas', monospace;
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+        }
+
+        .block-hash {
+            font-family: 'Consolas', monospace;
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            color: var(--accent-color);
+            word-break: break-all;
+            margin: 10px 0;
+            padding: clamp(10px, 2vw, 15px);
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .tampering-options {
+            margin: clamp(15px, 3vw, 20px) 0;
+        }
+
+        .tampering-option {
+            margin-bottom: clamp(12px, 2.5vw, 15px);
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .tampering-option:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .tampering-option h3 {
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            font-size: clamp(1em, 2vw, 1.2em);
+        }
+
+        .tampering-option p {
+            color: #666;
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+        }
+
+        .button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .button.danger {
+            background-color: var(--accent-color);
+        }
+
+        .button.danger:hover {
+            background-color: #c0392b;
+        }
+
+        .button.success {
+            background-color: var(--success-color);
+        }
+
+        .button.success:hover {
+            background-color: #27ae60;
+        }
+
+        .validation-results {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-family: 'Consolas', monospace;
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .button {
+                margin-right: 0;
+            }
+
+            .block-header {
+                flex-direction: column;
+            }
+
+            .block-status {
+                position: static;
+                margin-top: 10px;
+            }
+        }
+
+        .floating-help {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: #fff;
+            font-size: 2em;
+            border: none;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            z-index: 1001;
+            transition: background 0.3s;
+        }
+
+        .floating-help:hover {
+            background: var(--secondary-color);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.5s;
+        }
+
+        .close {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            margin-left: -20px;
+            margin-top: -20px;
+            z-index: 1003;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .button,
+        .validate-btn,
+        .fix-btn {
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .button:hover,
+        .validate-btn:hover,
+        .fix-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        .metric-value {
+            transition: color 0.3s;
+        }
+
+        .metric-value.animated {
+            color: var(--success-color);
+            animation: pop 0.5s;
+        }
+
+        @keyframes pop {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Chain Tampering & Validation</h1>
+            <p class="experiment-description">Understanding blockchain security through tampering simulation and
+                validation</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="blockchain-visualization">
+                <h2 class="panel-title">Blockchain Visualization</h2>
+                <div class="blockchain-container" id="blockchain">
+                    
+                </div>
+            </div>
+
+            <div class="tampering-controls">
+                <h2 class="panel-title">Tampering Controls</h2>
+                <div class="tampering-options">
+                    <div class="tampering-option" onclick="tamperBlock(1)">
+                        <h3>Tamper Block Data</h3>
+                        <p>Modify the data in a block to see how it affects the chain</p>
+                    </div>
+                    <div class="tampering-option" onclick="tamperBlock(2)">
+                        <h3>Modify Block Hash</h3>
+                        <p>Change a block's hash to break the chain</p>
+                    </div>
+                    <div class="tampering-option" onclick="tamperBlock(3)">
+                        <h3>Alter Previous Hash</h3>
+                        <p>Modify a block's reference to its previous block</p>
+                    </div>
+                </div>
+                <button class="button success" onclick="validateChain()" id="validateBtn">
+                    <span class="button-text">Validate Chain</span>
+                </button>
+                <button class="button" onclick="fixChain()" id="fixBtn">
+                    <span class="button-text">Fix Chain</span>
+                </button>
+                <div class="validation-results" id="validationResults"></div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="onboardingModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeOnboarding()">&times;</span>
+            <h2>Welcome to Chain Tampering & Validation!</h2>
+            <p>Explore how tampering affects blockchain integrity. Use the controls to modify blocks, validate, and fix
+                the chain. Hover over elements for tips!</p>
+            <button onclick="closeOnboarding()" class="button">Get Started</button>
+        </div>
+    </div>
+
+    
+    <button id="helpBtn" class="floating-help" title="Show tips" onclick="showHelp()">?</button>
+
+    
+    <div id="loader" class="loader" style="display:none;"></div>
+
+    <script>
+        class Block {
+            constructor(timestamp, data, previousHash = '') {
+                this.timestamp = timestamp;
+                this.data = data;
+                this.previousHash = previousHash;
+                this.hash = this.calculateHash();
+            }
+
+            calculateHash() {
+                return CryptoJS.SHA256(
+                    this.previousHash +
+                    this.timestamp +
+                    JSON.stringify(this.data)
+                ).toString();
+            }
+        }
+
+        class Blockchain {
+            constructor() {
+                this.chain = [this.createGenesisBlock()];
+            }
+
+            createGenesisBlock() {
+                return new Block(Date.now(), "Genesis Block", "0");
+            }
+
+            getLatestBlock() {
+                return this.chain[this.chain.length - 1];
+            }
+
+            addBlock(newBlock) {
+                newBlock.previousHash = this.getLatestBlock().hash;
+                newBlock.hash = newBlock.calculateHash();
+                this.chain.push(newBlock);
+            }
+
+            isChainValid() {
+                for (let i = 1; i < this.chain.length; i++) {
+                    const currentBlock = this.chain[i];
+                    const previousBlock = this.chain[i - 1];
+
+                    if (currentBlock.hash !== currentBlock.calculateHash()) {
+                        return {
+                            valid: false,
+                            invalidBlock: i,
+                            reason: "Current block's hash is invalid",
+                            type: "hash"
+                        };
+                    }
+
+                    if (currentBlock.previousHash !== previousBlock.hash) {
+                        return {
+                            valid: false,
+                            invalidBlock: i,
+                            reason: "Previous hash reference is invalid",
+                            type: "previousHash"
+                        };
+                    }
+                }
+                return { valid: true };
+            }
+
+            tamperBlock(blockIndex, type, value) {
+                if (blockIndex >= 0 && blockIndex < this.chain.length) {
+                    const block = this.chain[blockIndex];
+                    switch (type) {
+                        case 'data':
+                            block.data = value;
+                            block.hash = block.calculateHash();
+                            break;
+                        case 'hash':
+                            block.hash = value;
+                            break;
+                        case 'previousHash':
+                            block.previousHash = value;
+                            break;
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            fixChain() {
+                for (let i = 1; i < this.chain.length; i++) {
+                    const currentBlock = this.chain[i];
+                    const previousBlock = this.chain[i - 1];
+
+                    currentBlock.previousHash = previousBlock.hash;
+                    currentBlock.hash = currentBlock.calculateHash();
+                }
+            }
+        }
+
+        let blockchain = new Blockchain();
+
+        function createBlockElement(block, index) {
+            const blockDiv = document.createElement('div');
+            blockDiv.className = 'block';
+            const validation = blockchain.isChainValid();
+
+            if (!validation.valid && validation.invalidBlock === index) {
+                blockDiv.classList.add('tampered');
+            } else {
+                blockDiv.classList.add('valid');
+            }
+
+            blockDiv.innerHTML = `
+                <div class="block-header">
+                    <span class="block-number">Block #${index}</span>
+                    <span class="block-timestamp">${new Date(block.timestamp).toLocaleString()}</span>
+                </div>
+                <div class="block-status ${validation.valid ? 'status-valid' : 'status-invalid'}">
+                    ${validation.valid ? 'Valid' : 'Invalid'}
+                </div>
+                <div class="block-data">
+                    <strong>Data:</strong> ${JSON.stringify(block.data)}
+                </div>
+                <div class="block-hash">
+                    <strong>Previous Hash:</strong> ${block.previousHash}<br>
+                    <strong>Current Hash:</strong> ${block.hash}
+                </div>
+            `;
+            return blockDiv;
+        }
+
+        function updateBlockchainDisplay() {
+            const container = document.getElementById('blockchain');
+            container.innerHTML = '';
+            blockchain.chain.forEach((block, index) => {
+                container.appendChild(createBlockElement(block, index));
+            });
+            document.getElementById('blockCount').textContent = blockchain.chain.length;
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        async function validateChain() {
+            setLoading('validateBtn', true);
+
+            try {
+                const validationResult = blockchain.isChainValid();
+                updateBlockchainDisplay();
+
+                const resultsDiv = document.getElementById('validationResults');
+                if (validationResult.valid) {
+                    resultsDiv.innerHTML = '<span style="color: var(--success-color)">✓ Chain is valid</span>';
+                } else {
+                    resultsDiv.innerHTML = `
+                        <span style="color: var(--accent-color)">✗ Chain is invalid</span><br>
+                        Block #${validationResult.invalidBlock}: ${validationResult.reason}
+                    `;
+                }
+            } catch (error) {
+                showError('validationResults', 'Error validating chain: ' + error.message);
+            } finally {
+                setLoading('validateBtn', false);
+            }
+        }
+
+        async function fixChain() {
+            setLoading('fixBtn', true);
+
+            try {
+                blockchain.fixChain();
+                updateBlockchainDisplay();
+                document.getElementById('validationResults').innerHTML =
+                    '<span style="color: var(--success-color)">✓ Chain has been fixed</span>';
+            } catch (error) {
+                showError('validationResults', 'Error fixing chain: ' + error.message);
+            } finally {
+                setLoading('fixBtn', false);
+            }
+        }
+
+        function tamperBlock(type) {
+            const blockIndex = Math.floor(Math.random() * (blockchain.chain.length - 1)) + 1;
+            const block = blockchain.chain[blockIndex];
+
+            switch (type) {
+                case 1:
+                    block.data = "TAMPERED DATA " + Date.now();
+                    break;
+                case 2:
+                    block.hash = "0".repeat(64);
+                    break;
+                case 3:
+                    block.previousHash = "0".repeat(64);
+                    break;
+            }
+
+            updateBlockchainDisplay();
+            document.getElementById('validationResults').innerHTML =
+                `<span style="color: var(--accent-color)">⚠ Block #${blockIndex} has been tampered with</span>`;
+        }
+
+        // Initialize blockchain and display
+        updateBlockchainDisplay();
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'v') {
+                validateChain();
+            } else if (e.ctrlKey && e.key === 'f') {
+                fixChain();
+            }
+        });
+
+        function showLoader() { document.getElementById('loader').style.display = 'block'; }
+        function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+        function showOnboarding() { document.getElementById('onboardingModal').style.display = 'block'; }
+        function closeOnboarding() { document.getElementById('onboardingModal').style.display = 'none'; }
+        function showHelp() { alert('Tip: Tamper with blocks and validate the chain. Use the Fix button to auto-correct!'); }
+        window.onload = function () { if (!localStorage.getItem('exp4Onboarded')) { showOnboarding(); localStorage.setItem('exp4Onboarded', '1'); } };
+
+        // Animate metric value changes
+        function animateMetric(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('animated');
+                setTimeout(() => el.classList.remove('animated'), 600);
+            }
+        }
+    </script>
+</body>
+
+</html>

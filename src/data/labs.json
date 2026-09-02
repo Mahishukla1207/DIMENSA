@@ -1,0 +1,588 @@
+{
+  "subjects": [
+    {
+      "id": "artificial-intelligence-machine-learning",
+      "title": "Artificial Intelligence & Machine Learning",
+      "category": "Computer Science",
+      "description": "Interactive AI and ML simulations covering NumPy, pandas, neural networks, and model training.",
+      "type": "2D",
+      "status": "Live",
+      "experimentCount": 12,
+      "experiments": [
+        {
+          "id": "experiment-1",
+          "title": "NumPy & pandas Simulation",
+          "entry": "experiment-1.html"
+        },
+        {
+          "id": "experiment-2",
+          "title": "Exploratory Data Analysis (EDA) Visualization",
+          "entry": "experiment-2.html"
+        },
+        {
+          "id": "experiment-3",
+          "title": "Data Preprocessing Techniques",
+          "entry": "experiment-3.html"
+        },
+        {
+          "id": "experiment-4",
+          "title": "Linear Regression Simulation",
+          "entry": "experiment-4.html"
+        },
+        {
+          "id": "experiment-5",
+          "title": "Logistic Regression Simulation",
+          "entry": "experiment-5.html"
+        },
+        {
+          "id": "experiment-6",
+          "title": "Decision Tree & Random Forest Visualization",
+          "entry": "experiment-6.html"
+        },
+        {
+          "id": "experiment-7",
+          "title": "SVM Simulation",
+          "entry": "experiment-7.html"
+        },
+        {
+          "id": "experiment-8",
+          "title": "K-Means Clustering Visualizer",
+          "entry": "experiment-8.html"
+        },
+        {
+          "id": "experiment-9",
+          "title": "PCA Simulation",
+          "entry": "experiment-9.html"
+        },
+        {
+          "id": "experiment-10",
+          "title": "CNN Convolution Simulation",
+          "entry": "experiment-10.html"
+        },
+        {
+          "id": "experiment-11",
+          "title": "Evaluation Metrics Simulation",
+          "entry": "experiment-11.html"
+        },
+        {
+          "id": "experiment-12",
+          "title": "GridSearch Simulation",
+          "entry": "experiment-12.html"
+        }
+      ]
+    },
+    {
+      "id": "basic-electrical-electronics-lab",
+      "title": "Basic Electrical & Electronics Lab",
+      "category": "Engineering",
+      "description": "Hands-on electrical and electronics experiments with theory, procedure, and simulations.",
+      "type": "2D",
+      "status": "Live",
+      "experimentCount": 10,
+      "experiments": [
+        {
+          "id": "experiment-1",
+          "title": "Virtual Labs",
+          "entry": "experiment-1/aim.html"
+        },
+        {
+          "id": "experiment-10",
+          "title": "Virtual Labs",
+          "entry": "experiment-10/aim.html"
+        },
+        {
+          "id": "experiment-2",
+          "title": "Virtual Labs",
+          "entry": "experiment-2/aim.html"
+        },
+        {
+          "id": "experiment-3",
+          "title": "Virtual Labs",
+          "entry": "experiment-3/aim.html"
+        },
+        {
+          "id": "experiment-4",
+          "title": "Virtual Labs",
+          "entry": "experiment-4/aim.html"
+        },
+        {
+          "id": "experiment-5",
+          "title": "Virtual Labs",
+          "entry": "experiment-5/aim.html"
+        },
+        {
+          "id": "experiment-6",
+          "title": "Virtual Labs",
+          "entry": "experiment-6/aim.html"
+        },
+        {
+          "id": "experiment-7",
+          "title": "Virtual Labs",
+          "entry": "experiment-7/aim.html"
+        },
+        {
+          "id": "experiment-8",
+          "title": "Virtual Labs",
+          "entry": "experiment-8/aim.html"
+        },
+        {
+          "id": "experiment-9",
+          "title": "Virtual Labs",
+          "entry": "experiment-9/aim.html"
+        }
+      ]
+    },
+    {
+      "id": "blockchain-lab",
+      "title": "Blockchain Lab",
+      "category": "Computer Science",
+      "description": "Explore blockchain concepts through guided cryptographic and distributed ledger experiments.",
+      "type": "2D",
+      "status": "Live",
+      "experimentCount": 20,
+      "experiments": [
+        {
+          "id": "experiment-1",
+          "title": "Blockchain Lab - Experiment 1: Blockchain Basics & Hashing",
+          "entry": "experiment-1.html"
+        },
+        {
+          "id": "experiment-2",
+          "title": "Blockchain Lab - Experiment 2: Advanced Blockchain Implementation",
+          "entry": "experiment-2.html"
+        },
+        {
+          "id": "experiment-3",
+          "title": "Blockchain Lab - Experiment 3: Proof of Work Mining Simulation",
+          "entry": "experiment-3.html"
+        },
+        {
+          "id": "experiment-4",
+          "title": "Blockchain Lab - Experiment 4: Chain Tampering & Validation",
+          "entry": "experiment-4.html"
+        },
+        {
+          "id": "experiment-5",
+          "title": "Blockchain Lab - Experiment 5: Transactions & Validation",
+          "entry": "experiment-5.html"
+        },
+        {
+          "id": "experiment-6",
+          "title": "Blockchain Lab - Experiment 6: Smart Contracts",
+          "entry": "experiment-6.html"
+        },
+        {
+          "id": "experiment-7",
+          "title": "Blockchain Lab - Experiment 7: Consensus & Network",
+          "entry": "experiment-7.html"
+        },
+        {
+          "id": "experiment-8",
+          "title": "Blockchain Lab - Experiment 8: Scalability & Sharding",
+          "entry": "experiment-8.html"
+        },
+        {
+          "id": "experiment-9",
+          "title": "Blockchain Lab - Experiment 9: Privacy & Zero-Knowledge Proofs",
+          "entry": "experiment-9.html"
+        },
+        {
+          "id": "experiment-10",
+          "title": "Blockchain Lab - Experiment 10: Interoperability & Cross-Chain",
+          "entry": "experiment-10.html"
+        },
+        {
+          "id": "experiment-11",
+          "title": "Blockchain Lab - Experiment 11: Governance & Voting",
+          "entry": "experiment-11.html"
+        },
+        {
+          "id": "experiment-12",
+          "title": "Blockchain Lab - Experiment 12: Security & Attack Vectors",
+          "entry": "experiment-12.html"
+        },
+        {
+          "id": "experiment-13",
+          "title": "Blockchain Lab - Experiment 13: Privacy & Anonymity",
+          "entry": "experiment-13.html"
+        },
+        {
+          "id": "experiment-14",
+          "title": "Blockchain Lab - Experiment 14: Scalability & Performance",
+          "entry": "experiment-14.html"
+        },
+        {
+          "id": "experiment-15",
+          "title": "Blockchain Lab - Experiment 15: Governance & Token Economics",
+          "entry": "experiment-15.html"
+        },
+        {
+          "id": "experiment-16",
+          "title": "Blockchain Lab - Experiment 16: Interoperability & Cross-Chain Bridges",
+          "entry": "experiment-16.html"
+        },
+        {
+          "id": "experiment-17",
+          "title": "Blockchain Lab - Experiment 17: Scalability & Layer 2 Solutions",
+          "entry": "experiment-17.html"
+        },
+        {
+          "id": "experiment-18",
+          "title": "Blockchain Lab - Experiment 18: Smart Contracts & DApps",
+          "entry": "experiment-18.html"
+        },
+        {
+          "id": "experiment-19",
+          "title": "Blockchain Lab - Experiment 19: Consensus & Network Security",
+          "entry": "experiment-19.html"
+        },
+        {
+          "id": "experiment-20",
+          "title": "Blockchain Lab - Experiment 20: Smart Contracts & DApps",
+          "entry": "experiment-20.html"
+        }
+      ]
+    },
+    {
+      "id": "cyber-security-and-cryptography",
+      "title": "Cyber Security & Cryptography",
+      "category": "Computer Science",
+      "description": "Learn encryption, hashing, and security fundamentals through interactive labs.",
+      "type": "2D",
+      "status": "Live",
+      "experimentCount": 10,
+      "experiments": [
+        {
+          "id": "experiment-1",
+          "title": "Caesar Cipher Encryption",
+          "entry": "experiment-1.html"
+        },
+        {
+          "id": "experiment-2",
+          "title": "Caesar Cipher Decryption",
+          "entry": "experiment-2.html"
+        },
+        {
+          "id": "experiment-3",
+          "title": "Vigenère Cipher Encryption",
+          "entry": "experiment-3.html"
+        },
+        {
+          "id": "experiment-4",
+          "title": "Vigenère Cipher Decryption",
+          "entry": "experiment-4.html"
+        },
+        {
+          "id": "experiment-5",
+          "title": "Playfair Cipher Grid Setup",
+          "entry": "experiment-5.html"
+        },
+        {
+          "id": "experiment-6",
+          "title": "Monoalphabetic Cipher",
+          "entry": "experiment-6.html"
+        },
+        {
+          "id": "experiment-7",
+          "title": "XOR Cipher Demo",
+          "entry": "experiment-7.html"
+        },
+        {
+          "id": "experiment-8",
+          "title": "SHA-256 Hash Simulator",
+          "entry": "experiment-8.html"
+        },
+        {
+          "id": "experiment-9",
+          "title": "Diffie-Hellman Key Exchange Visualization",
+          "entry": "experiment-9.html"
+        },
+        {
+          "id": "experiment-10",
+          "title": "Frequency Analysis Tool",
+          "entry": "experiment-10.html"
+        }
+      ]
+    },
+    {
+      "id": "data-analytics",
+      "title": "Data Analytics",
+      "category": "Computer Science",
+      "description": "Analyze datasets and explore analytics workflows with structured virtual experiments.",
+      "type": "2D",
+      "status": "Live",
+      "experimentCount": 10,
+      "experiments": [
+        {
+          "id": "experiment-1",
+          "title": "Virtual Labs",
+          "entry": "experiment-1/aim.html"
+        },
+        {
+          "id": "experiment-10",
+          "title": "Virtual Labs",
+          "entry": "experiment-10/aim.html"
+        },
+        {
+          "id": "experiment-2",
+          "title": "Virtual Labs",
+          "entry": "experiment-2/aim.html"
+        },
+        {
+          "id": "experiment-3",
+          "title": "Virtual Labs",
+          "entry": "experiment-3/aim.html"
+        },
+        {
+          "id": "experiment-4",
+          "title": "Virtual Labs",
+          "entry": "experiment-4/aim.html"
+        },
+        {
+          "id": "experiment-5",
+          "title": "Virtual Labs",
+          "entry": "experiment-5/aim.html"
+        },
+        {
+          "id": "experiment-6",
+          "title": "Virtual Labs",
+          "entry": "experiment-6/aim.html"
+        },
+        {
+          "id": "experiment-7",
+          "title": "Virtual Labs",
+          "entry": "experiment-7/aim.html"
+        },
+        {
+          "id": "experiment-8",
+          "title": "Virtual Labs",
+          "entry": "experiment-8/aim.html"
+        },
+        {
+          "id": "experiment-9",
+          "title": "Virtual Labs",
+          "entry": "experiment-9/aim.html"
+        }
+      ]
+    },
+    {
+      "id": "data-science",
+      "title": "Data Structures & Algorithms",
+      "category": "Computer Science",
+      "description": "Visualize sorting, searching, graphs, trees, and classic algorithm simulations.",
+      "type": "2D",
+      "status": "Live",
+      "experimentCount": 25,
+      "experiments": [
+        {
+          "id": "graph-traversal-technique-bfs",
+          "title": "Virtual Labs",
+          "entry": "graph-traversal-technique/bfs/aim.html"
+        },
+        {
+          "id": "graph-traversal-technique-dfs",
+          "title": "Virtual Labs",
+          "entry": "graph-traversal-technique/dfs/aim.html"
+        },
+        {
+          "id": "linear-queue-array",
+          "title": "Virtual Labs",
+          "entry": "linear-queue/array/aim.html"
+        },
+        {
+          "id": "linear-queue-linked-list",
+          "title": "Virtual Labs",
+          "entry": "linear-queue/linked-list/aim.html"
+        },
+        {
+          "id": "minimum-spanning-trees-krushkals-algorithm",
+          "title": "Virtual Labs",
+          "entry": "minimum-spanning-trees/krushkals-algorithm/aim.html"
+        },
+        {
+          "id": "minimum-spanning-trees-prisms-algorithm",
+          "title": "Virtual Labs",
+          "entry": "minimum-spanning-trees/prisms-algorithm/aim.html"
+        },
+        {
+          "id": "polynomial-addition",
+          "title": "Virtual Labs",
+          "entry": "polynomial/addition/aim.html"
+        },
+        {
+          "id": "polynomial-merging",
+          "title": "Virtual Labs",
+          "entry": "polynomial/merging/aim.html"
+        },
+        {
+          "id": "queue-circular-queue",
+          "title": "Virtual Labs",
+          "entry": "queue/circular-queue/aim.html"
+        },
+        {
+          "id": "queue-doubly-ended-queue",
+          "title": "Virtual Labs",
+          "entry": "queue/doubly-ended-queue/aim.html"
+        },
+        {
+          "id": "queue-priority-queue",
+          "title": "Virtual Labs",
+          "entry": "queue/priority-queue/aim.html"
+        },
+        {
+          "id": "searching-binary-searching",
+          "title": "Virtual Labs",
+          "entry": "searching/binary-searching/aim.html"
+        },
+        {
+          "id": "searching-linear-searching",
+          "title": "Virtual Labs",
+          "entry": "searching/linear-searching/aim.html"
+        },
+        {
+          "id": "shortest-path-dijikstra-algorithm",
+          "title": "Virtual Labs",
+          "entry": "shortest-path/dijikstra-algorithm/aim.html"
+        },
+        {
+          "id": "shortest-path-floyd-warshals-algorithm",
+          "title": "Virtual Labs",
+          "entry": "shortest-path/floyd-warshals-algorithm/aim.html"
+        },
+        {
+          "id": "sorting-bubble-sort",
+          "title": "Virtual Labs",
+          "entry": "sorting/bubble-sort/aim.html"
+        },
+        {
+          "id": "sorting-counting-sort",
+          "title": "Virtual Labs",
+          "entry": "sorting/counting-sort/aim.html"
+        },
+        {
+          "id": "sorting-heap-sort",
+          "title": "Virtual Labs",
+          "entry": "sorting/heap-sort/aim.html"
+        },
+        {
+          "id": "sorting-insertion-sort",
+          "title": "Virtual Labs",
+          "entry": "sorting/insertion-sort/aim.html"
+        },
+        {
+          "id": "sorting-merge-sort",
+          "title": "Virtual Labs",
+          "entry": "sorting/merge-sort/aim.html"
+        },
+        {
+          "id": "sorting-quick-sort",
+          "title": "Virtual Labs",
+          "entry": "sorting/quick-sort/aim.html"
+        },
+        {
+          "id": "sorting-selection-sort",
+          "title": "Virtual Labs",
+          "entry": "sorting/selection-sort/aim.html"
+        },
+        {
+          "id": "stack-array",
+          "title": "Virtual Labs",
+          "entry": "stack/array/aim.html"
+        },
+        {
+          "id": "stack-linked-list",
+          "title": "Virtual Labs",
+          "entry": "stack/linked-list/aim.html"
+        },
+        {
+          "id": "tower-of-hanoi",
+          "title": "Virtual Labs",
+          "entry": "tower-of-hanoi/aim.html"
+        }
+      ]
+    },
+    {
+      "id": "design-and-analysis-of-algorithms",
+      "title": "Design & Analysis of Algorithms",
+      "category": "Computer Science",
+      "description": "Step through algorithm design problems with interactive experiment modules.",
+      "type": "2D",
+      "status": "Live",
+      "experimentCount": 11,
+      "experiments": [
+        {
+          "id": "experiment-1",
+          "title": "Experiment 1: Linear & Binary Search (Recursive)",
+          "entry": "experiment-1.html"
+        },
+        {
+          "id": "experiment-2",
+          "title": "Experiment 2: Basic Sorting Algorithms",
+          "entry": "experiment-2.html"
+        },
+        {
+          "id": "experiment-3",
+          "title": "Experiment 3: Advanced Sorting Algorithms",
+          "entry": "experiment-3.html"
+        },
+        {
+          "id": "experiment-4",
+          "title": "Experiment 4: Non-Comparison Sorts",
+          "entry": "experiment-4.html"
+        },
+        {
+          "id": "experiment-5",
+          "title": "Experiment 5: Shell Sort",
+          "entry": "experiment-5.html"
+        },
+        {
+          "id": "experiment-6",
+          "title": "Experiment 6: Greedy Algorithms",
+          "entry": "experiment-6.html"
+        },
+        {
+          "id": "experiment-7",
+          "title": "Experiment 7: Dynamic Programming",
+          "entry": "experiment-7.html"
+        },
+        {
+          "id": "experiment-8",
+          "title": "Experiment 8: Graph Algorithms",
+          "entry": "experiment-8.html"
+        },
+        {
+          "id": "experiment-9",
+          "title": "Experiment 9: Shortest Path Algorithms",
+          "entry": "experiment-9.html"
+        },
+        {
+          "id": "experiment-10",
+          "title": "Experiment 10: Backtracking Algorithms",
+          "entry": "experiment-10.html"
+        },
+        {
+          "id": "index",
+          "title": "Data Analysis and Algorithm Lab",
+          "entry": "index.html"
+        }
+      ]
+    }
+  ],
+  "vrLabs": [
+    {
+      "id": "car-simulation",
+      "title": "Car Simulation",
+      "category": "Engineering",
+      "type": "VR",
+      "status": "Live",
+      "description": "Immersive VR car simulation experience. Install the APK on a compatible Android VR headset.",
+      "apkPath": "/labs/vr/CarSimulation.apk",
+      "apkSize": 62037019,
+      "learningObjectives": [
+        "Experience immersive vehicle simulation in VR",
+        "Practice spatial navigation in a 3D environment",
+        "Apply engineering concepts through interactive scenarios"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistic Regression Simulation</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 20px 0;
+            display: flex;
+            gap: 20px;
+        }
+
+        .main-canvas {
+            flex: 2;
+        }
+
+        .sigmoid-canvas {
+            flex: 1;
+        }
+
+        canvas {
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            background-color: white;
+        }
+
+        #regressionCanvas {
+            cursor: crosshair;
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .class-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .class-0 {
+            background-color: #ff4444;
+            color: white;
+        }
+
+        .class-1 {
+            background-color: #4444ff;
+            color: white;
+        }
+
+        .class-button.active {
+            transform: scale(1.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .equation {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .instructions {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .probability-display {
+            font-family: monospace;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .btn {
+            margin: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">📊 Logistic Regression Simulation</h1>
+
+        
+        <div class="card">
+            <div class="instructions">
+                <h3>How to Use:</h3>
+                <ol>
+                    <li>Select a class (red for class 0, blue for class 1)</li>
+                    <li>Click on the left canvas to add data points</li>
+                    <li>Add points from both classes</li>
+                    <li>Click "Train" to fit the logistic curve</li>
+                    <li>Hover over points to see their probabilities</li>
+                </ol>
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <div class="canvas-container">
+                <div class="main-canvas">
+                    <canvas id="regressionCanvas" width="600" height="400"></canvas>
+                </div>
+                <div class="sigmoid-canvas">
+                    <canvas id="sigmoidCanvas" width="300" height="400"></canvas>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="class-button class-0 active" onclick="setClass(0)">Class 0 (Red)</button>
+                <button class="class-button class-1" onclick="setClass(1)">Class 1 (Blue)</button>
+                <button onclick="trainModel()" class="btn btn-primary">Train Model</button>
+                <button onclick="resetCanvas()" class="btn btn-danger">Reset</button>
+            </div>
+
+            <div class="equation" id="equationDisplay">p(y=1|x) = 1 / (1 + e^(-(w₀ + w₁x)))</div>
+            <div class="probability-display" id="probabilityDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const regressionCanvas = document.getElementById('regressionCanvas');
+        const sigmoidCanvas = document.getElementById('sigmoidCanvas');
+        const regCtx = regressionCanvas.getContext('2d');
+        const sigCtx = sigmoidCanvas.getContext('2d');
+
+        // Data and model parameters
+        const points = []; // Stores {x, y, class}
+        let currentClass = 0; // 0 or 1
+        let weights = { w0: 0, w1: 0, w2: 0 }; // Logistic regression weights
+        let animationFrame = null;
+        let currentWeights = { w0: 0, w1: 0, w2: 0 };
+        let isTraining = false;
+
+        // Canvas dimensions and scaling
+        const PADDING = 40;
+        const POINT_RADIUS = 5;
+        let canvasScale = 1;
+
+        // Initialize canvases with responsive sizing
+        function initCanvas() {
+            const container = regressionCanvas.parentElement;
+            const containerWidth = container.clientWidth;
+
+            // Set canvas sizes with proper scaling
+            regressionCanvas.width = containerWidth * 0.7;
+            regressionCanvas.height = regressionCanvas.width * 0.6;
+            sigmoidCanvas.width = containerWidth * 0.3;
+            sigmoidCanvas.height = sigmoidCanvas.width * 0.8;
+
+            // Calculate scale factor for coordinate conversion
+            canvasScale = (regressionCanvas.width - 2 * PADDING) / 20; // Scale to fit -10 to 10 range
+
+            // Draw initial state
+            drawAxes();
+            drawSigmoid();
+            drawPoints();
+        }
+
+        // Convert screen coordinates to model coordinates
+        function screenToModel(x, y) {
+            const rect = regressionCanvas.getBoundingClientRect();
+            const scaleX = regressionCanvas.width / rect.width;
+            const scaleY = regressionCanvas.height / rect.height;
+
+            // Convert to model coordinates (-10 to 10 range)
+            return {
+                x: (x * scaleX - PADDING) / canvasScale - 10,
+                y: 10 - (y * scaleY - PADDING) / canvasScale
+            };
+        }
+
+        // Convert model coordinates to screen coordinates
+        function modelToScreen(x, y) {
+            const rect = regressionCanvas.getBoundingClientRect();
+            const scaleX = regressionCanvas.width / rect.width;
+            const scaleY = regressionCanvas.height / rect.height;
+
+            // Convert to screen coordinates
+            return {
+                x: ((x + 10) * canvasScale + PADDING) / scaleX,
+                y: ((10 - y) * canvasScale + PADDING) / scaleY
+            };
+        }
+
+        // Add point to canvas
+        function addPoint(x, y) {
+            try {
+                // Get the canvas's position relative to the viewport
+                const rect = regressionCanvas.getBoundingClientRect();
+
+                // Calculate click position relative to canvas
+                const clickX = x - rect.left;
+                const clickY = y - rect.top;
+
+                // Convert to model coordinates
+                const modelCoords = screenToModel(clickX, clickY);
+
+                // Validate coordinates are within bounds
+                if (modelCoords.x < -10 || modelCoords.x > 10 ||
+                    modelCoords.y < -10 || modelCoords.y > 10) {
+                    showError('Point must be placed within the grid (-10 to 10)');
+                    return;
+                }
+
+                // Add point to array
+                points.push({
+                    x: modelCoords.x,
+                    y: modelCoords.y,
+                    class: currentClass
+                });
+
+                // Redraw canvas
+                drawPoints();
+                updateProbabilityDisplay();
+            } catch (error) {
+                showError('Error adding point: ' + error.message);
+            }
+        }
+
+        // Draw all points
+        function drawPoints() {
+            regCtx.clearRect(0, 0, regressionCanvas.width, regressionCanvas.height);
+            drawAxes();
+
+            points.forEach(point => {
+                const screenCoords = modelToScreen(point.x, point.y);
+                regCtx.beginPath();
+                regCtx.arc(screenCoords.x, screenCoords.y, POINT_RADIUS, 0, 2 * Math.PI);
+                regCtx.fillStyle = point.class === 0 ? '#ff4444' : '#4444ff';
+                regCtx.fill();
+                regCtx.strokeStyle = '#fff';
+                regCtx.lineWidth = 2;
+                regCtx.stroke();
+            });
+
+            if (weights.w0 !== 0 || weights.w1 !== 0 || weights.w2 !== 0) {
+                drawDecisionBoundary();
+            }
+        }
+
+        // Draw decision boundary
+        function drawDecisionBoundary() {
+            const { w0, w1, w2 } = weights;
+            if (w2 === 0) return; // Avoid division by zero
+
+            const startX = -10;
+            const endX = 10;
+            const startY = -(w0 + w1 * startX) / w2;
+            const endY = -(w0 + w1 * endX) / w2;
+
+            const start = modelToScreen(startX, startY);
+            const end = modelToScreen(endX, endY);
+
+            regCtx.beginPath();
+            regCtx.moveTo(start.x, start.y);
+            regCtx.lineTo(end.x, end.y);
+            regCtx.strokeStyle = '#00ff00';
+            regCtx.lineWidth = 2;
+            regCtx.stroke();
+        }
+
+        // Train the model using gradient descent
+        async function trainModel() {
+            if (isTraining) {
+                showError('Training already in progress');
+                return;
+            }
+
+            if (points.length < 2) {
+                showError('Please add at least 2 points before training');
+                return;
+            }
+
+            try {
+                isTraining = true;
+                setLoading('trainButton', true);
+
+                const learningRate = 0.1;
+                const epochs = 100;
+                let prevLoss = Infinity;
+
+                for (let epoch = 0; epoch < epochs; epoch++) {
+                    let loss = 0;
+                    let gradients = { w0: 0, w1: 0, w2: 0 };
+
+                    // Compute gradients
+                    points.forEach(point => {
+                        const prediction = sigmoid(weights.w0 + weights.w1 * point.x + weights.w2 * point.y);
+                        const error = prediction - point.class;
+
+                        gradients.w0 += error;
+                        gradients.w1 += error * point.x;
+                        gradients.w2 += error * point.y;
+
+                        loss += point.class * Math.log(prediction) +
+                            (1 - point.class) * Math.log(1 - prediction);
+                    });
+
+                    // Update weights
+                    weights.w0 -= learningRate * gradients.w0 / points.length;
+                    weights.w1 -= learningRate * gradients.w1 / points.length;
+                    weights.w2 -= learningRate * gradients.w2 / points.length;
+
+                    // Update visualization
+                    drawPoints();
+                    updateEquationDisplay();
+
+                    // Check convergence
+                    loss = -loss / points.length;
+                    if (Math.abs(loss - prevLoss) < 1e-6) break;
+                    prevLoss = loss;
+
+                    // Add animation delay
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+
+                showSuccess('Training completed successfully!');
+            } catch (error) {
+                showError('Error during training: ' + error.message);
+            } finally {
+                isTraining = false;
+                setLoading('trainButton', false);
+            }
+        }
+
+        // Update equation display
+        function updateEquationDisplay() {
+            const { w0, w1, w2 } = weights;
+            document.getElementById('equationDisplay').innerHTML =
+                `p(y=1|x,y) = 1 / (1 + e^(-(${w0.toFixed(2)} + ${w1.toFixed(2)}x + ${w2.toFixed(2)}y)))`;
+        }
+
+        // Update probability display for hover
+        function updateProbabilityDisplay(point = null) {
+            const display = document.getElementById('probabilityDisplay');
+            if (!point) {
+                display.textContent = 'Hover over a point to see its probability';
+                return;
+            }
+
+            const { w0, w1, w2 } = weights;
+            const z = w0 + w1 * point.x + w2 * point.y;
+            const probability = sigmoid(z);
+            display.textContent = `P(class=1) = ${probability.toFixed(3)}`;
+        }
+
+        // Reset canvas
+        function resetCanvas() {
+            try {
+                points.length = 0;
+                weights = { w0: 0, w1: 0, w2: 0 };
+                currentWeights = { w0: 0, w1: 0, w2: 0 };
+                updateEquationDisplay();
+                updateProbabilityDisplay();
+                drawPoints();
+                showSuccess('Canvas reset successfully');
+            } catch (error) {
+                showError('Error resetting canvas: ' + error.message);
+            }
+        }
+
+        // Utility functions
+        function sigmoid(x) {
+            return 1 / (1 + Math.exp(-x));
+        }
+
+        function setClass(cls) {
+            currentClass = cls;
+            document.querySelectorAll('.class-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.class-${cls}`).classList.add('active');
+        }
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.disabled = isLoading;
+                button.classList.toggle('loading', isLoading);
+                const originalText = button.textContent;
+                if (isLoading) {
+                    button.dataset.originalText = originalText;
+                    button.textContent = 'Training...';
+                } else {
+                    button.textContent = button.dataset.originalText || originalText;
+                }
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            document.querySelector('.card').insertAdjacentElement('afterbegin', errorDiv);
+            setTimeout(() => errorDiv.classList.add('visible'), 10);
+            setTimeout(() => {
+                errorDiv.classList.remove('visible');
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 3000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.textContent = message;
+            document.querySelector('.card').insertAdjacentElement('afterbegin', successDiv);
+            setTimeout(() => successDiv.classList.add('visible'), 10);
+            setTimeout(() => {
+                successDiv.classList.remove('visible');
+                setTimeout(() => successDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize the page
+        window.addEventListener('load', () => {
+            // Add IDs to buttons
+            document.querySelector('button[onclick="trainModel()"]').id = 'trainButton';
+            document.querySelector('button[onclick="resetCanvas()"]').id = 'resetButton';
+
+            initCanvas();
+
+            // Add canvas click handler
+            regressionCanvas.addEventListener('click', (e) => {
+                addPoint(e.clientX, e.clientY);
+            });
+
+            // Add hover handler
+            regressionCanvas.addEventListener('mousemove', (e) => {
+                const rect = regressionCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const modelCoords = screenToModel(x, y);
+
+                // Find closest point
+                let closestPoint = null;
+                let minDist = Infinity;
+
+                points.forEach(point => {
+                    const dist = Math.sqrt(
+                        Math.pow(point.x - modelCoords.x, 2) +
+                        Math.pow(point.y - modelCoords.y, 2)
+                    );
+                    if (dist < minDist && dist < 0.5) {
+                        minDist = dist;
+                        closestPoint = point;
+                    }
+                });
+
+                updateProbabilityDisplay(closestPoint);
+            });
+
+            // Add resize handler
+            window.addEventListener('resize', debounce(() => {
+                initCanvas();
+                drawPoints();
+            }, 250));
+        });
+
+        // Add debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Draw coordinate axes
+        function drawAxes() {
+            regCtx.beginPath();
+            regCtx.strokeStyle = '#000';
+            regCtx.lineWidth = 1;
+
+            // X-axis
+            regCtx.moveTo(PADDING, regressionCanvas.height - PADDING);
+            regCtx.lineTo(regressionCanvas.width - PADDING, regressionCanvas.height - PADDING);
+
+            // Y-axis
+            regCtx.moveTo(PADDING, PADDING);
+            regCtx.lineTo(PADDING, regressionCanvas.height - PADDING);
+
+            regCtx.stroke();
+
+            // Add axis labels
+            regCtx.fillStyle = '#000';
+            regCtx.font = '12px Arial';
+            regCtx.fillText('x', regressionCanvas.width - PADDING + 5, regressionCanvas.height - PADDING + 15);
+            regCtx.fillText('y', PADDING - 15, PADDING - 5);
+        }
+
+        // Draw sigmoid function
+        function drawSigmoid() {
+            sigCtx.clearRect(0, 0, sigmoidCanvas.width, sigmoidCanvas.height);
+
+            // Draw axes
+            sigCtx.beginPath();
+            sigCtx.strokeStyle = '#000';
+            sigCtx.lineWidth = 1;
+
+            // X-axis
+            sigCtx.moveTo(PADDING, sigmoidCanvas.height - PADDING);
+            sigCtx.lineTo(sigmoidCanvas.width - PADDING, sigmoidCanvas.height - PADDING);
+
+            // Y-axis
+            sigCtx.moveTo(PADDING, PADDING);
+            sigCtx.lineTo(PADDING, sigmoidCanvas.height - PADDING);
+
+            sigCtx.stroke();
+
+            // Draw sigmoid curve
+            sigCtx.beginPath();
+            sigCtx.strokeStyle = '#4444ff';
+            sigCtx.lineWidth = 2;
+
+            const width = sigmoidCanvas.width - 2 * PADDING;
+            const height = sigmoidCanvas.height - 2 * PADDING;
+
+            for (let i = 0; i <= width; i++) {
+                const x = (i - width / 2) / 50; // Scale x for better visualization
+                const y = sigmoid(x);
+                const screenX = PADDING + i;
+                const screenY = sigmoidCanvas.height - PADDING - y * height;
+
+                if (i === 0) {
+                    sigCtx.moveTo(screenX, screenY);
+                } else {
+                    sigCtx.lineTo(screenX, screenY);
+                }
+            }
+
+            sigCtx.stroke();
+
+            // Add labels
+            sigCtx.fillStyle = '#000';
+            sigCtx.font = '12px Arial';
+            sigCtx.fillText('Sigmoid Function', PADDING, PADDING - 5);
+            sigCtx.fillText('x', sigmoidCanvas.width - PADDING + 5, sigmoidCanvas.height - PADDING + 15);
+            sigCtx.fillText('p(y=1|x)', PADDING - 15, PADDING - 5);
+        }
+    </script>
+</body>
+
+</html>

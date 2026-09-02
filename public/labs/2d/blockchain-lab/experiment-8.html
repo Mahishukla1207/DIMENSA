@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 8: Scalability & Sharding</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .shard-panel,
+        .metrics-panel {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .shard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin: clamp(15px, 3vw, 20px) 0;
+        }
+
+        .shard {
+            background: #f8f9fa;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: var(--border-radius);
+            border: 2px solid transparent;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .shard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .shard.active {
+            border-color: var(--success-color);
+        }
+
+        .shard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+            padding-bottom: clamp(4px, 1vw, 5px);
+            border-bottom: 1px solid #ddd;
+        }
+
+        .shard-title {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .shard-status {
+            padding: clamp(2px, 0.5vw, 3px) clamp(6px, 1.5vw, 8px);
+            border-radius: 12px;
+            font-size: clamp(0.7em, 1.2vw, 0.8em);
+            font-weight: bold;
+        }
+
+        .status-active {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-inactive {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .shard-metrics {
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            color: #666;
+        }
+
+        .metric-item {
+            margin: clamp(4px, 1vw, 5px) 0;
+            display: flex;
+            justify-content: space-between;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .metric-item:hover {
+            transform: translateX(5px);
+            color: var(--primary-color);
+        }
+
+        .transaction-list {
+            margin: clamp(8px, 1.5vw, 10px) 0;
+            max-height: clamp(120px, 20vh, 150px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary-color) #f8f9fa;
+        }
+
+        .transaction-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .transaction-list::-webkit-scrollbar-track {
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+
+        .transaction-list::-webkit-scrollbar-thumb {
+            background-color: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        .transaction {
+            background: white;
+            padding: clamp(6px, 1.2vw, 8px);
+            border-radius: 5px;
+            margin-bottom: clamp(4px, 1vw, 5px);
+            font-size: clamp(0.7em, 1.2vw, 0.8em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .transaction:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: clamp(2px, 0.5vw, 3px);
+        }
+
+        .transaction-amount {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .transaction-details {
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+        }
+
+        .scalability-controls {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .scalability-controls:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: clamp(12px, 2.5vw, 15px);
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: clamp(8px, 1.5vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .button.success {
+            background-color: var(--success-color);
+        }
+
+        .button.success:hover {
+            background-color: #27ae60;
+        }
+
+        .metrics-overview {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .metrics-overview:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card {
+            background: white;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: var(--border-radius);
+            margin-bottom: clamp(10px, 2vw, 15px);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .metric-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-title {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .metric-value {
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+            color: var(--secondary-color);
+            font-family: 'Consolas', monospace;
+        }
+
+        .metric-chart {
+            height: clamp(180px, 30vh, 200px);
+            margin: clamp(15px, 3vw, 20px) 0;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: clamp(12px, 2.5vw, 15px);
+            position: relative;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .metric-chart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-bar {
+            position: absolute;
+            bottom: 0;
+            width: clamp(20px, 4vw, 30px);
+            background: var(--secondary-color);
+            border-radius: 3px 3px 0 0;
+            transition: height var(--transition-speed) ease;
+        }
+
+        .chart-bar:hover {
+            background: #2980b9;
+        }
+
+        .chart-label {
+            position: absolute;
+            bottom: -20px;
+            font-size: clamp(0.7em, 1.2vw, 0.8em);
+            color: #666;
+            text-align: center;
+            width: clamp(20px, 4vw, 30px);
+        }
+
+        .cross-shard-transactions {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .cross-shard-transactions:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .cross-shard-list {
+            max-height: clamp(180px, 30vh, 200px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary-color) #f8f9fa;
+        }
+
+        .cross-shard-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .cross-shard-list::-webkit-scrollbar-track {
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+
+        .cross-shard-list::-webkit-scrollbar-thumb {
+            background-color: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        .cross-shard-item {
+            background: white;
+            padding: clamp(8px, 1.5vw, 10px);
+            border-radius: var(--border-radius);
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .cross-shard-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .cross-shard-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: clamp(4px, 1vw, 5px);
+            padding-bottom: clamp(4px, 1vw, 5px);
+            border-bottom: 1px solid #eee;
+        }
+
+        .cross-shard-status {
+            padding: clamp(2px, 0.5vw, 3px) clamp(4px, 1vw, 6px);
+            border-radius: 10px;
+            font-size: clamp(0.7em, 1.2vw, 0.8em);
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .status-completed {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-failed {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .performance-log {
+            height: clamp(180px, 30vh, 200px);
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: var(--border-radius);
+            margin: clamp(15px, 3vw, 20px) 0;
+            font-family: 'Consolas', monospace;
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary-color) #f8f9fa;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .performance-log:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .performance-log::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .performance-log::-webkit-scrollbar-track {
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+
+        .performance-log::-webkit-scrollbar-thumb {
+            background-color: var(--secondary-color);
+            border-radius: 3px;
+        }
+
+        .log-entry {
+            margin-bottom: clamp(4px, 1vw, 5px);
+            padding: clamp(4px, 1vw, 5px);
+            border-bottom: 1px solid #eee;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .log-entry:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .log-entry.success {
+            color: var(--success-color);
+        }
+
+        .log-entry.error {
+            color: var(--error-color);
+        }
+
+        .log-entry.info {
+            color: var(--secondary-color);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .button {
+                margin-right: 0;
+            }
+
+            .shard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metric-card {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Scalability & Sharding</h1>
+            <p class="experiment-description">Understanding blockchain scalability through sharding and cross-shard
+                transactions</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="shard-panel">
+                <h2 class="panel-title">Shard Management</h2>
+                <div class="scalability-controls">
+                    <div class="control-group">
+                        <label for="shardCount">Number of Shards</label>
+                        <input type="number" id="shardCount" min="2" max="16" value="4" onchange="updateShards()">
+                    </div>
+                    <div class="control-group">
+                        <label for="txPerSecond">Transactions per Second</label>
+                        <input type="number" id="txPerSecond" min="1" max="1000" value="10"
+                            onchange="updateTransactionRate()">
+                    </div>
+                    <button class="button" onclick="addShard()" id="addShardBtn">
+                        <span class="button-text">Add Shard</span>
+                    </button>
+                    <button class="button success" onclick="simulateLoad()" id="simulateBtn">
+                        <span class="button-text">Simulate Load</span>
+                    </button>
+                    <div class="error-message" id="simulationError"></div>
+                </div>
+                <div class="shard-grid" id="shardGrid">
+                    
+                </div>
+            </div>
+
+            <div class="metrics-panel">
+                <h2 class="panel-title">Performance Metrics</h2>
+                <div class="metrics-overview">
+                    <div class="metric-card">
+                        <div class="metric-title">Total Transactions per Second</div>
+                        <div class="metric-value" id="totalTPS">0 TPS</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Average Block Time</div>
+                        <div class="metric-value" id="avgBlockTime">0s</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Cross-Shard Transactions</div>
+                        <div class="metric-value" id="crossShardCount">0</div>
+                    </div>
+                </div>
+                <div class="metric-chart" id="performanceChart">
+                    
+                </div>
+                <div class="cross-shard-transactions">
+                    <h3>Cross-Shard Transactions</h3>
+                    <div class="cross-shard-list" id="crossShardList">
+                        
+                    </div>
+                </div>
+                <div class="performance-log" id="performanceLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Shard {
+            constructor(id) {
+                this.id = id;
+                this.transactions = [];
+                this.status = 'active';
+                this.tps = 0;
+                this.blockTime = 0;
+                this.crossShardCount = 0;
+                this.lastBlockTime = Date.now();
+            }
+
+            addTransaction(transaction) {
+                this.transactions.push(transaction);
+                if (transaction.isCrossShard) {
+                    this.crossShardCount++;
+                }
+                this.updateMetrics();
+            }
+
+            updateMetrics() {
+                this.tps = this.transactions.length / ((Date.now() - this.lastBlockTime) / 1000);
+                this.blockTime = Math.max(1, 10 - (this.tps / 10));
+            }
+
+            clearTransactions() {
+                this.transactions = [];
+                this.updateMetrics();
+            }
+        }
+
+        class ShardingSystem {
+            constructor() {
+                this.shards = [];
+                this.totalTPS = 0;
+                this.avgBlockTime = 0;
+                this.crossShardTransactions = [];
+            }
+
+            addShard() {
+                const shard = new Shard(this.shards.length);
+                this.shards.push(shard);
+                this.updateMetrics();
+                return shard;
+            }
+
+            updateMetrics() {
+                this.totalTPS = this.shards.reduce((sum, shard) => sum + shard.tps, 0);
+                this.avgBlockTime = this.shards.reduce((sum, shard) => sum + shard.blockTime, 0) / this.shards.length;
+            }
+
+            generateTransaction() {
+                const sourceShard = this.shards[Math.floor(Math.random() * this.shards.length)];
+                const targetShard = this.shards[Math.floor(Math.random() * this.shards.length)];
+                const isCrossShard = sourceShard !== targetShard;
+
+                const transaction = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    amount: Math.random() * 100,
+                    timestamp: Date.now(),
+                    sourceShard: sourceShard.id,
+                    targetShard: targetShard.id,
+                    isCrossShard: isCrossShard,
+                    status: 'pending'
+                };
+
+                sourceShard.addTransaction(transaction);
+                if (isCrossShard) {
+                    this.crossShardTransactions.push(transaction);
+                }
+
+                this.updateMetrics();
+                return transaction;
+            }
+
+            simulateLoad(duration = 5000) {
+                const txPerSecond = parseInt(document.getElementById('txPerSecond').value);
+                const interval = 1000 / txPerSecond;
+                const endTime = Date.now() + duration;
+
+                const simulate = () => {
+                    if (Date.now() < endTime) {
+                        this.generateTransaction();
+                        setTimeout(simulate, interval);
+                    }
+                };
+
+                simulate();
+            }
+        }
+
+        let shardingSystem = new ShardingSystem();
+
+        function initializeShards() {
+            const count = parseInt(document.getElementById('shardCount').value);
+            while (shardingSystem.shards.length < count) {
+                shardingSystem.addShard();
+            }
+            updateShardDisplay();
+            addLogEntry(`Initialized ${count} shards`, 'info');
+        }
+
+        function updateShardDisplay() {
+            const grid = document.getElementById('shardGrid');
+            grid.innerHTML = '';
+
+            shardingSystem.shards.forEach(shard => {
+                const div = document.createElement('div');
+                div.className = `shard ${shard.status}`;
+                div.innerHTML = `
+                    <div class="shard-header">
+                        <span class="shard-title">Shard ${shard.id}</span>
+                        <span class="shard-status status-${shard.status}">${shard.status}</span>
+                    </div>
+                    <div class="shard-metrics">
+                        <div class="metric-item">
+                            <span>TPS:</span>
+                            <span>${shard.tps.toFixed(2)}</span>
+                        </div>
+                        <div class="metric-item">
+                            <span>Block Time:</span>
+                            <span>${shard.blockTime.toFixed(1)}s</span>
+                        </div>
+                        <div class="metric-item">
+                            <span>Cross-Shard:</span>
+                            <span>${shard.crossShardCount}</span>
+                        </div>
+                    </div>
+                    <div class="transaction-list">
+                        ${shard.transactions.slice(-5).map(tx => `
+                            <div class="transaction">
+                                <div class="transaction-header">
+                                    <span class="transaction-amount">${tx.amount.toFixed(2)}</span>
+                                    <span>${tx.isCrossShard ? '↔️' : '→'}</span>
+                                </div>
+                                <div class="transaction-details">
+                                    ${tx.isCrossShard ?
+                        `Shard ${tx.sourceShard} → Shard ${tx.targetShard}` :
+                        `Internal Transaction`}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+
+            updateMetricsDisplay();
+        }
+
+        function updateMetricsDisplay() {
+            document.getElementById('totalTPS').textContent =
+                `${shardingSystem.totalTPS.toFixed(2)} TPS`;
+            document.getElementById('avgBlockTime').textContent =
+                `${shardingSystem.avgBlockTime.toFixed(1)}s`;
+            document.getElementById('crossShardCount').textContent =
+                shardingSystem.crossShardTransactions.length;
+
+            updatePerformanceChart();
+            updateCrossShardList();
+        }
+
+        function updatePerformanceChart() {
+            const chart = document.getElementById('performanceChart');
+            chart.innerHTML = '';
+
+            const maxTPS = Math.max(...shardingSystem.shards.map(s => s.tps));
+            const barWidth = 30;
+            const spacing = 20;
+            const maxHeight = 150;
+
+            shardingSystem.shards.forEach((shard, index) => {
+                const height = (shard.tps / maxTPS) * maxHeight;
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.style.left = `${index * (barWidth + spacing)}px`;
+                bar.style.height = `${height}px`;
+
+                const label = document.createElement('div');
+                label.className = 'chart-label';
+                label.style.left = `${index * (barWidth + spacing)}px`;
+                label.textContent = `S${shard.id}`;
+
+                chart.appendChild(bar);
+                chart.appendChild(label);
+            });
+        }
+
+        function updateCrossShardList() {
+            const container = document.getElementById('crossShardList');
+            container.innerHTML = '';
+
+            shardingSystem.crossShardTransactions.slice(-10).forEach(tx => {
+                const div = document.createElement('div');
+                div.className = 'cross-shard-item';
+                div.innerHTML = `
+                    <div class="cross-shard-header">
+                        <span>${tx.amount.toFixed(2)}</span>
+                        <span class="cross-shard-status status-${tx.status}">${tx.status}</span>
+                    </div>
+                    <div>Shard ${tx.sourceShard} → Shard ${tx.targetShard}</div>
+                    <div>${new Date(tx.timestamp).toLocaleTimeString()}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        async function addShard() {
+            setLoading('addShardBtn', true);
+
+            try {
+                if (shardingSystem.shards.length >= 16) {
+                    throw new Error('Maximum number of shards (16) reached');
+                }
+
+                shardingSystem.addShard();
+                updateShardDisplay();
+                addLogEntry(`Added new shard (Total: ${shardingSystem.shards.length})`, 'success');
+            } catch (error) {
+                showError('simulationError', error.message);
+                addLogEntry(`Failed to add shard: ${error.message}`, 'error');
+            } finally {
+                setLoading('addShardBtn', false);
+            }
+        }
+
+        async function simulateLoad() {
+            setLoading('simulateBtn', true);
+
+            try {
+                const txPerSecond = parseInt(document.getElementById('txPerSecond').value);
+                if (txPerSecond < 1 || txPerSecond > 1000) {
+                    throw new Error('Transaction rate must be between 1 and 1000 TPS');
+                }
+
+                shardingSystem.simulateLoad();
+                addLogEntry('Started load simulation', 'info');
+            } catch (error) {
+                showError('simulationError', error.message);
+                addLogEntry(`Failed to start simulation: ${error.message}`, 'error');
+            } finally {
+                setLoading('simulateBtn', false);
+            }
+        }
+
+        function updateShards() {
+            const count = parseInt(document.getElementById('shardCount').value);
+            if (count < 2 || count > 16) {
+                showError('simulationError', 'Number of shards must be between 2 and 16');
+                return;
+            }
+
+            while (shardingSystem.shards.length < count) {
+                shardingSystem.addShard();
+            }
+            while (shardingSystem.shards.length > count) {
+                shardingSystem.shards.pop();
+            }
+            updateShardDisplay();
+            addLogEntry(`Updated shard count to ${count}`, 'info');
+        }
+
+        function updateTransactionRate() {
+            const rate = parseInt(document.getElementById('txPerSecond').value);
+            if (rate < 1 || rate > 1000) {
+                showError('simulationError', 'Transaction rate must be between 1 and 1000 TPS');
+                return;
+            }
+            addLogEntry(`Updated transaction rate to ${rate} TPS`, 'info');
+        }
+
+        function addLogEntry(message, type = '') {
+            const log = document.getElementById('performanceLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Initialize the sharding system
+        initializeShards();
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'a') {
+                addShard();
+            } else if (e.ctrlKey && e.key === 's') {
+                simulateLoad();
+            }
+        });
+
+        // Update metrics periodically
+        setInterval(() => {
+            shardingSystem.shards.forEach(shard => {
+                shard.updateMetrics();
+            });
+            shardingSystem.updateMetrics();
+            updateShardDisplay();
+        }, 1000);
+    </script>
+</body>
+
+</html>

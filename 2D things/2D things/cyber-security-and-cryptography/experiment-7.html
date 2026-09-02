@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XOR Cipher Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        button {
+            background-color: #1a73e8;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        button:hover {
+            background-color: #1557b0;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            min-height: 50px;
+            font-family: monospace;
+        }
+
+        .explanation {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f0fe;
+            border-radius: 4px;
+            color: #1a73e8;
+        }
+
+        .process {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .bit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+            gap: 8px;
+            margin: 15px 0;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .bit {
+            text-align: center;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: clamp(14px, 2vw, 16px);
+        }
+
+        .bit-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .bit.input1 {
+            color: #1a73e8;
+        }
+
+        .bit.input2 {
+            color: #1557b0;
+        }
+
+        .bit.result {
+            color: #34a853;
+        }
+
+        .error {
+            color: #ea4335;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-toggle button {
+            flex: 1;
+            margin: 0;
+        }
+
+        .mode-toggle button.active {
+            background-color: #1557b0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>XOR Cipher Demo</h1>
+
+        <div class="mode-toggle">
+            <button onclick="setMode('encrypt')" class="active" id="encryptBtn">Encryption Mode</button>
+            <button onclick="setMode('decrypt')" id="decryptBtn">Decryption Mode</button>
+        </div>
+
+        <div class="input-group">
+            <label for="input1" id="input1Label">Enter binary text:</label>
+            <input type="text" id="input1" placeholder="Enter binary string (e.g., 10101010)"
+                oninput="validateBinary(this)" pattern="[01]*">
+        </div>
+
+        <div class="input-group">
+            <label for="input2">Enter binary key:</label>
+            <input type="text" id="input2" placeholder="Enter binary key (e.g., 11001100)"
+                oninput="validateBinary(this)" pattern="[01]*">
+        </div>
+
+        <button onclick="performXOR()">Perform XOR Operation</button>
+
+        <div class="result" id="result">
+            Result will appear here...
+        </div>
+
+        <div class="process" id="process">
+            <h3>Bit-by-Bit Operation:</h3>
+            <div id="bitGrid" class="bit-grid">
+                
+            </div>
+        </div>
+
+        <div class="explanation">
+            <h3>How XOR Works:</h3>
+            <p>XOR (Exclusive OR) is a binary operation that follows these rules:</p>
+            <ul>
+                <li>0 XOR 0 = 0</li>
+                <li>0 XOR 1 = 1</li>
+                <li>1 XOR 0 = 1</li>
+                <li>1 XOR 1 = 0</li>
+            </ul>
+            <p>For example, if we XOR 1010 with 1100:</p>
+            <pre>
+  1010 (text)
+⊕ 1100 (key)
+  ----
+  0110 (result)
+            </pre>
+            <p>The magic of XOR is that if you XOR the result with the same key again, you get back your original text!
+            </p>
+            <pre>
+  0110 (encrypted)
+⊕ 1100 (key)
+  ----
+  1010 (original text)
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'encrypt';
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('encryptBtn').classList.toggle('active', mode === 'encrypt');
+            document.getElementById('decryptBtn').classList.toggle('active', mode === 'decrypt');
+            document.getElementById('input1Label').textContent =
+                mode === 'encrypt' ? 'Enter binary text:' : 'Enter encrypted text:';
+        }
+
+        function validateBinary(input) {
+            const oldValue = input.value;
+            const newValue = oldValue.replace(/[^01]/g, '');
+            if (oldValue !== newValue) {
+                input.value = newValue;
+                // Show a temporary message
+                const message = document.createElement('div');
+                message.className = 'error';
+                message.textContent = 'Only 0 and 1 are allowed';
+                message.style.opacity = '1';
+                input.parentNode.appendChild(message);
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    setTimeout(() => message.remove(), 300);
+                }, 2000);
+            }
+        }
+
+        function performXOR() {
+            const input1 = document.getElementById('input1').value;
+            const input2 = document.getElementById('input2').value;
+            const result = document.getElementById('result');
+            const bitGrid = document.getElementById('bitGrid');
+
+            // Validate inputs
+            if (!input1 || !input2) {
+                result.innerHTML = '<span class="error">Please enter both binary strings!</span>';
+                bitGrid.innerHTML = '';
+                return;
+            }
+
+            if (input1.length !== input2.length) {
+                result.innerHTML = '<span class="error">Both strings must be the same length! (Current lengths: ' +
+                    input1.length + ' and ' + input2.length + ')</span>';
+                bitGrid.innerHTML = '';
+                return;
+            }
+
+            // Perform XOR operation
+            let xorResult = '';
+            let bitGridHTML = '';
+
+            // Add header row
+            bitGridHTML += `
+                <div class="bit input1"><div>Text</div><div class="bit-label">Input 1</div></div>
+                <div class="bit input2"><div>Key</div><div class="bit-label">Input 2</div></div>
+                <div class="bit result"><div>Result</div><div class="bit-label">XOR</div></div>
+            `;
+
+            for (let i = 0; i < input1.length; i++) {
+                const bit1 = input1[i];
+                const bit2 = input2[i];
+                const xorBit = bit1 === bit2 ? '0' : '1';
+                xorResult += xorBit;
+
+                bitGridHTML += `
+                    <div class="bit input1">${bit1}</div>
+                    <div class="bit input2">${bit2}</div>
+                    <div class="bit result">${xorBit}</div>
+                `;
+            }
+
+            result.textContent = xorResult;
+            bitGrid.innerHTML = bitGridHTML;
+
+            // Add explanation
+            const explanation = currentMode === 'encrypt'
+                ? 'To decrypt, use this result as input and XOR with the same key.'
+                : 'To verify, use this result as input and XOR with the same key to get the original text.';
+            result.innerHTML += `<br><br>${explanation}`;
+        }
+    </script>
+</body>
+
+</html>

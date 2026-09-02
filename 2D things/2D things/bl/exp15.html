@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 15: Governance & Token Economics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --governance-color: #8e44ad;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .governance-panel,
+        .economics-panel {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: clamp(10px, 2vw, 15px);
+            padding-bottom: clamp(5px, 1.5vw, 10px);
+            border-bottom: 2px solid var(--governance-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .governance-controls {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+        }
+
+        .governance-method {
+            margin-bottom: clamp(15px, 3vw, 20px);
+            padding: clamp(12px, 2.5vw, 15px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .governance-method:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .method-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .method-name {
+            font-weight: bold;
+            color: var(--governance-color);
+            font-size: clamp(1em, 1.5vw, 1.2em);
+        }
+
+        .method-description {
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .method-parameters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+            gap: clamp(8px, 1.5vw, 10px);
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .parameter-group {
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .parameter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+        }
+
+        .parameter-group input,
+        .parameter-group select {
+            width: 100%;
+            padding: clamp(8px, 1.5vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .parameter-group input:focus,
+        .parameter-group select:focus {
+            border-color: var(--governance-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(142, 68, 173, 0.2);
+        }
+
+        .button {
+            background-color: var(--governance-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #7d3c98;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .token-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            color: var(--governance-color);
+            font-family: monospace;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .governance-log {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .log-entry.governance {
+            color: var(--governance-color);
+        }
+
+        .log-entry.economics {
+            color: var(--secondary-color);
+        }
+
+        .log-entry.warning {
+            color: var(--warning-color);
+        }
+
+        .proposal-list {
+            margin: 20px 0;
+        }
+
+        .proposal-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .proposal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .proposal-title {
+            font-weight: bold;
+            color: var(--governance-color);
+        }
+
+        .proposal-status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-pending {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .status-closed {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .proposal-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .proposal-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .proposal-metric {
+            text-align: center;
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 3px;
+        }
+
+        .proposal-metric-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .proposal-metric-value {
+            font-weight: bold;
+            color: var(--governance-color);
+        }
+
+        .voting-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .vote-button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .vote-button.yes {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .vote-button.no {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .vote-button.abstain {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .vote-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .token-distribution {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .distribution-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .distribution-title {
+            font-weight: bold;
+            color: var(--governance-color);
+        }
+
+        .distribution-total {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .distribution-bar {
+            height: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .distribution-segment {
+            height: 100%;
+            float: left;
+            transition: width 0.3s ease;
+        }
+
+        .segment-community {
+            background-color: var(--success-color);
+        }
+
+        .segment-team {
+            background-color: var(--secondary-color);
+        }
+
+        .segment-investors {
+            background-color: var(--warning-color);
+        }
+
+        .segment-foundation {
+            background-color: var(--accent-color);
+        }
+
+        .distribution-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .distribution-label {
+            text-align: center;
+            flex: 1;
+        }
+
+        .token-economics {
+            margin: 20px 0;
+        }
+
+        .economics-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .economics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .economics-title {
+            font-weight: bold;
+            color: var(--governance-color);
+        }
+
+        .economics-value {
+            font-family: monospace;
+            color: var(--secondary-color);
+        }
+
+        .economics-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .economics-chart {
+            height: 200px;
+            margin-top: 10px;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .proposal-card.active {
+            animation: pulse 1s infinite;
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .method-parameters {
+                grid-template-columns: 1fr;
+            }
+
+            .token-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .proposal-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .voting-controls {
+                flex-direction: column;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Governance & Token Economics</h1>
+            <p class="experiment-description">Understanding blockchain governance and token economics through
+                interactive simulation</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="governance-panel">
+                <h2 class="panel-title">Governance System</h2>
+                <div class="governance-controls">
+                    <div class="governance-method">
+                        <div class="method-header">
+                            <span class="method-name">Create Proposal</span>
+                        </div>
+                        <div class="method-description">
+                            Create a new governance proposal for the community to vote on
+                        </div>
+                        <div class="method-parameters">
+                            <div class="parameter-group">
+                                <label>Proposal Type</label>
+                                <select id="proposalType">
+                                    <option value="parameter">Parameter Change</option>
+                                    <option value="upgrade">Protocol Upgrade</option>
+                                    <option value="funding">Funding Request</option>
+                                </select>
+                            </div>
+                            <div class="parameter-group">
+                                <label>Voting Period (days)</label>
+                                <input type="number" id="votingPeriod" min="1" max="30" value="7">
+                            </div>
+                        </div>
+                        <button class="button" onclick="createProposal()">Create Proposal</button>
+                    </div>
+
+                    <div class="governance-method">
+                        <div class="method-header">
+                            <span class="method-name">Token Distribution</span>
+                        </div>
+                        <div class="method-description">
+                            Manage token distribution and allocation
+                        </div>
+                        <div class="method-parameters">
+                            <div class="parameter-group">
+                                <label>Total Supply</label>
+                                <input type="number" id="totalSupply" min="1000000" max="1000000000" value="100000000">
+                            </div>
+                            <div class="parameter-group">
+                                <label>Distribution Type</label>
+                                <select id="distributionType">
+                                    <option value="fair">Fair Launch</option>
+                                    <option value="premine">Premine</option>
+                                    <option value="hybrid">Hybrid</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="button" onclick="updateDistribution()">Update Distribution</button>
+                    </div>
+                </div>
+
+                <div class="proposal-list" id="proposalList">
+                    
+                </div>
+
+                <div class="token-distribution">
+                    <div class="distribution-header">
+                        <span class="distribution-title">Token Distribution</span>
+                        <span class="distribution-total">Total: 100,000,000</span>
+                    </div>
+                    <div class="distribution-bar">
+                        <div class="distribution-segment segment-community" style="width: 40%"></div>
+                        <div class="distribution-segment segment-team" style="width: 20%"></div>
+                        <div class="distribution-segment segment-investors" style="width: 25%"></div>
+                        <div class="distribution-segment segment-foundation" style="width: 15%"></div>
+                    </div>
+                    <div class="distribution-labels">
+                        <div class="distribution-label">Community (40%)</div>
+                        <div class="distribution-label">Team (20%)</div>
+                        <div class="distribution-label">Investors (25%)</div>
+                        <div class="distribution-label">Foundation (15%)</div>
+                    </div>
+                </div>
+
+                <div class="governance-log" id="governanceLog">
+                    
+                </div>
+            </div>
+
+            <div class="economics-panel">
+                <h2 class="panel-title">Token Economics</h2>
+                <div class="token-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Market Cap</div>
+                        <div class="metric-value" id="marketCap">$0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Circulating Supply</div>
+                        <div class="metric-value" id="circulatingSupply">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Token Price</div>
+                        <div class="metric-value" id="tokenPrice">$0.00</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="economicsChart"></canvas>
+                </div>
+
+                <div class="token-economics">
+                    <div class="economics-card">
+                        <div class="economics-header">
+                            <span class="economics-title">Inflation Rate</span>
+                            <span class="economics-value">2% per year</span>
+                        </div>
+                        <div class="economics-description">
+                            Annual token emission rate and distribution
+                        </div>
+                        <div class="economics-chart" id="inflationChart"></div>
+                    </div>
+
+                    <div class="economics-card">
+                        <div class="economics-header">
+                            <span class="economics-title">Staking Rewards</span>
+                            <span class="economics-value">5% APY</span>
+                        </div>
+                        <div class="economics-description">
+                            Token staking rewards and distribution
+                        </div>
+                        <div class="economics-chart" id="stakingChart"></div>
+                    </div>
+
+                    <div class="economics-card">
+                        <div class="economics-header">
+                            <span class="economics-title">Voting Power</span>
+                            <span class="economics-value">1 token = 1 vote</span>
+                        </div>
+                        <div class="economics-description">
+                            Token-based voting power distribution
+                        </div>
+                        <div class="economics-chart" id="votingChart"></div>
+                    </div>
+                </div>
+
+                <div class="governance-log" id="economicsLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class GovernanceSystem {
+            constructor() {
+                this.proposals = new Map();
+                this.metrics = {
+                    marketCap: 0,
+                    circulatingSupply: 0,
+                    tokenPrice: 0,
+                    totalSupply: 100000000,
+                    distribution: {
+                        community: 40,
+                        team: 20,
+                        investors: 25,
+                        foundation: 15
+                    }
+                };
+                this.economicsData = {
+                    labels: [],
+                    marketCap: [],
+                    price: [],
+                    supply: []
+                };
+                this.chart = null;
+                this.initializeChart();
+            }
+
+            initializeChart() {
+                const ctx = document.getElementById('economicsChart').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: this.economicsData.labels,
+                        datasets: [{
+                            label: 'Market Cap',
+                            data: this.economicsData.marketCap,
+                            borderColor: '#8e44ad',
+                            tension: 0.4
+                        }, {
+                            label: 'Token Price',
+                            data: this.economicsData.price,
+                            borderColor: '#3498db',
+                            tension: 0.4
+                        }, {
+                            label: 'Circulating Supply',
+                            data: this.economicsData.supply,
+                            borderColor: '#2ecc71',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            createProposal(type, votingPeriod) {
+                const id = Math.random().toString(36).substr(2, 9);
+                const proposal = {
+                    id,
+                    type,
+                    votingPeriod,
+                    status: 'active',
+                    votes: {
+                        yes: 0,
+                        no: 0,
+                        abstain: 0
+                    },
+                    createdAt: Date.now(),
+                    endsAt: Date.now() + votingPeriod * 24 * 60 * 60 * 1000
+                };
+                this.proposals.set(id, proposal);
+                this.updateProposalList();
+                return proposal;
+            }
+
+            updateDistribution(totalSupply, distribution) {
+                this.metrics.totalSupply = totalSupply;
+                this.metrics.distribution = distribution;
+                this.updateMetrics();
+            }
+
+            castVote(proposalId, vote) {
+                const proposal = this.proposals.get(proposalId);
+                if (!proposal || proposal.status !== 'active') return false;
+
+                proposal.votes[vote]++;
+                this.updateProposalList();
+                return true;
+            }
+
+            updateMetrics() {
+                // Update metrics display
+                document.getElementById('marketCap').textContent =
+                    `$${this.metrics.marketCap.toLocaleString()}`;
+                document.getElementById('circulatingSupply').textContent =
+                    this.metrics.circulatingSupply.toLocaleString();
+                document.getElementById('tokenPrice').textContent =
+                    `$${this.metrics.tokenPrice.toFixed(2)}`;
+
+                // Update chart
+                this.updateChart();
+
+                // Update proposal list
+                this.updateProposalList();
+            }
+
+            updateChart() {
+                const now = new Date().toLocaleTimeString();
+                this.economicsData.labels.push(now);
+                this.economicsData.marketCap.push(this.metrics.marketCap);
+                this.economicsData.price.push(this.metrics.tokenPrice);
+                this.economicsData.supply.push(this.metrics.circulatingSupply);
+
+                if (this.economicsData.labels.length > 20) {
+                    this.economicsData.labels.shift();
+                    this.economicsData.marketCap.shift();
+                    this.economicsData.price.shift();
+                    this.economicsData.supply.shift();
+                }
+
+                this.chart.update();
+            }
+
+            updateProposalList() {
+                const container = document.getElementById('proposalList');
+                container.innerHTML = '';
+
+                this.proposals.forEach((proposal, id) => {
+                    const card = document.createElement('div');
+                    card.className = `proposal-card ${proposal.status === 'active' ? 'active' : ''}`;
+
+                    const totalVotes = proposal.votes.yes + proposal.votes.no + proposal.votes.abstain;
+                    const yesPercentage = totalVotes > 0 ?
+                        (proposal.votes.yes / totalVotes * 100).toFixed(1) : 0;
+
+                    card.innerHTML = `
+                        <div class="proposal-header">
+                            <span class="proposal-title">Proposal ${id}</span>
+                            <span class="proposal-status status-${proposal.status}">${proposal.status}</span>
+                        </div>
+                        <div class="proposal-description">
+                            ${proposal.type} proposal (${proposal.votingPeriod} days)
+                        </div>
+                        <div class="proposal-metrics">
+                            <div class="proposal-metric">
+                                <div class="proposal-metric-label">Yes</div>
+                                <div class="proposal-metric-value">${proposal.votes.yes}</div>
+                            </div>
+                            <div class="proposal-metric">
+                                <div class="proposal-metric-label">No</div>
+                                <div class="proposal-metric-value">${proposal.votes.no}</div>
+                            </div>
+                            <div class="proposal-metric">
+                                <div class="proposal-metric-label">Abstain</div>
+                                <div class="proposal-metric-value">${proposal.votes.abstain}</div>
+                            </div>
+                        </div>
+                        ${proposal.status === 'active' ? `
+                            <div class="voting-controls">
+                                <button class="vote-button yes" onclick="castVote('${id}', 'yes')">Vote Yes</button>
+                                <button class="vote-button no" onclick="castVote('${id}', 'no')">Vote No</button>
+                                <button class="vote-button abstain" onclick="castVote('${id}', 'abstain')">Abstain</button>
+                            </div>
+                        ` : ''}
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            simulateMarketActivity() {
+                setInterval(() => {
+                    this.metrics.tokenPrice = Math.max(0,
+                        this.metrics.tokenPrice * (1 + (Math.random() - 0.5) * 0.1));
+                    this.metrics.marketCap = this.metrics.tokenPrice * this.metrics.circulatingSupply;
+                    this.metrics.circulatingSupply = Math.min(this.metrics.totalSupply,
+                        this.metrics.circulatingSupply * (1 + 0.0001));
+                    this.updateMetrics();
+                }, 1000);
+            }
+        }
+
+        let governanceSystem = new GovernanceSystem();
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        async function createProposal() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const type = document.getElementById('proposalType').value;
+                const votingPeriod = parseInt(document.getElementById('votingPeriod').value);
+
+                if (votingPeriod < 1) {
+                    throw new Error('Voting period must be at least 1 day');
+                }
+                if (votingPeriod > 30) {
+                    throw new Error('Voting period cannot exceed 30 days');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const proposal = governanceSystem.createProposal(type, votingPeriod);
+                addLogEntry(`Created ${type} proposal ${proposal.id} with ${votingPeriod} days voting period`, 'governance');
+                governanceSystem.updateMetrics();
+            } catch (error) {
+                showError('proposalError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function updateDistribution() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const totalSupply = parseInt(document.getElementById('totalSupply').value);
+                const distributionType = document.getElementById('distributionType').value;
+
+                if (totalSupply < 1000000) {
+                    throw new Error('Total supply must be at least 1,000,000');
+                }
+                if (totalSupply > 1000000000) {
+                    throw new Error('Total supply cannot exceed 1,000,000,000');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const distribution = calculateDistribution(distributionType, totalSupply);
+                governanceSystem.updateDistribution(totalSupply, distribution);
+                addLogEntry(`Updated token distribution with ${totalSupply.toLocaleString()} total supply`, 'economics');
+                governanceSystem.updateMetrics();
+            } catch (error) {
+                showError('distributionError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        function calculateDistribution(type, totalSupply) {
+            switch (type) {
+                case 'fair':
+                    return {
+                        community: 60,
+                        team: 15,
+                        investors: 15,
+                        foundation: 10
+                    };
+                case 'premine':
+                    return {
+                        community: 30,
+                        team: 25,
+                        investors: 30,
+                        foundation: 15
+                    };
+                case 'hybrid':
+                    return {
+                        community: 45,
+                        team: 20,
+                        investors: 25,
+                        foundation: 10
+                    };
+                default:
+                    return governanceSystem.metrics.distribution;
+            }
+        }
+
+        function castVote(proposalId, vote) {
+            if (governanceSystem.castVote(proposalId, vote)) {
+                addLogEntry(`Voted ${vote} on proposal ${proposalId}`, 'governance');
+            }
+        }
+
+        function addLogEntry(message, type = '') {
+            const log = document.getElementById(`${type}Log`);
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                createProposal();
+            } else if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                updateDistribution();
+            }
+        });
+
+        // Initialize the governance system
+        governanceSystem.simulateMarketActivity();
+        addLogEntry('Governance system initialized', 'info');
+    </script>
+</body>
+
+</html>

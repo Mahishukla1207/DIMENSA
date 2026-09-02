@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 9: Privacy & Zero-Knowledge Proofs</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --privacy-color: #9b59b6;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .privacy-panel,
+        .proof-panel {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: clamp(10px, 2vw, 15px);
+            padding-bottom: clamp(5px, 1.5vw, 10px);
+            border-bottom: 2px solid var(--privacy-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .privacy-controls {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .privacy-controls:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: clamp(12px, 2.5vw, 15px);
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: clamp(8px, 1.5vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            border-color: var(--privacy-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(155, 89, 182, 0.2);
+        }
+
+        .button {
+            background-color: var(--privacy-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #8e44ad;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .transaction-container {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .transaction-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction {
+            background: white;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: var(--border-radius);
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .transaction:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+            padding-bottom: clamp(4px, 1vw, 5px);
+            border-bottom: 1px solid #eee;
+        }
+
+        .transaction-amount {
+            font-weight: bold;
+            color: var(--privacy-color);
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .transaction-details {
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+        }
+
+        .privacy-level {
+            padding: clamp(2px, 0.5vw, 3px) clamp(6px, 1.5vw, 8px);
+            border-radius: 12px;
+            font-size: clamp(0.7em, 1.2vw, 0.8em);
+            font-weight: bold;
+            background-color: var(--privacy-color);
+            color: white;
+        }
+
+        .proof-container {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .proof-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .proof-step {
+            background: white;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: var(--border-radius);
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+            position: relative;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .proof-step:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .proof-step::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            width: 20px;
+            height: 2px;
+            background: var(--privacy-color);
+        }
+
+        .proof-step:first-child::before {
+            display: none;
+        }
+
+        .proof-step-number {
+            position: absolute;
+            left: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            background: var(--privacy-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(0.7em, 1.2vw, 0.8em);
+        }
+
+        .proof-step-title {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: clamp(4px, 1vw, 5px);
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .proof-step-description {
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+        }
+
+        .verification-result {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            text-align: center;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .verification-result:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .verification-status {
+            font-size: clamp(1.1em, 2.2vw, 1.2em);
+            font-weight: bold;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .status-verified {
+            color: var(--success-color);
+        }
+
+        .status-invalid {
+            color: var(--error-color);
+        }
+
+        .privacy-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+            gap: clamp(10px, 2vw, 15px);
+            margin: clamp(15px, 3vw, 20px) 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: var(--border-radius);
+            text-align: center;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-title {
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+            margin-bottom: clamp(4px, 1vw, 5px);
+        }
+
+        .metric-value {
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+            color: var(--privacy-color);
+            font-weight: bold;
+            font-family: 'Consolas', monospace;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .button {
+                margin-right: 0;
+            }
+
+            .privacy-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .proof-step::before,
+            .proof-step-number {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Privacy & Zero-Knowledge Proofs</h1>
+            <p class="experiment-description">Understanding blockchain privacy through zero-knowledge proofs and private
+                transactions</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="privacy-panel">
+                <h2 class="panel-title">Privacy Controls</h2>
+                <div class="privacy-controls">
+                    <div class="control-group">
+                        <label for="privacyLevel">Privacy Level</label>
+                        <select id="privacyLevel" onchange="updatePrivacyLevel()">
+                            <option value="low">Low (Basic)</option>
+                            <option value="medium">Medium (Enhanced)</option>
+                            <option value="high">High (Zero-Knowledge)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="transactionAmount">Transaction Amount</label>
+                        <input type="number" id="transactionAmount" min="0.01" step="0.01" value="1.00">
+                    </div>
+                    <button class="button" onclick="generateProof()" id="generateProofBtn">
+                        <span class="button-text">Generate Zero-Knowledge Proof</span>
+                    </button>
+                    <div class="error-message" id="proofError"></div>
+                </div>
+                <div class="privacy-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Total Private Transactions</div>
+                        <div class="metric-value" id="totalPrivateTx">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Average Privacy Level</div>
+                        <div class="metric-value" id="avgPrivacyLevel">0%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Verification Success Rate</div>
+                        <div class="metric-value" id="verificationRate">0%</div>
+                    </div>
+                </div>
+                <div class="privacy-visualization" id="privacyVisualization">
+                    <div class="privacy-layer"></div>
+                    <div class="privacy-overlay"></div>
+                </div>
+                <div class="transaction-container" id="transactionContainer">
+                    
+                </div>
+            </div>
+
+            <div class="proof-panel">
+                <h2 class="panel-title">Zero-Knowledge Proofs</h2>
+                <div class="proof-container" id="proofContainer">
+                    <div class="proof-step">
+                        <div class="proof-step-number">1</div>
+                        <div class="proof-step-title">Commitment Phase</div>
+                        <div class="proof-step-description">
+                            The prover commits to a secret value without revealing it
+                        </div>
+                    </div>
+                    <div class="proof-step">
+                        <div class="proof-step-number">2</div>
+                        <div class="proof-step-title">Challenge Phase</div>
+                        <div class="proof-step-description">
+                            The verifier sends a random challenge to the prover
+                        </div>
+                    </div>
+                    <div class="proof-step">
+                        <div class="proof-step-number">3</div>
+                        <div class="proof-step-title">Response Phase</div>
+                        <div class="proof-step-description">
+                            The prover responds to the challenge without revealing the secret
+                        </div>
+                    </div>
+                </div>
+                <div class="verification-result" id="verificationResult">
+                    <div class="verification-status">Verification Status</div>
+                    <div id="verificationDetails">No proof to verify</div>
+                </div>
+                <div class="privacy-log" id="privacyLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class PrivateTransaction {
+            constructor(amount, privacyLevel) {
+                this.id = Math.random().toString(36).substr(2, 9);
+                this.amount = amount;
+                this.privacyLevel = privacyLevel;
+                this.timestamp = Date.now();
+                this.status = 'pending';
+                this.proof = null;
+            }
+
+            generateProof() {
+                const commitment = CryptoJS.SHA256(this.id + this.amount).toString();
+                const challenge = CryptoJS.SHA256(commitment + Date.now()).toString();
+                const response = CryptoJS.SHA256(challenge + this.id).toString();
+
+                this.proof = {
+                    commitment,
+                    challenge,
+                    response,
+                    verified: false
+                };
+            }
+
+            verifyProof() {
+                if (!this.proof) return false;
+
+                const expectedResponse = CryptoJS.SHA256(this.proof.challenge + this.id).toString();
+                this.proof.verified = expectedResponse === this.proof.response;
+                return this.proof.verified;
+            }
+        }
+
+        class PrivacySystem {
+            constructor() {
+                this.transactions = [];
+                this.totalPrivateTx = 0;
+                this.avgPrivacyLevel = 0;
+                this.verificationRate = 0;
+            }
+
+            addTransaction(transaction) {
+                this.transactions.push(transaction);
+                this.totalPrivateTx++;
+                this.updateMetrics();
+            }
+
+            updateMetrics() {
+                const privacyLevels = {
+                    'low': 0.3,
+                    'medium': 0.6,
+                    'high': 1.0
+                };
+
+                this.avgPrivacyLevel = this.transactions.reduce((sum, tx) =>
+                    sum + privacyLevels[tx.privacyLevel], 0) / this.transactions.length * 100;
+
+                const verifiedCount = this.transactions.filter(tx =>
+                    tx.proof && tx.proof.verified).length;
+                this.verificationRate = (verifiedCount / this.totalPrivateTx) * 100;
+            }
+        }
+
+        let privacySystem = new PrivacySystem();
+
+        function createPrivateTransaction() {
+            const amount = parseInt(document.getElementById('transactionAmount').value);
+            const privacyLevel = document.getElementById('privacyLevel').value;
+
+            const transaction = new PrivateTransaction(amount, privacyLevel);
+            transaction.generateProof();
+            transaction.verifyProof();
+
+            privacySystem.addTransaction(transaction);
+            updateTransactionDisplay();
+            updatePrivacyVisualization();
+            addLogEntry(`Created private transaction (${privacyLevel} privacy)`, 'privacy');
+        }
+
+        function updateTransactionDisplay() {
+            const container = document.getElementById('transactionContainer');
+            container.innerHTML = '';
+
+            privacySystem.transactions.slice(-5).forEach(tx => {
+                const div = document.createElement('div');
+                div.className = `transaction ${tx.privacyLevel}`;
+                div.innerHTML = `
+                    <div class="transaction-header">
+                        <span class="transaction-amount">${tx.amount}</span>
+                        <span class="privacy-level">${tx.privacyLevel}</span>
+                    </div>
+                    <div class="transaction-details">
+                        <div>ID: ${tx.id}</div>
+                        <div>Status: ${tx.status}</div>
+                        <div>Proof: ${tx.proof ? (tx.proof.verified ? 'Verified' : 'Invalid') : 'None'}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            updateMetricsDisplay();
+        }
+
+        function updateMetricsDisplay() {
+            document.getElementById('totalPrivateTx').textContent =
+                privacySystem.totalPrivateTx;
+            document.getElementById('avgPrivacyLevel').textContent =
+                `${privacySystem.avgPrivacyLevel.toFixed(1)}%`;
+            document.getElementById('verificationRate').textContent =
+                `${privacySystem.verificationRate.toFixed(1)}%`;
+        }
+
+        function updatePrivacyVisualization() {
+            const visualization = document.getElementById('privacyVisualization');
+            const layer = visualization.querySelector('.privacy-layer');
+            const overlay = visualization.querySelector('.privacy-overlay');
+
+            const privacyLevels = {
+                'low': 0.3,
+                'medium': 0.6,
+                'high': 1.0
+            };
+
+            const avgLevel = privacySystem.avgPrivacyLevel / 100;
+            layer.style.opacity = avgLevel;
+            overlay.style.opacity = 0.5 * avgLevel;
+        }
+
+        function updatePrivacyLevel() {
+            const level = document.getElementById('privacyLevel').value;
+            addLogEntry(`Privacy level updated to ${level}`, 'privacy');
+        }
+
+        function addLogEntry(message, type = '') {
+            const log = document.getElementById('privacyLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        async function generateProof() {
+            setLoading('generateProofBtn', true);
+
+            try {
+                const amount = parseFloat(document.getElementById('transactionAmount').value);
+                if (isNaN(amount) || amount <= 0) {
+                    throw new Error('Please enter a valid transaction amount');
+                }
+
+                const privacyLevel = document.getElementById('privacyLevel').value;
+                // Simulate proof generation
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                addProofStep('Generated commitment', 'Created a cryptographic commitment to the transaction amount');
+                addProofStep('Created proof', 'Generated zero-knowledge proof of transaction validity');
+                addProofStep('Verified proof', 'Successfully verified the proof');
+
+                updateVerificationStatus(true);
+                addTransaction(amount, privacyLevel);
+            } catch (error) {
+                showError('proofError', error.message);
+                updateVerificationStatus(false);
+            } finally {
+                setLoading('generateProofBtn', false);
+            }
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'g') {
+                generateProof();
+            }
+        });
+
+        // Initialize the privacy system
+        updatePrivacyVisualization();
+        addLogEntry('Privacy system initialized', 'privacy');
+    </script>
+</body>
+
+</html>

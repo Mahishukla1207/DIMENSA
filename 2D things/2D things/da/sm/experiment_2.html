@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Data Import/Export Simulator - Data Analytics Lab</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f4f7f8;
+    }
+    input, button {
+      margin: 10px 5px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+      width: 100%;
+      background: white;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 8px 12px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🧪 Data Import/Export Simulator</h1>
+
+<input type="file" id="fileInput" accept=".csv, .txt" />
+<button onclick="downloadCSV()">Download as CSV</button>
+
+<table id="dataTable">
+  <thead>
+    <tr id="headerRow"></tr>
+  </thead>
+  <tbody id="bodyRows"></tbody>
+</table>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const headerRow = document.getElementById('headerRow');
+  const bodyRows = document.getElementById('bodyRows');
+
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const text = event.target.result;
+      loadTable(text);
+    };
+    reader.readAsText(file);
+  });
+
+  function loadTable(text) {
+    const lines = text.split('\n').filter(Boolean);
+    headerRow.innerHTML = '';
+    bodyRows.innerHTML = '';
+
+    if (lines.length) {
+      const headers = lines[0].split(',');
+      headers.forEach(h => {
+        const th = document.createElement('th');
+        th.innerText = h.trim();
+        headerRow.appendChild(th);
+      });
+
+      for (let i = 1; i < lines.length; i++) {
+        const tr = document.createElement('tr');
+        const cells = lines[i].split(',');
+        cells.forEach(c => {
+          const td = document.createElement('td');
+          td.innerText = c.trim();
+          tr.appendChild(td);
+        });
+        bodyRows.appendChild(tr);
+      }
+    }
+  }
+
+  function downloadCSV() {
+    let csvContent = "";
+    const rows = document.querySelectorAll("table tr");
+    rows.forEach(row => {
+      const cols = row.querySelectorAll("td, th");
+      const rowData = [];
+      cols.forEach(col => rowData.push(col.innerText));
+      csvContent += rowData.join(",") + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'exported_data.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+</script>
+
+</body>
+</html>

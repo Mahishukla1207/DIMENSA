@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Plot Visualizer</title>
+  <script src="assets/chart.min.js"></script>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    /* Global Styles */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f4f8;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+    .container:hover {
+      transform: scale(1.02);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 28px;
+      color: #2c3e50;
+      font-weight: 700;
+    }
+    p {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+    /* Textarea Styles */
+    textarea {
+      width: 100%;
+      padding: 15px;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      resize: none;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+      outline: none;
+    }
+    textarea:focus {
+      border-color: #1976d2;
+      box-shadow: 0 0 8px rgba(25, 118, 210, 0.5);
+    }
+    /* Button Styles */
+    button {
+      background: #1976d2;
+      color: white;
+      padding: 15px 30px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: background 0.3s ease;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button:hover {
+      background: #1565c0;
+    }
+    /* Select Styles */
+    select {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      transition: border 0.3s ease;
+      margin-bottom: 20px;
+    }
+    select:focus {
+      border-color: #1976d2;
+    }
+    /* Canvas Styles */
+    #plotCanvas {
+      width: 100%;
+      height: 400px;
+      margin-top: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    /* Media Queries for Responsiveness */
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      button {
+        padding: 12px 25px;
+      }
+      textarea {
+        font-size: 13px;
+      }
+      select {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Plot Visualizer</h1>
+
+    <p>Enter your data points (x,y) separated by commas, one pair per line:</p>
+
+    <textarea id="dataInput" placeholder="1,3\n2,6\n3,9\n4,12\n5,15"></textarea>
+
+    <p>Select Plot Type:</p>
+    <select id="plotType">
+      <option value="line">Line</option>
+      <option value="bar">Vertical Bar</option>
+      <option value="horizontalBar">Horizontal Bar</option>
+      <option value="scatter">Scatter</option>
+      <option value="pie">Pie</option>
+      <option value="area">Area</option>
+      <option value="histogram">Histogram (Bar)</option>
+      <option value="stem">Stem (Scatter)</option>
+      <option value="step">Step Line</option>
+      <option value="stack">Stacked Bar</option>
+    </select>
+
+    <button onclick="plotGraph()">Plot Graph</button>
+
+    <canvas id="plotCanvas"></canvas>
+  </div>
+
+  <script>
+    let plotChart;
+
+    function plotGraph() {
+      const rawData = document.getElementById('dataInput').value.trim().split('\n');
+      const plotType = document.getElementById('plotType').value;
+      const x = [], y = [];
+
+      rawData.forEach(line => {
+        const [xi, yi] = line.split(',').map(Number);
+        if (!isNaN(xi) && !isNaN(yi)) {
+          x.push(xi);
+          y.push(yi);
+        }
+      });
+
+      if (plotChart) {
+        plotChart.destroy();
+      }
+
+      const ctx = document.getElementById('plotCanvas').getContext('2d');
+
+      let chartType = plotType;
+      if (plotType === "horizontalBar") chartType = "bar";  // Handle manually
+      if (plotType === "area") chartType = "line";          // Area is just line + fill
+      if (plotType === "histogram") chartType = "bar";      // Histogram is bar
+      if (plotType === "stem") chartType = "scatter";       // Stem = scatter
+      if (plotType === "step") chartType = "line";          // Step = line with step mode
+      if (plotType === "stack") chartType = "bar";          // Stack = bar with stack
+
+      plotChart = new Chart(ctx, {
+        type: chartType,
+        data: {
+          labels: x,
+          datasets: [{
+            label: 'Custom Data',
+            data: y,
+            backgroundColor: 'rgba(25, 118, 210, 0.6)',
+            borderColor: '#1976d2',
+            borderWidth: 2,
+            fill: plotType === "area" ? true : false,
+            stepped: plotType === "step",
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2,
+          indexAxis: plotType === "horizontalBar" ? 'y' : 'x',
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'X-axis',
+                color: '#333',
+                font: { size: 16 }
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Y-axis',
+                color: '#333',
+                font: { size: 16 }
+              },
+              stacked: plotType === "stack",
+            }
+          },
+          plugins: {
+            legend: {
+              display: true
+            }
+          }
+        }
+      });
+
+      if (plotType === "pie") {
+        plotChart.config.type = "pie";
+        plotChart.data = {
+          labels: x.map(String),
+          datasets: [{
+            data: y,
+            backgroundColor: [
+              '#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#4caf50',
+              '#f44336', '#3f51b5', '#00bcd4', '#ff9800', '#9c27b0'
+            ]
+          }]
+        };
+        plotChart.update();
+      }
+    }
+  </script>
+
+</body>
+</html>

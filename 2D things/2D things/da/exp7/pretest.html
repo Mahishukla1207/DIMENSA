@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtual Labs</title>
+    <style>
+        body {
+            margin: 0;
+
+            height: 100px;
+            padding: 50px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+
+            zoom: 1.40;
+
+        }
+
+        h1 {
+            font-size: 30px;
+
+            color: black;
+        }
+
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border-bottom: 3px solid orange;
+            padding: 10px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-left img {
+            height: 50px;
+            margin-right: 10px;
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-right: 10px;
+        }
+
+        .navbar-right span {
+            color: gold;
+            font-size: 20px;
+        }
+
+        .navbar-right button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 12px;
+        }
+
+        .container {
+            display: flex;
+            height: 110vh;
+            padding-top: 70px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .sidebar {
+            margin-top: 30px;
+            width: 170px;
+            background-color: #f5f5f5;
+            padding: 20px;
+            box-shadow: 4px 0 10px rgba(41, 3, 167, 0.1);
+            position: fixed;
+            top: 60px;
+            left: 0;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #0066ff;
+            font-weight: bold;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .content {
+            position: fixed;
+            margin-left: 180px;
+            top: 90px;
+            padding: 30px;
+            overflow-y: auto;
+            height: calc(100vh - 60px);
+        }
+
+
+
+        .card {
+            background: white;
+            width: 650px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h1 {
+            margin-top: 0;
+            color: black;
+        }
+
+        .card p {
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* Modal Styles */
+        .modal1 {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 2000;
+
+            width: 100%;
+            height: 1000px;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2000;
+
+            width: 100%;
+            height: 1200px;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px 20px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            text-align: left;
+
+        }
+
+
+
+        .modal-logo img {
+            width: 150px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .stars {
+            font-size: 30px;
+            margin: 15px 0;
+        }
+
+        .star {
+            color: gray;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .star.selected {
+            color: orange;
+        }
+
+        .modal-button {
+            padding: 10px 24px;
+            border: none;
+            font-size: 16px;
+            border-radius: 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        .submit-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #888;
+            color: white;
+        }
+
+
+
+        textarea,
+        input[type="email"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .my-section {
+            margin-left: 200px;
+            margin-right: 20px;
+
+        }
+
+        .diagram-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        #screenshotPreview {
+            margin-top: 10px;
+            max-width: 100%;
+            display: none;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <div class="navbar-left">
+            <img src="logo.jpg" alt="Virtual Labs Logo" />
+            <h2>Virtual Labs</h2>
+        </div>
+        <div class="navbar-right">
+            <button onclick="openModal()">Rate Me</button>
+            <button onclick="openBugModal()">Report a Bug</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <a href="aim.html">Aim</a>
+            <a href="theory.html">Theory</a>
+            <a href="pretest.html">Pretest</a>
+            <a href="procedure.html">Procedure</a>
+            <a href="/da/sm/experiment_7.html">Simulation</a>
+            <a href="posttest.html"><u>Posttest</u></a>
+            <a href="feedback.html">Feedback</a>
+        </div>
+        <main>
+            <section class="my-section">
+                <br>
+                <center>
+                    <h1>Pretest MCQs</h1>
+                </center>
+                <hr style="height: 2.5px; background-color: black; border: none;">
+                <h3>Answer the multiple-choice questions below to test your understanding!</h3>
+
+                <section id="pretest">
+                    <br>
+                    <h2>Multiple-Choice Questions:</h2>
+
+                    <form id="quiz">
+                        <ol>
+                            <li>
+                                <p>Stock prediction is a:</p>
+                                <label><input type="radio" name="q1" value="a"> Classification problem</label><br>
+                                <label><input type="radio" name="q1" value="b"> Regression problem</label><br>
+                                <label><input type="radio" name="q1" value="c"> Clustering problem</label><br>
+                                <label><input type="radio" name="q1" value="d"> None</label>
+                            </li>
+                            <br>
+                            <li>
+                                <p>Which library is used for time series analysis?</p>
+                                <label><input type="radio" name="q2" value="a"> pandas</label><br>
+                                <label><input type="radio" name="q2" value="b"> statsmodels</label><br>
+                                <label><input type="radio" name="q2" value="c"> scikit-learn</label><br>
+                                <label><input type="radio" name="q2" value="d"> All of the above</label>
+                            </li>
+                            <br>
+                            <li>
+                                <p>What is the target variable in stock prediction?</p>
+                                <label><input type="radio" name="q3" value="a"> Date</label><br>
+                                <label><input type="radio" name="q3" value="b"> Price</label><br>
+                                <label><input type="radio" name="q3" value="c"> Volume</label><br>
+                                <label><input type="radio" name="q3" value="d"> Ticker</label>
+                            </li>
+                            <br>
+                            <li>
+                                <p>Which function visualizes stock trends?</p>
+                                <label><input type="radio" name="q4" value="a"> plot()</label><br>
+                                <label><input type="radio" name="q4" value="b"> scatter()</label><br>
+                                <label><input type="radio" name="q4" value="c"> bar()</label><br>
+                                <label><input type="radio" name="q4" value="d"> pie()</label>
+                            </li>
+                            <br>
+                            <li>
+                                <p>Which method splits data into train and test?</p>
+                                <label><input type="radio" name="q5" value="a"> train_test_split()</label><br>
+                                <label><input type="radio" name="q5" value="b"> split_data()</label><br>
+                                <label><input type="radio" name="q5" value="c"> divide()</label><br>
+                                <label><input type="radio" name="q5" value="d"> None</label>
+                            </li>
+                            <br>
+                        </ol>
+                        <button type="submit">Submit</button>
+                        <br><br><br><br>
+                    </form>
+                </section>
+            </section>
+        </main>
+
+    </div>
+
+    
+    <div class="modal1" id="rateModal">
+        <div class="modal-content">
+            <div class="modal-logo">
+                <img src="logo.jpg" alt="V-Lab Logo">
+            </div>
+            <h2>Rate</h2>
+            <div class="stars" id="starContainer">
+                <span class="star" data-value="1">&#9733;</span>
+                <span class="star" data-value="2">&#9733;</span>
+                <span class="star" data-value="3">&#9733;</span>
+                <span class="star" data-value="4">&#9733;</span>
+                <span class="star" data-value="5">&#9733;</span>
+            </div>
+            <button class="modal-button submit-btn" onclick="submitRating()">Submit</button>
+            <button class="modal-button cancel-btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    
+    <div class="modal" id="bugModal">
+        <div class="modal-content">
+            <h2>Bug Report</h2>
+            <form id="bugForm">
+                <p><strong>Please select the Issues</strong></p>
+                <label><input type="checkbox" name="issue" value="Simulation Not Working"> Simulation Not
+                    Working</label><br>
+                <label><input type="checkbox" name="issue" value="Incorrect Results/Observations"> Incorrect
+                    Results/Observations</label><br>
+                <label><input type="checkbox" name="issue" value="Insufficient/Incorrect Instructions">
+                    Insufficient/Incorrect Instructions</label><br>
+                <label><input type="checkbox" name="issue" value="Page Not Loading"> Page Not Loading</label><br>
+                <label><input type="checkbox" name="issue" value="Content Not Visible"> Content Not Visible</label><br>
+                <label><input type="checkbox" name="issue" value="Incorrect Content"> Incorrect Content</label><br><br>
+
+                <label><strong>Please describe your issue</strong></label>
+                <textarea id="description" rows="3" placeholder="Enter description here"></textarea>
+
+                <label><strong>Your Email (Optional)</strong></label>
+                <input type="email" id="email" placeholder="Enter email here for communication">
+
+                <label><input type="checkbox" id="screenshotCheckbox"> Include Screenshot</label>
+                <div id="screenshotPreviewContainer">
+                    <img id="screenshotPreview" alt="Screenshot Preview">
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="modal-button cancel-btn" onclick="closeBugModal()">Close</button>
+                    <button type="button" class="modal-button submit-btn" onclick="submitBug()">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <script>
+        document.getElementById('quiz').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const answers = {
+                q1: 'b',
+                q2: 'd',
+                q3: 'b',
+                q4: 'a',
+                q5: 'a'
+            };
+
+            const form = event.target;
+            const questions = form.querySelectorAll('ol > li');
+
+            // Remove previous icons and highlights
+            form.querySelectorAll('label').forEach(label => {
+                label.classList.remove('correct', 'incorrect');
+                const existingIcon = label.querySelector('.icon');
+                if (existingIcon) existingIcon.remove();
+            });
+
+            questions.forEach(question => {
+                const inputs = question.querySelectorAll('input[type="radio"]');
+                if (inputs.length === 0) return;
+
+                const questionName = inputs[0].name;
+                const selected = form.querySelector(`input[name="${questionName}"]:checked`);
+                const correct = answers[questionName];
+
+                if (selected) {
+                    const label = selected.parentElement;
+                    const icon = document.createElement('span');
+                    icon.classList.add('icon');
+
+                    if (selected.value === correct) {
+                        label.classList.add('correct');
+                        icon.textContent = "✅";
+                    } else {
+                        label.classList.add('incorrect');
+                        icon.textContent = "❌";
+                    }
+
+                    label.appendChild(icon);
+                }
+            });
+        });
+        const stars = document.querySelectorAll('.star');
+        let selectedRating = 0;
+
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                selectedRating = parseInt(star.getAttribute('data-value'));
+                updateStars(selectedRating);
+            });
+        });
+
+        function updateStars(rating) {
+            stars.forEach(star => {
+                const value = parseInt(star.getAttribute('data-value'));
+                star.classList.toggle('selected', value <= rating);
+            });
+        }
+
+        function openModal() {
+            document.getElementById("rateModal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("rateModal").style.display = "none";
+            selectedRating = 0;
+            updateStars(0);
+        }
+
+        function openBugModal() {
+            document.getElementById("bugModal").style.display = "block";
+        }
+
+        function closeBugModal() {
+            document.getElementById("bugModal").style.display = "none";
+            document.getElementById("bugForm").reset();
+            const img = document.getElementById("screenshotPreview");
+            img.src = "";
+            img.style.display = "none";
+        }
+
+        document.getElementById("screenshotCheckbox").addEventListener("change", function () {
+            const modal = document.getElementById("bugModal");
+            const img = document.getElementById("screenshotPreview");
+
+            if (this.checked) {
+                modal.style.display = "none";
+                setTimeout(() => {
+                    html2canvas(document.body).then(canvas => {
+                        img.src = canvas.toDataURL("image/png");
+                        img.style.display = "block";
+                        modal.style.display = "block";
+                    });
+                }, 300);
+            } else {
+                img.src = "";
+                img.style.display = "none";
+            }
+        });
+
+        function submitBug() {
+            const checkedIssues = Array.from(document.querySelectorAll('input[name="issue"]:checked')).map(cb => cb.value);
+            const description = document.getElementById("description").value;
+            const email = document.getElementById("email").value;
+            const includeScreenshot = document.getElementById("screenshotCheckbox").checked;
+            const screenshot = includeScreenshot ? document.getElementById("screenshotPreview").src : null;
+
+            if (checkedIssues.length === 0 && !description.trim()) {
+                alert("Please select at least one issue or describe the issue.");
+                return;
+            }
+
+            console.log({
+                issues: checkedIssues,
+                description,
+                email,
+                screenshot
+            });
+
+            alert("Bug submitted successfully!");
+            closeBugModal();
+        }
+
+        function submitRating() {
+            if (selectedRating > 0) {
+                alert(`You rated ${selectedRating} star(s)!`);
+                closeModal();
+            } else {
+                alert("Please select a rating before submitting.");
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monoalphabetic Cipher</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #1a73e8;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #1557b0;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            min-height: 50px;
+        }
+
+        .substitution-map {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .substitution-map h3 {
+            margin-top: 0;
+            color: #1a73e8;
+        }
+
+        .substitution-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .substitution-pair {
+            text-align: center;
+            padding: 5px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .substitution-pair .original {
+            color: #1a73e8;
+            font-weight: bold;
+        }
+
+        .substitution-pair .arrow {
+            color: #666;
+            margin: 0 2px;
+        }
+
+        .substitution-pair .substituted {
+            color: #1557b0;
+            font-weight: bold;
+        }
+
+        .explanation {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f0fe;
+            border-radius: 4px;
+            color: #1a73e8;
+        }
+
+        .process {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .process pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Monoalphabetic Cipher</h1>
+
+        <div class="substitution-map">
+            <h3>Substitution Map:</h3>
+            <div class="substitution-grid" id="substitutionGrid">
+                
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="message">Enter your message:</label>
+            <textarea id="message" rows="4" placeholder="Type your message here..."></textarea>
+        </div>
+
+        <button onclick="encryptMessage()">Encrypt Message</button>
+
+        <div class="result" id="result">
+            Encrypted message will appear here...
+        </div>
+
+        <div class="process" id="process">
+            <h3>Encryption Process:</h3>
+            <pre id="processText">The encryption process will be shown here...</pre>
+        </div>
+
+        <div class="explanation">
+            <h3>How it works:</h3>
+            <p>The Monoalphabetic Cipher uses a fixed substitution map to encrypt messages. Each letter is always
+                replaced by the same letter:</p>
+            <ul>
+                <li>A always becomes Q</li>
+                <li>B always becomes M</li>
+                <li>C always becomes P</li>
+                <li>...and so on!</li>
+            </ul>
+            <p>For example, if you type "HELLO":</p>
+            <ul>
+                <li>H → L</li>
+                <li>E → K</li>
+                <li>L → X</li>
+                <li>O → W</li>
+                <li>Result: LKXXW</li>
+            </ul>
+            <p>Note: The substitution map stays the same for every message!</p>
+        </div>
+    </div>
+
+    <script>
+        // Generate a random substitution map
+        function generateSubstitutionMap() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+            const shuffled = [...letters].sort(() => Math.random() - 0.5);
+            const map = {};
+            letters.forEach((letter, index) => {
+                map[letter] = shuffled[index];
+            });
+            return map;
+        }
+
+        // Fixed substitution map (generated once)
+        const substitutionMap = generateSubstitutionMap();
+
+        // Generate substitution grid on page load
+        window.onload = function () {
+            const grid = document.getElementById('substitutionGrid');
+            for (let letter in substitutionMap) {
+                const pair = document.createElement('div');
+                pair.className = 'substitution-pair';
+                pair.innerHTML = `<span class="original">${letter}</span><span class="arrow">→</span><span class="substituted">${substitutionMap[letter]}</span>`;
+                grid.appendChild(pair);
+            }
+        };
+
+        function encryptMessage() {
+            const message = document.getElementById('message').value.toUpperCase();
+            const result = document.getElementById('result');
+            const processText = document.getElementById('processText');
+
+            if (!message) {
+                result.textContent = 'Please enter a message!';
+                return;
+            }
+
+            let encrypted = '';
+            let process = 'Original message: ' + message + '\n\nEncryption process:\n';
+
+            for (let i = 0; i < message.length; i++) {
+                let char = message[i];
+
+                if (char.match(/[A-Z]/)) {
+                    let substituted = substitutionMap[char];
+                    encrypted += substituted;
+                    process += `${char} → ${substituted}\n`;
+                } else {
+                    encrypted += char;
+                    process += `${char} (not a letter, unchanged)\n`;
+                }
+            }
+
+            result.textContent = encrypted;
+            processText.textContent = process;
+        }
+    </script>
+</body>
+
+</html>

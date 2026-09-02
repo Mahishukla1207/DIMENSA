@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 1: Blockchain Basics & Hashing</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .blockchain-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 40px);
+        }
+
+        .block {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .block:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .block::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--secondary-color);
+            opacity: 0;
+            transition: opacity var(--transition-speed) ease;
+        }
+
+        .block:hover::after {
+            opacity: 1;
+        }
+
+        .block-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .block-number {
+            font-size: clamp(1em, 2vw, 1.2em);
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .block-hash {
+            font-family: 'Consolas', monospace;
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            color: var(--accent-color);
+            word-break: break-all;
+            background: #f8f9fa;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .block-data {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .input-group {
+            margin-bottom: clamp(15px, 3vw, 20px);
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: clamp(8px, 2vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: border-color var(--transition-speed) ease;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+
+        .button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .controls {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: clamp(20px, 4vw, 30px);
+            display: grid;
+            gap: 15px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .button.mine {
+            background-color: var(--accent-color);
+        }
+
+        .button.mine:hover {
+            background-color: #c0392b;
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: 5px;
+            margin: clamp(15px, 3vw, 20px) 0;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .info-box h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            list-style-position: inside;
+            margin-left: 10px;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .blockchain-container {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Blockchain Basics & Hashing</h1>
+            <p class="experiment-description">Understanding blocks, hashing (SHA-256), and basic blockchain structure
+            </p>
+        </div>
+
+        <div class="info-box">
+            <h3>What is a Blockchain?</h3>
+            <p>A blockchain is a distributed ledger that consists of blocks linked together using cryptographic hashes.
+                Each block contains:</p>
+            <ul>
+                <li>Previous block's hash</li>
+                <li>Timestamp</li>
+                <li>Data</li>
+                <li>Current block's hash</li>
+            </ul>
+        </div>
+
+        <div class="controls">
+            <div class="input-group">
+                <label for="blockData">Enter Block Data:</label>
+                <textarea id="blockData" rows="3" placeholder="Enter data for the new block..."
+                    aria-label="Block data input"></textarea>
+                <div class="error-message" id="blockDataError"></div>
+            </div>
+            <div class="button-group">
+                <button class="button" onclick="addBlock()" id="addBlockBtn">
+                    <span class="button-text">Add New Block</span>
+                </button>
+                <button class="button mine" onclick="mineBlock()" id="mineBlockBtn">
+                    <span class="button-text">Mine Block</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="blockchain-container" id="blockchain">
+            
+        </div>
+    </div>
+
+    <script>
+        class Block {
+            constructor(timestamp, data, previousHash = '') {
+                this.timestamp = timestamp;
+                this.data = data;
+                this.previousHash = previousHash;
+                this.hash = this.calculateHash();
+                this.nonce = 0;
+            }
+
+            calculateHash() {
+                return CryptoJS.SHA256(
+                    this.previousHash +
+                    this.timestamp +
+                    JSON.stringify(this.data) +
+                    this.nonce
+                ).toString();
+            }
+
+            mineBlock(difficulty) {
+                const target = Array(difficulty + 1).join('0');
+                let attempts = 0;
+                const maxAttempts = 100000; // Add a maximum attempt limit
+
+                while (this.hash.substring(0, difficulty) !== target && attempts < maxAttempts) {
+                    this.nonce++;
+                    this.hash = this.calculateHash();
+                    attempts++;
+                }
+
+                if (attempts >= maxAttempts) {
+                    throw new Error('Mining timeout - difficulty might be too high');
+                }
+
+                console.log(`Block mined: ${this.hash} after ${attempts} attempts`);
+                return this.hash;
+            }
+        }
+
+        class Blockchain {
+            constructor() {
+                this.chain = [this.createGenesisBlock()];
+                this.difficulty = 2; // Reduced difficulty for better performance
+            }
+
+            createGenesisBlock() {
+                return new Block(Date.now(), "Genesis Block", "0");
+            }
+
+            getLatestBlock() {
+                return this.chain[this.chain.length - 1];
+            }
+
+            addBlock(newBlock) {
+                newBlock.previousHash = this.getLatestBlock().hash;
+                newBlock.mineBlock(this.difficulty);
+                this.chain.push(newBlock);
+            }
+
+            isChainValid() {
+                for (let i = 1; i < this.chain.length; i++) {
+                    const currentBlock = this.chain[i];
+                    const previousBlock = this.chain[i - 1];
+
+                    if (currentBlock.hash !== currentBlock.calculateHash()) {
+                        return false;
+                    }
+
+                    if (currentBlock.previousHash !== previousBlock.hash) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+
+        let blockchain = new Blockchain();
+        let isMining = false;
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        async function addBlock() {
+            const blockData = document.getElementById('blockData').value.trim();
+
+            if (!blockData) {
+                showError('blockDataError', 'Please enter some data for the block');
+                return;
+            }
+
+            setLoading('addBlockBtn', true);
+
+            try {
+                const newBlock = new Block(Date.now(), blockData);
+                blockchain.addBlock(newBlock);
+                updateBlockchainDisplay();
+                document.getElementById('blockData').value = '';
+            } catch (error) {
+                showError('blockDataError', 'Error adding block: ' + error.message);
+            } finally {
+                setLoading('addBlockBtn', false);
+            }
+        }
+
+        async function mineBlock() {
+            if (isMining) return;
+
+            const latestBlock = blockchain.getLatestBlock();
+            if (!latestBlock) {
+                showError('blockDataError', 'No block available to mine');
+                return;
+            }
+
+            isMining = true;
+            setLoading('mineBlockBtn', true);
+
+            try {
+                // Create a new block with the same data but mine it
+                const newBlock = new Block(
+                    latestBlock.timestamp,
+                    latestBlock.data,
+                    latestBlock.previousHash
+                );
+
+                // Mine the block
+                newBlock.mineBlock(blockchain.difficulty);
+
+                // Update the blockchain
+                blockchain.chain[blockchain.chain.length - 1] = newBlock;
+
+                // Update the display
+                updateBlockchainDisplay();
+
+                // Show success message
+                const successMessage = `Block mined successfully!\nHash: ${newBlock.hash}\nNonce: ${newBlock.nonce}`;
+                alert(successMessage);
+            } catch (error) {
+                showError('blockDataError', 'Error mining block: ' + error.message);
+            } finally {
+                isMining = false;
+                setLoading('mineBlockBtn', false);
+            }
+        }
+
+        function updateBlockchainDisplay() {
+            const container = document.getElementById('blockchain');
+            container.innerHTML = '';
+
+            blockchain.chain.forEach((block, index) => {
+                const blockElement = document.createElement('div');
+                blockElement.className = 'block';
+                blockElement.innerHTML = `
+                    <div class="block-header">
+                        <div class="block-number">Block #${index}</div>
+                        <div class="block-hash" title="Block Hash">${block.hash}</div>
+                    </div>
+                    <div class="block-data">
+                        <strong>Timestamp:</strong> ${new Date(block.timestamp).toLocaleString()}<br>
+                        <strong>Previous Hash:</strong> ${block.previousHash}<br>
+                        <strong>Data:</strong> ${block.data}<br>
+                        <strong>Nonce:</strong> ${block.nonce}<br>
+                        <strong>Difficulty:</strong> ${blockchain.difficulty}
+                    </div>
+                `;
+                container.appendChild(blockElement);
+            });
+        }
+
+        // Initial display
+        updateBlockchainDisplay();
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                addBlock();
+            }
+        });
+
+        // Add input validation
+        document.getElementById('blockData').addEventListener('input', function () {
+            const errorElement = document.getElementById('blockDataError');
+            if (this.value.length > 1000) {
+                showError('blockDataError', 'Block data is too long (max 1000 characters)');
+                this.value = this.value.substring(0, 1000);
+            }
+        });
+    </script>
+</body>
+
+</html>

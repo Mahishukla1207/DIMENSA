@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 12: Security & Attack Vectors</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --security-color: #c0392b;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .attack-panel,
+        .defense-panel {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: clamp(10px, 2vw, 15px);
+            padding-bottom: clamp(5px, 1.5vw, 10px);
+            border-bottom: 2px solid var(--security-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .attack-controls {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+        }
+
+        .attack-type {
+            margin-bottom: clamp(15px, 3vw, 20px);
+            padding: clamp(12px, 2.5vw, 15px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .attack-type:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .attack-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .attack-name {
+            font-weight: bold;
+            color: var(--security-color);
+            font-size: clamp(1em, 1.5vw, 1.2em);
+        }
+
+        .attack-description {
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .attack-parameters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+            gap: clamp(8px, 1.5vw, 10px);
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .parameter-group {
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+        }
+
+        .parameter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            color: #666;
+        }
+
+        .parameter-group input,
+        .parameter-group select {
+            width: 100%;
+            padding: clamp(8px, 1.5vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .parameter-group input:focus,
+        .parameter-group select:focus {
+            border-color: var(--security-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.2);
+        }
+
+        .button {
+            background-color: var(--security-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #a93226;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .network-visualization {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            min-height: 200px;
+            position: relative;
+        }
+
+        .node {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: var(--secondary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .node.honest {
+            background: var(--success-color);
+        }
+
+        .node.malicious {
+            background: var(--accent-color);
+        }
+
+        .node.affected {
+            background: var(--warning-color);
+        }
+
+        .connection {
+            position: absolute;
+            height: 2px;
+            background: #ddd;
+            transform-origin: left center;
+        }
+
+        .connection.active {
+            background: var(--success-color);
+        }
+
+        .connection.attacked {
+            background: var(--accent-color);
+        }
+
+        .security-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            color: var(--security-color);
+            font-family: monospace;
+        }
+
+        .attack-log {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .log-entry.attack {
+            color: var(--accent-color);
+        }
+
+        .log-entry.defense {
+            color: var(--success-color);
+        }
+
+        .log-entry.info {
+            color: var(--security-color);
+        }
+
+        .defense-measures {
+            margin: 20px 0;
+        }
+
+        .defense-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .defense-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .defense-name {
+            font-weight: bold;
+            color: var(--success-color);
+        }
+
+        .defense-status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-active {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-inactive {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .defense-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .defense-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .defense-button {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .defense-button.activate {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .defense-button.deactivate {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .defense-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .node.attacking {
+            animation: pulse 1s infinite;
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .attack-parameters {
+                grid-template-columns: 1fr;
+            }
+
+            .security-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .defense-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Security & Attack Vectors</h1>
+            <p class="experiment-description">Understanding blockchain security through attack simulation and defense
+                mechanisms</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="attack-panel">
+                <h2 class="panel-title">Attack Simulation</h2>
+                <div class="attack-controls">
+                    <div class="attack-type">
+                        <div class="attack-header">
+                            <span class="attack-name">51% Attack</span>
+                        </div>
+                        <div class="attack-description">
+                            Simulate a majority hash power attack on the network
+                        </div>
+                        <div class="attack-parameters">
+                            <div class="parameter-group">
+                                <label>Attack Power (%)</label>
+                                <input type="range" id="attackPower" min="0" max="100" value="51">
+                            </div>
+                            <div class="parameter-group">
+                                <label>Duration (blocks)</label>
+                                <input type="number" id="attackDuration" min="1" max="100" value="10">
+                            </div>
+                        </div>
+                        <button class="button" onclick="simulate51Attack()">Launch Attack</button>
+                    </div>
+
+                    <div class="attack-type">
+                        <div class="attack-header">
+                            <span class="attack-name">Sybil Attack</span>
+                        </div>
+                        <div class="attack-description">
+                            Create multiple fake identities to influence the network
+                        </div>
+                        <div class="attack-parameters">
+                            <div class="parameter-group">
+                                <label>Number of Fake Nodes</label>
+                                <input type="number" id="fakeNodes" min="1" max="100" value="10">
+                            </div>
+                            <div class="parameter-group">
+                                <label>Attack Strategy</label>
+                                <select id="sybilStrategy">
+                                    <option value="random">Random Distribution</option>
+                                    <option value="clustered">Clustered Attack</option>
+                                    <option value="targeted">Targeted Attack</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="button" onclick="simulateSybilAttack()">Launch Attack</button>
+                    </div>
+
+                    <div class="attack-type">
+                        <div class="attack-header">
+                            <span class="attack-name">Double Spending</span>
+                        </div>
+                        <div class="attack-description">
+                            Attempt to spend the same funds multiple times
+                        </div>
+                        <div class="attack-parameters">
+                            <div class="parameter-group">
+                                <label>Transaction Amount</label>
+                                <input type="number" id="doubleSpendAmount" min="1" max="1000" value="100">
+                            </div>
+                            <div class="parameter-group">
+                                <label>Confirmation Blocks</label>
+                                <input type="number" id="confirmationBlocks" min="1" max="10" value="6">
+                            </div>
+                        </div>
+                        <button class="button" onclick="simulateDoubleSpend()">Launch Attack</button>
+                    </div>
+                </div>
+
+                <div class="network-visualization" id="networkVisualization">
+                    
+                </div>
+
+                <div class="security-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Network Health</div>
+                        <div class="metric-value" id="networkHealth">100%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Active Attacks</div>
+                        <div class="metric-value" id="activeAttacks">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Attack Success Rate</div>
+                        <div class="metric-value" id="attackSuccess">0%</div>
+                    </div>
+                </div>
+
+                <div class="attack-log" id="attackLog">
+                    
+                </div>
+            </div>
+
+            <div class="defense-panel">
+                <h2 class="panel-title">Defense Mechanisms</h2>
+                <div class="defense-measures">
+                    <div class="defense-card">
+                        <div class="defense-header">
+                            <span class="defense-name">Consensus Protection</span>
+                            <span class="defense-status status-active">Active</span>
+                        </div>
+                        <div class="defense-description">
+                            Enhanced consensus mechanism to detect and prevent majority attacks
+                        </div>
+                        <div class="defense-controls">
+                            <button class="defense-button activate"
+                                onclick="toggleDefense('consensus', true)">Activate</button>
+                            <button class="defense-button deactivate"
+                                onclick="toggleDefense('consensus', false)">Deactivate</button>
+                        </div>
+                    </div>
+
+                    <div class="defense-card">
+                        <div class="defense-header">
+                            <span class="defense-name">Node Authentication</span>
+                            <span class="defense-status status-active">Active</span>
+                        </div>
+                        <div class="defense-description">
+                            Identity verification system to prevent Sybil attacks
+                        </div>
+                        <div class="defense-controls">
+                            <button class="defense-button activate"
+                                onclick="toggleDefense('authentication', true)">Activate</button>
+                            <button class="defense-button deactivate"
+                                onclick="toggleDefense('authentication', false)">Deactivate</button>
+                        </div>
+                    </div>
+
+                    <div class="defense-card">
+                        <div class="defense-header">
+                            <span class="defense-name">Transaction Monitoring</span>
+                            <span class="defense-status status-active">Active</span>
+                        </div>
+                        <div class="defense-description">
+                            Real-time transaction analysis to detect double spending attempts
+                        </div>
+                        <div class="defense-controls">
+                            <button class="defense-button activate"
+                                onclick="toggleDefense('monitoring', true)">Activate</button>
+                            <button class="defense-button deactivate"
+                                onclick="toggleDefense('monitoring', false)">Deactivate</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="security-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Defense Coverage</div>
+                        <div class="metric-value" id="defenseCoverage">100%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Blocked Attacks</div>
+                        <div class="metric-value" id="blockedAttacks">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">System Integrity</div>
+                        <div class="metric-value" id="systemIntegrity">100%</div>
+                    </div>
+                </div>
+
+                <div class="attack-log" id="defenseLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Network {
+            constructor() {
+                this.nodes = new Map();
+                this.connections = new Set();
+                this.defenses = {
+                    consensus: true,
+                    authentication: true,
+                    monitoring: true
+                };
+                this.metrics = {
+                    networkHealth: 100,
+                    activeAttacks: 0,
+                    attackSuccess: 0,
+                    defenseCoverage: 100,
+                    blockedAttacks: 0,
+                    systemIntegrity: 100
+                };
+            }
+
+            addNode(id, type = 'honest') {
+                this.nodes.set(id, {
+                    type,
+                    status: 'active',
+                    connections: new Set()
+                });
+            }
+
+            addConnection(node1, node2) {
+                if (this.nodes.has(node1) && this.nodes.has(node2)) {
+                    this.nodes.get(node1).connections.add(node2);
+                    this.nodes.get(node2).connections.add(node1);
+                    this.connections.add(`${node1}-${node2}`);
+                }
+            }
+
+            updateNodeStatus(nodeId, status) {
+                if (this.nodes.has(nodeId)) {
+                    this.nodes.get(nodeId).status = status;
+                }
+            }
+
+            toggleDefense(defense, active) {
+                this.defenses[defense] = active;
+                this.updateMetrics();
+            }
+
+            updateMetrics() {
+                const totalNodes = this.nodes.size;
+                const activeNodes = Array.from(this.nodes.values())
+                    .filter(node => node.status === 'active').length;
+
+                this.metrics.networkHealth = (activeNodes / totalNodes) * 100;
+                this.metrics.defenseCoverage = Object.values(this.defenses)
+                    .filter(active => active).length / Object.keys(this.defenses).length * 100;
+
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                // Update metrics display
+                document.getElementById('networkHealth').textContent =
+                    `${this.metrics.networkHealth.toFixed(1)}%`;
+                document.getElementById('activeAttacks').textContent =
+                    this.metrics.activeAttacks;
+                document.getElementById('attackSuccess').textContent =
+                    `${this.metrics.attackSuccess.toFixed(1)}%`;
+                document.getElementById('defenseCoverage').textContent =
+                    `${this.metrics.defenseCoverage.toFixed(1)}%`;
+                document.getElementById('blockedAttacks').textContent =
+                    this.metrics.blockedAttacks;
+                document.getElementById('systemIntegrity').textContent =
+                    `${this.metrics.systemIntegrity.toFixed(1)}%`;
+
+                // Update network visualization
+                this.updateNetworkVisualization();
+            }
+
+            updateNetworkVisualization() {
+                const container = document.getElementById('networkVisualization');
+                container.innerHTML = '';
+
+                // Create nodes
+                this.nodes.forEach((node, id) => {
+                    const nodeElement = document.createElement('div');
+                    nodeElement.className = `node ${node.type} ${node.status}`;
+                    nodeElement.textContent = id;
+                    nodeElement.style.left = `${Math.random() * 80 + 10}%`;
+                    nodeElement.style.top = `${Math.random() * 80 + 10}%`;
+                    container.appendChild(nodeElement);
+                });
+
+                // Create connections
+                this.connections.forEach(connection => {
+                    const [node1, node2] = connection.split('-');
+                    const node1Element = container.querySelector(`.node:nth-child(${Array.from(this.nodes.keys()).indexOf(node1) + 1})`);
+                    const node2Element = container.querySelector(`.node:nth-child(${Array.from(this.nodes.keys()).indexOf(node2) + 1})`);
+
+                    if (node1Element && node2Element) {
+                        const connectionElement = document.createElement('div');
+                        connectionElement.className = 'connection';
+                        container.appendChild(connectionElement);
+
+                        // Calculate connection position and angle
+                        const x1 = node1Element.offsetLeft + node1Element.offsetWidth / 2;
+                        const y1 = node1Element.offsetTop + node1Element.offsetHeight / 2;
+                        const x2 = node2Element.offsetLeft + node2Element.offsetWidth / 2;
+                        const y2 = node2Element.offsetTop + node2Element.offsetHeight / 2;
+
+                        const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+                        connectionElement.style.width = `${length}px`;
+                        connectionElement.style.left = `${x1}px`;
+                        connectionElement.style.top = `${y1}px`;
+                        connectionElement.style.transform = `rotate(${angle}deg)`;
+                    }
+                });
+            }
+        }
+
+        let network = new Network();
+
+        // Initialize network with some nodes
+        for (let i = 0; i < 10; i++) {
+            network.addNode(i);
+            if (i > 0) {
+                network.addConnection(i - 1, i);
+            }
+        }
+        network.updateDisplay();
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        async function simulate51Attack() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const power = parseInt(document.getElementById('attackPower').value);
+                const duration = parseInt(document.getElementById('attackDuration').value);
+
+                if (power < 51) {
+                    throw new Error('Attack power must be at least 51%');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                network.metrics.activeAttacks++;
+                network.metrics.attackSuccess = power;
+                addLogEntry(`Launching 51% attack with ${power}% power for ${duration} blocks`, 'attack');
+
+                // Simulate attack
+                const maliciousNodes = Math.floor(network.nodes.size * (power / 100));
+                for (let i = 0; i < maliciousNodes; i++) {
+                    network.updateNodeStatus(i, 'malicious');
+                }
+
+                network.updateDisplay();
+                setTimeout(() => {
+                    if (network.defenses.consensus) {
+                        addLogEntry('Attack detected and mitigated by consensus protection', 'defense');
+                        network.metrics.blockedAttacks++;
+                    } else {
+                        addLogEntry('Attack successful: network compromised', 'attack');
+                        network.metrics.systemIntegrity -= 20;
+                    }
+                    network.metrics.activeAttacks--;
+                    network.updateDisplay();
+                }, duration * 1000);
+            } catch (error) {
+                showError('attackError', error.message);
+                addLogEntry(error.message, 'attack');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function simulateSybilAttack() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const fakeNodes = parseInt(document.getElementById('fakeNodes').value);
+                const strategy = document.getElementById('sybilStrategy').value;
+
+                if (fakeNodes < 1) {
+                    throw new Error('Number of fake nodes must be at least 1');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                network.metrics.activeAttacks++;
+                addLogEntry(`Launching Sybil attack with ${fakeNodes} fake nodes (${strategy} strategy)`, 'attack');
+
+                // Add fake nodes
+                for (let i = 0; i < fakeNodes; i++) {
+                    const nodeId = network.nodes.size + i;
+                    network.addNode(nodeId, 'malicious');
+                    network.addConnection(nodeId, Math.floor(Math.random() * network.nodes.size));
+                }
+
+                network.updateDisplay();
+                setTimeout(() => {
+                    if (network.defenses.authentication) {
+                        addLogEntry('Sybil attack detected and prevented by node authentication', 'defense');
+                        network.metrics.blockedAttacks++;
+                    } else {
+                        addLogEntry('Sybil attack successful: network integrity compromised', 'attack');
+                        network.metrics.systemIntegrity -= 15;
+                    }
+                    network.metrics.activeAttacks--;
+                    network.updateDisplay();
+                }, 5000);
+            } catch (error) {
+                showError('attackError', error.message);
+                addLogEntry(error.message, 'attack');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function simulateDoubleSpend() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const amount = parseInt(document.getElementById('doubleSpendAmount').value);
+                const confirmations = parseInt(document.getElementById('confirmationBlocks').value);
+
+                if (amount < 1) {
+                    throw new Error('Transaction amount must be at least 1');
+                }
+                if (confirmations < 1) {
+                    throw new Error('Number of confirmation blocks must be at least 1');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                network.metrics.activeAttacks++;
+                addLogEntry(`Attempting double spend of ${amount} tokens with ${confirmations} confirmations`, 'attack');
+
+                setTimeout(() => {
+                    if (network.defenses.monitoring) {
+                        addLogEntry('Double spend attempt detected and prevented', 'defense');
+                        network.metrics.blockedAttacks++;
+                    } else {
+                        addLogEntry('Double spend successful: transaction integrity compromised', 'attack');
+                        network.metrics.systemIntegrity -= 10;
+                    }
+                    network.metrics.activeAttacks--;
+                    network.updateDisplay();
+                }, confirmations * 1000);
+            } catch (error) {
+                showError('attackError', error.message);
+                addLogEntry(error.message, 'attack');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        function toggleDefense(defense, active) {
+            network.toggleDefense(defense, active);
+            addLogEntry(`${defense} defense ${active ? 'activated' : 'deactivated'}`, 'info');
+        }
+
+        function addLogEntry(message, type = '') {
+            const log = document.getElementById(type === 'defense' ? 'defenseLog' : 'attackLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                simulate51Attack();
+            } else if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                simulateSybilAttack();
+            } else if (e.ctrlKey && e.key === '3') {
+                e.preventDefault();
+                simulateDoubleSpend();
+            }
+        });
+
+        // Initialize the network
+        addLogEntry('Security system initialized', 'info');
+    </script>
+</body>
+
+</html>

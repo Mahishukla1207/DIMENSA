@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stock Market Prediction - Data Analytics Lab</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f7fafc;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    canvas {
+      background: #ffffff;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    button, input {
+      margin: 5px;
+      padding: 8px 14px;
+      font-size: 15px;
+    }
+    #controls {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>📈 Stock Market Prediction Simulator</h1>
+<p>Click to add stock prices over time. Predict the next stock price trend with linear regression!</p>
+
+<canvas id="canvas" width="700" height="400"></canvas>
+
+<div id="controls">
+  <button onclick="predictTrend()">Predict Trend</button>
+  <button onclick="clearCanvas()">Clear All</button>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let points = []; // {x, y}
+  let isPredicted = false;
+
+  canvas.addEventListener('click', function(e) {
+    if (isPredicted) return; // No adding after prediction
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    points.push({x, y});
+    draw();
+  });
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Axes
+    ctx.beginPath();
+    ctx.moveTo(40, 0);
+    ctx.lineTo(40, canvas.height);
+    ctx.moveTo(0, canvas.height-40);
+    ctx.lineTo(canvas.width, canvas.height-40);
+    ctx.strokeStyle = '#aaa';
+    ctx.stroke();
+
+    // Draw points
+    for (let p of points) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = 'blue';
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  function predictTrend() {
+    if (points.length < 2) {
+      alert("Add more points to predict!");
+      return;
+    }
+
+    // Least squares linear regression
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (let p of points) {
+      sumX += p.x;
+      sumY += p.y;
+      sumXY += p.x * p.y;
+      sumX2 += p.x * p.x;
+    }
+    const n = points.length;
+    const m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX); // slope
+    const b = (sumY - m * sumX) / n; // intercept
+
+    draw();
+
+    // Draw prediction line
+    ctx.beginPath();
+    ctx.moveTo(0, m*0 + b);
+    ctx.lineTo(canvas.width, m*canvas.width + b);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    isPredicted = true;
+    alert("Prediction completed! 🔥 Red line shows the trend.");
+  }
+
+  function clearCanvas() {
+    points = [];
+    isPredicted = false;
+    draw();
+  }
+</script>
+
+</body>
+</html>

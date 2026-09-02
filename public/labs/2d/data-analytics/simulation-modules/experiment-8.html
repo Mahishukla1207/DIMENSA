@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>K-Means Clustering Simulator - Data Analytics Lab</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f0f7ff;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    canvas {
+      background: #ffffff;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    button, input {
+      margin: 5px;
+      padding: 8px 14px;
+      font-size: 15px;
+    }
+    #controls {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🌸 K-Means Clustering Simulator (IRIS Dataset Inspired)</h1>
+<p>Click to place data points. Set K, then Cluster them visually!</p>
+
+<canvas id="canvas" width="700" height="400"></canvas>
+
+<div id="controls">
+  <input type="number" id="kValue" placeholder="Enter number of clusters K" min="1" style="width: 200px;">
+  <button onclick="runKMeans()">Run K-Means</button>
+  <button onclick="clearCanvas()">Clear All</button>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let points = []; // {x, y}
+  let centers = [];
+  let colors = ["#FF5733", "#33FF57", "#3357FF", "#F333FF", "#33FFF5", "#FF33A6"];
+
+  canvas.addEventListener('click', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    points.push({x, y, cluster: null});
+    draw();
+  });
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw points
+    for (let p of points) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = p.cluster !== null ? colors[p.cluster % colors.length] : 'black';
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Draw centers
+    for (let c of centers) {
+      ctx.beginPath();
+      ctx.rect(c.x-7, c.y-7, 14, 14);
+      ctx.fillStyle = colors[c.cluster % colors.length];
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  function runKMeans() {
+    const k = parseInt(document.getElementById('kValue').value);
+    if (isNaN(k) || k <= 0) {
+      alert("Enter a valid number of clusters (K).");
+      return;
+    }
+    if (points.length < k) {
+      alert("Add more points than number of clusters.");
+      return;
+    }
+
+    // Initialize random centers
+    centers = [];
+    for (let i = 0; i < k; i++) {
+      const randPoint = points[Math.floor(Math.random() * points.length)];
+      centers.push({x: randPoint.x, y: randPoint.y, cluster: i});
+    }
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+
+      // Assign points to nearest center
+      for (let p of points) {
+        let minDist = Infinity;
+        let assignedCluster = null;
+        for (let c of centers) {
+          const dist = Math.hypot(p.x - c.x, p.y - c.y);
+          if (dist < minDist) {
+            minDist = dist;
+            assignedCluster = c.cluster;
+          }
+        }
+        if (p.cluster !== assignedCluster) {
+          p.cluster = assignedCluster;
+          changed = true;
+        }
+      }
+
+      // Move centers
+      for (let c of centers) {
+        const clusterPoints = points.filter(p => p.cluster === c.cluster);
+        if (clusterPoints.length > 0) {
+          const meanX = clusterPoints.reduce((sum, p) => sum + p.x, 0) / clusterPoints.length;
+          const meanY = clusterPoints.reduce((sum, p) => sum + p.y, 0) / clusterPoints.length;
+          c.x = meanX;
+          c.y = meanY;
+        }
+      }
+    }
+
+    draw();
+    alert("K-Means clustering complete! 🌸");
+  }
+
+  function clearCanvas() {
+    points = [];
+    centers = [];
+    draw();
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sentiment Analysis Simulator - Data Analytics Lab</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #fef9f9;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: 400px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 18px;
+      font-size: 16px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>💬 Sentiment Analysis Simulator</h1>
+<p>Type a sentence. We'll guess if it's positive or negative!</p>
+
+<input type="text" id="sentence" placeholder="Type something like 'I love coding!'">
+<button onclick="analyzeSentiment()">Analyze</button>
+
+<div id="result"></div>
+
+<script>
+  const positiveWords = ["happy", "good", "great", "awesome", "fantastic", "love", "enjoy", "cool", "nice", "beautiful"];
+  const negativeWords = ["sad", "bad", "hate", "terrible", "awful", "worst", "angry", "horrible", "ugly", "cry"];
+
+  function analyzeSentiment() {
+    const sentence = document.getElementById('sentence').value.toLowerCase();
+    if (sentence.trim() === "") {
+      alert("Please type a sentence first!");
+      return;
+    }
+
+    let score = 0;
+    for (let word of positiveWords) {
+      if (sentence.includes(word)) score += 1;
+    }
+    for (let word of negativeWords) {
+      if (sentence.includes(word)) score -= 1;
+    }
+
+    const resultDiv = document.getElementById('result');
+    if (score > 0) {
+      resultDiv.innerHTML = "😊 Positive!";
+      resultDiv.style.color = "green";
+    } else if (score < 0) {
+      resultDiv.innerHTML = "😞 Negative!";
+      resultDiv.style.color = "red";
+    } else {
+      resultDiv.innerHTML = "😐 Neutral!";
+      resultDiv.style.color = "gray";
+    }
+  }
+</script>
+
+</body>
+</html>

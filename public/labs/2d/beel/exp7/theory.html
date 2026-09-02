@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Virtual Labs</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100px;
+            padding: 50px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            zoom: 1.40;
+        }
+
+        h1 {
+            font-size: 30px;
+            color: black;
+        }
+
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border-bottom: 3px solid orange;
+            padding: 10px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-left img {
+            height: 50px;
+            margin-right: 10px;
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-right: 10px;
+        }
+
+        .navbar-right span {
+            color: gold;
+            font-size: 20px;
+        }
+
+        .navbar-right button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 12px;
+        }
+
+        .container {
+            display: flex;
+            height: 110vh;
+            padding-top: 70px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .sidebar {
+            margin-top: 30px;
+            width: 170px;
+            background-color: #f5f5f5;
+            padding: 20px;
+            box-shadow: 4px 0 10px rgba(41, 3, 167, 0.1);
+            position: fixed;
+            top: 60px;
+            left: 0;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #0066ff;
+            font-weight: bold;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .content {
+            position: fixed;
+            margin-left: 180px;
+            top: 90px;
+            padding: 30px;
+            overflow-y: auto;
+            height: calc(100vh - 60px);
+        }
+
+        .card {
+            background: white;
+            width: 680px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h1 {
+            margin-top: 0;
+            color: black;
+        }
+
+        .card p {
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* Modal Styles */
+        .modal1,
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 2000;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: left;
+        }
+
+        .modal-logo img {
+            width: 150px;
+            margin-bottom: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stars {
+            font-size: 30px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .star {
+            color: gray;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .star.selected {
+            color: orange;
+        }
+
+        .modal-button {
+            padding: 10px 24px;
+            border: none;
+            font-size: 16px;
+            border-radius: 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        .submit-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #888;
+            color: white;
+        }
+
+        textarea,
+        input[type="email"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .my-section {
+            margin-left: 200px;
+            margin-right: 20px;
+        }
+
+        .diagram-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .diagram-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #screenshotPreview {
+            margin-top: 10px;
+            max-width: 100%;
+            display: none;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                padding-top: 120px;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                top: 0;
+                box-shadow: none;
+            }
+
+            .my-section {
+                margin-left: 0;
+            }
+
+            .content {
+                margin-left: 0;
+                position: relative;
+            }
+
+            .card {
+                width: 90%;
+                margin: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <div class="navbar-left">
+            <img src="logo.jpg" alt="Virtual Labs Logo" />
+            <h2>Virtual Labs</h2>
+        </div>
+        <div class="navbar-right">
+            <button onclick="openModal()">Rate Me</button>
+            <button onclick="openBugModal()">Report a Bug</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <a href="aim.html">Aim</a>
+            <a href="theory.html"><u>Theory</u></a>
+            <a href="pretest.html">Pretest</a>
+            <a href="procedure.html">Procedure</a>
+            <a href="simulation.html">Simulation</a>
+            <a href="posttest.html">Posttest</a>
+            <a href="reference.html">References</a>
+            <a href="feedback.html">Feedback</a>
+        </div>
+        <main>
+            <div class="my-section">
+                <div>
+                    <ol>
+                        <center>
+                            <h1>Theory</h1>
+                        </center>
+                        <hr style="height: 2.5px; background-color: black; border: none;">
+                        <p>The efficiency of a transformer is given by the expression:
+                            <br><br>
+                            <center>𝜂 = (𝑂𝑢𝑡𝑝𝑢𝑡 𝑃𝑜𝑤𝑒𝑟 / 𝐼𝑛𝑝𝑢𝑡 𝑃𝑜𝑤𝑒𝑟) × 100</center>
+                            <br>
+                            <center>𝜂 = (P<sub>2</sub> / P<sub>1</sub>) × 100</center>
+                            <br><br>
+                            The method of determination of transformer efficiency by direct measurement of output and
+                            input does not give
+                            accurate result as the power losses are quite low (of the order of 1–4%). The difference
+                            between the reading of
+                            observed output and actual output is so small that an instrument error as low as 0.5% would
+                            cause an error of
+                            the order of 15–20% in the power losses. There is wastage of large amount of power and no
+                            information is available
+                            from such a test about the proportion of copper and iron losses.
+                        </p>
+                        <div class="diagram-container">
+                            <img src="1.png" alt="RC network" class="diagram" />
+                        </div>
+                        <p style="text-align: center;"><b>Fig. 1: Circuit diagram for Determination of efficiency of a
+                                single-phase
+                                transformer by load test</b></p>
+                        <br>
+                    </ol>
+                </div>
+            </div>
+        </main>
+    </div>
+
+
+
+    
+    <div class="modal" id="ratingModal">
+        <div class="modal-content">
+            <h2>Rate Us</h2>
+            <div class="stars">
+                <span class="star" onclick="rateStar(1)">★</span>
+                <span class="star" onclick="rateStar(2)">★</span>
+                <span class="star" onclick="rateStar(3)">★</span>
+                <span class="star" onclick="rateStar(4)">★</span>
+                <span class="star" onclick="rateStar(5)">★</span>
+            </div>
+            <button class="modal-button submit-btn" onclick="submitRating()">Submit</button>
+            <button class="modal-button cancel-btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    
+    <div class="modal1" id="bugModal">
+        <div class="modal-content">
+            <h2>Report a Bug</h2>
+            <input type="email" id="email" placeholder="Your Email">
+            <textarea id="bugDescription" rows="5" placeholder="Describe the bug"></textarea>
+            <button class="modal-button submit-btn" onclick="submitBug()">Submit</button>
+            <button class="modal-button cancel-btn" onclick="closeBugModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('ratingModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('ratingModal').style.display = 'none';
+        }
+
+        function openBugModal() {
+            document.getElementById('bugModal').style.display = 'block';
+        }
+
+        function closeBugModal() {
+            document.getElementById('bugModal').style.display = 'none';
+        }
+
+        function rateStar(star) {
+            const stars = document.querySelectorAll('#ratingModal .star');
+            stars.forEach((s, index) => {
+                if (index < star) {
+                    s.classList.add('selected');
+                } else {
+                    s.classList.remove('selected');
+                }
+            });
+        }
+
+        function submitRating() {
+            alert("Thanks for rating us!");
+            closeModal();
+        }
+
+        function submitBug() {
+            const email = document.getElementById('email').value;
+            const description = document.getElementById('bugDescription').value;
+            if (email && description) {
+                alert("Bug reported successfully! Thank you.");
+                closeBugModal();
+            } else {
+                alert("Please fill out both fields.");
+            }
+        }
+    </script>
+
+</body>
+
+</html>

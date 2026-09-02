@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision Tree & Random Forest Visualization</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            /* Colors */
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --warning-color: #f1c40f;
+            --decision-node-color: #e3f2fd;
+            --decision-node-border: #2196f3;
+            --leaf-node-color: #f1f8e9;
+            --leaf-node-border: #4caf50;
+            --prediction-color: #fff3e0;
+            --prediction-border: #ff9800;
+
+            /* Spacing */
+            --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+            --spacing-sm: clamp(0.5rem, 1vw, 1rem);
+            --spacing-md: clamp(1rem, 2vw, 1.5rem);
+            --spacing-lg: clamp(1.5rem, 3vw, 2rem);
+
+            /* Typography */
+            --font-size-sm: clamp(0.875rem, 1.5vw, 1rem);
+            --font-size-md: clamp(1rem, 2vw, 1.25rem);
+            --font-size-lg: clamp(1.25rem, 2.5vw, 1.5rem);
+            --font-size-xl: clamp(1.5rem, 3vw, 2rem);
+
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-slow: 350ms ease;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+
+            /* Border Radius */
+            --border-radius-sm: 4px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+        }
+
+        body {
+            background-color: var(--background-color);
+            padding: var(--spacing-md);
+            color: var(--text-color);
+            font-size: var(--font-size-md);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: min(1400px, 95vw);
+            margin: 0 auto;
+            padding: var(--spacing-md);
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-lg);
+            margin: var(--spacing-md) 0;
+            box-shadow: var(--shadow-md);
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .data-input {
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            tab-size: 4;
+            font-size: var(--font-size-md);
+            padding: var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .data-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .tree-container {
+            display: flex;
+            gap: var(--spacing-md);
+            overflow-x: auto;
+            padding: var(--spacing-md) 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-color) var(--background-color);
+        }
+
+        .tree-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .tree-container::-webkit-scrollbar-track {
+            background: var(--background-color);
+            border-radius: var(--border-radius-sm);
+        }
+
+        .tree-container::-webkit-scrollbar-thumb {
+            background-color: var(--accent-color);
+            border-radius: var(--border-radius-sm);
+        }
+
+        .tree {
+            min-width: 300px;
+            background: var(--card-background);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-sm);
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        .tree:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .node {
+            padding: var(--spacing-sm);
+            margin: var(--spacing-xs);
+            border-radius: var(--border-radius-md);
+            font-family: 'Courier New', monospace;
+            position: relative;
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .node:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .decision-node {
+            background-color: var(--decision-node-color);
+            border: 2px solid var(--decision-node-border);
+        }
+
+        .leaf-node {
+            background-color: var(--leaf-node-color);
+            border: 2px solid var(--leaf-node-border);
+        }
+
+        .node-content {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .node-label {
+            font-weight: 600;
+            margin-bottom: var(--spacing-xs);
+            color: var(--primary-color);
+        }
+
+        .node-value {
+            font-size: var(--font-size-sm);
+            color: var(--secondary-color);
+        }
+
+        .node-children {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-sm);
+            padding-left: var(--spacing-md);
+            position: relative;
+        }
+
+        .node-children::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--border-color);
+            transition: background-color var(--transition-fast);
+        }
+
+        .node-children:hover::before {
+            background-color: var(--accent-color);
+        }
+
+        .prediction {
+            background-color: var(--prediction-color);
+            border: 2px solid var(--prediction-border);
+            padding: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+            border-radius: var(--border-radius-md);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .prediction:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .instructions {
+            background-color: rgba(52, 152, 219, 0.1);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            margin: var(--spacing-sm) 0;
+            transition: background-color var(--transition-normal);
+        }
+
+        .instructions:hover {
+            background-color: rgba(52, 152, 219, 0.15);
+        }
+
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--border-radius-sm);
+            border: none;
+            background-color: var(--accent-color);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            overflow: hidden;
+            margin: var(--spacing-xs);
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .btn:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .forest-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+        }
+
+        .tree-card {
+            flex: 1;
+            min-width: 300px;
+            background: var(--card-background);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md);
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        .tree-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .tree-title {
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+            color: var(--accent-color);
+        }
+
+        .final-prediction {
+            background-color: var(--leaf-node-color);
+            border: 2px solid var(--leaf-node-border);
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            text-align: center;
+            font-size: var(--font-size-lg);
+            transition: all var(--transition-normal);
+        }
+
+        .final-prediction:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .error-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .success-message {
+            color: var(--success-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .success-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .test-input {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+            flex-wrap: wrap;
+            margin: var(--spacing-sm) 0;
+        }
+
+        .test-input input {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .test-input input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--spacing-sm);
+            }
+
+            .card {
+                padding: var(--spacing-md);
+            }
+
+            .tree-container {
+                flex-direction: column;
+            }
+
+            .tree {
+                width: 100%;
+            }
+
+            .node-children {
+                flex-direction: column;
+                padding-left: var(--spacing-sm);
+            }
+
+            .test-input {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .test-input input {
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+                margin: var(--spacing-xs) 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">🌳 Decision Tree & Random Forest Visualization</h1>
+
+        
+        <div class="card">
+            <div class="instructions">
+                <h3>How to Use:</h3>
+                <ol>
+                    <li>Enter your data in the text area below (format: age,income,buys_product age,income,buys_product
+                        ... all in one line, separated by spaces)</li>
+                    <li>Example: 25,50000,yes 30,75000,yes 22,30000,no</li>
+                    <li>Click "Train" to see the decision tree and random forest</li>
+                </ol>
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <h3>Input Data</h3>
+            <textarea id="dataInput" class="form-control data-input" rows="2"
+                placeholder="25,50000,yes 30,75000,yes 22,30000,no"></textarea>
+            <div class="mt-3">
+                <button onclick="trainModels()" class="btn btn-primary">Train Models</button>
+                <button onclick="resetModels()" class="btn btn-danger">Reset</button>
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <h3>Decision Tree</h3>
+            <div id="decisionTree" class="tree-container"></div>
+        </div>
+
+        
+        <div class="card">
+            <h3>Random Forest</h3>
+            <div id="randomForest" class="forest-container"></div>
+            <div id="finalPrediction" class="final-prediction" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Data structures and helper functions
+        class TreeNode {
+            constructor(feature, threshold, left, right, prediction = null) {
+                this.feature = feature;      // Feature to split on
+                this.threshold = threshold;  // Threshold value
+                this.left = left;           // Left child (<= threshold)
+                this.right = right;         // Right child (> threshold)
+                this.prediction = prediction; // For leaf nodes
+            }
+        }
+
+        // Parse input data
+        function parseData(input) {
+            // Accepts: 25,50000,yes 30,75000,yes ...
+            const entries = input.trim().split(/\s+/);
+            const data = [];
+            for (let i = 0; i < entries.length; i++) {
+                const parts = entries[i].split(',').map(x => x.trim());
+                if (parts.length !== 3) {
+                    throw new Error(`Entry ${i + 1} is invalid. Each entry must have 3 values: age,income,buys_product`);
+                }
+                const age = parseInt(parts[0]);
+                const income = parseInt(parts[1]);
+                const buys = parts[2].toLowerCase();
+                if (isNaN(age) || isNaN(income) || (buys !== 'yes' && buys !== 'no')) {
+                    throw new Error(`Entry ${i + 1} is invalid. Age and income must be numbers, buys must be 'yes' or 'no'.`);
+                }
+                data.push({ age, income, buys: buys === 'yes' });
+            }
+            return data;
+        }
+
+        // Calculate Gini impurity
+        function calculateGiniImpurity(labels) {
+            const counts = {};
+            labels.forEach(label => {
+                counts[label] = (counts[label] || 0) + 1;
+            });
+
+            let impurity = 1;
+            Object.values(counts).forEach(count => {
+                const probability = count / labels.length;
+                impurity -= probability * probability;
+            });
+
+            return impurity;
+        }
+
+        // Find best split
+        function findBestSplit(data) {
+            let bestGain = 0;
+            let bestFeature = null;
+            let bestThreshold = null;
+            let bestLeft = null;
+            let bestRight = null;
+
+            const features = ['age', 'income'];
+            const parentImpurity = calculateGiniImpurity(data.map(d => d.buys));
+
+            features.forEach(feature => {
+                const values = [...new Set(data.map(d => d[feature]))].sort((a, b) => a - b);
+
+                for (let i = 0; i < values.length - 1; i++) {
+                    const threshold = (values[i] + values[i + 1]) / 2;
+                    const left = data.filter(d => d[feature] <= threshold);
+                    const right = data.filter(d => d[feature] > threshold);
+
+                    if (left.length === 0 || right.length === 0) continue;
+
+                    const leftImpurity = calculateGiniImpurity(left.map(d => d.buys));
+                    const rightImpurity = calculateGiniImpurity(right.map(d => d.buys));
+
+                    const gain = parentImpurity -
+                        (left.length / data.length) * leftImpurity -
+                        (right.length / data.length) * rightImpurity;
+
+                    if (gain > bestGain) {
+                        bestGain = gain;
+                        bestFeature = feature;
+                        bestThreshold = threshold;
+                        bestLeft = left;
+                        bestRight = right;
+                    }
+                }
+            });
+
+            return { bestFeature, bestThreshold, bestLeft, bestRight };
+        }
+
+        // Build decision tree
+        function buildTree(data, maxDepth = 3, currentDepth = 0) {
+            if (currentDepth >= maxDepth || data.length <= 1) {
+                const prediction = data.length > 0 ?
+                    data.filter(d => d.buys).length > data.length / 2 :
+                    null;
+                return new TreeNode(null, null, null, null, prediction);
+            }
+
+            const { bestFeature, bestThreshold, bestLeft, bestRight } = findBestSplit(data);
+
+            if (!bestFeature) {
+                const prediction = data.filter(d => d.buys).length > data.length / 2;
+                return new TreeNode(null, null, null, null, prediction);
+            }
+
+            return new TreeNode(
+                bestFeature,
+                bestThreshold,
+                buildTree(bestLeft, maxDepth, currentDepth + 1),
+                buildTree(bestRight, maxDepth, currentDepth + 1)
+            );
+        }
+
+        // Create random forest
+        function createRandomForest(data, numTrees = 3) {
+            const trees = [];
+            for (let i = 0; i < numTrees; i++) {
+                // Bootstrap sample
+                const sample = [];
+                for (let j = 0; j < data.length; j++) {
+                    const randomIndex = Math.floor(Math.random() * data.length);
+                    sample.push(data[randomIndex]);
+                }
+                trees.push(buildTree(sample));
+            }
+            return trees;
+        }
+
+        // Render decision tree
+        function renderTree(node, container) {
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'node ' + (node.prediction !== null ? 'leaf-node' : 'decision-node');
+
+            const content = document.createElement('div');
+            content.className = 'node-content';
+
+            if (node.prediction !== null) {
+                content.innerHTML = `
+                    <div class="node-label">Prediction</div>
+                    <div class="node-value">${node.prediction ? 'Yes' : 'No'}</div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="node-label">${node.feature}</div>
+                    <div class="node-value">≤ ${node.threshold.toFixed(2)}</div>
+                `;
+
+                const children = document.createElement('div');
+                children.className = 'node-children';
+
+                const leftChild = document.createElement('div');
+                leftChild.className = 'node-child';
+                renderTree(node.left, leftChild);
+                children.appendChild(leftChild);
+
+                const rightChild = document.createElement('div');
+                rightChild.className = 'node-child';
+                renderTree(node.right, rightChild);
+                children.appendChild(rightChild);
+
+                nodeDiv.appendChild(children);
+            }
+
+            nodeDiv.appendChild(content);
+            container.appendChild(nodeDiv);
+        }
+
+        // Traverse a tree for a test sample
+        function traverseTree(tree, sample) {
+            let node = tree;
+            while (node.prediction === null) {
+                if (sample[node.feature] <= node.threshold) {
+                    node = node.left;
+                } else {
+                    node = node.right;
+                }
+            }
+            return node.prediction;
+        }
+
+        // Add loading state management
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                button.classList.toggle('loading', isLoading);
+                button.disabled = isLoading;
+            }
+        }
+
+        // Add error handling
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            document.querySelector('.card').insertAdjacentElement('afterbegin', errorDiv);
+
+            // Show error
+            setTimeout(() => errorDiv.classList.add('visible'), 10);
+
+            // Remove error after 3 seconds
+            setTimeout(() => {
+                errorDiv.classList.remove('visible');
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Add success message
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.textContent = message;
+            document.querySelector('.card').insertAdjacentElement('afterbegin', successDiv);
+
+            // Show success
+            setTimeout(() => successDiv.classList.add('visible'), 10);
+
+            // Remove success after 3 seconds
+            setTimeout(() => {
+                successDiv.classList.remove('visible');
+                setTimeout(() => successDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Update trainModels function with loading state and error handling
+        async function trainModels() {
+            try {
+                setLoading('trainButton', true);
+                const input = document.getElementById('dataInput').value;
+                let data;
+                try {
+                    data = parseData(input);
+                } catch (e) {
+                    showError(e.message);
+                    return;
+                }
+                if (data.length < 2) {
+                    showError('Please enter at least 2 data points.');
+                    return;
+                }
+
+                // Train and visualize decision tree
+                const tree = buildTree(data);
+                const treeContainer = document.getElementById('decisionTree');
+                treeContainer.innerHTML = '';
+                renderTree(tree, treeContainer);
+
+                // Train and visualize random forest
+                const forest = createRandomForest(data);
+                const forestContainer = document.getElementById('randomForest');
+                forestContainer.innerHTML = '';
+                forest.forEach((tree, index) => {
+                    const treeCard = document.createElement('div');
+                    treeCard.className = 'tree-card';
+                    treeCard.innerHTML = `<div class="tree-title">Tree ${index + 1}</div>`;
+                    renderTree(tree, treeCard);
+                    forestContainer.appendChild(treeCard);
+                });
+
+                // Show test sample input for prediction
+                showTestSampleInput(forest);
+                showSuccess('Models trained successfully!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('trainButton', false);
+            }
+        }
+
+        // Show test sample input and prediction
+        function showTestSampleInput(forest) {
+            let predDiv = document.getElementById('finalPrediction');
+            predDiv.style.display = 'block';
+            predDiv.innerHTML = `<div style="margin-bottom:10px;">Enter a test sample for prediction:</div>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <label>Age: <input type="number" id="testAge" style="width:80px;"></label>
+                    <label>Income: <input type="number" id="testIncome" style="width:100px;"></label>
+                    <button class="btn btn-success" onclick="predictTestSample()">Predict</button>
+                </div>
+                <div id="testPredictionResult" style="margin-top:10px;font-weight:bold;"></div>`;
+            // Store forest globally for prediction
+            window._currentForest = forest;
+        }
+
+        // Update predictTestSample function with loading state and error handling
+        async function predictTestSample() {
+            try {
+                setLoading('predictButton', true);
+                const age = parseInt(document.getElementById('testAge').value);
+                const income = parseInt(document.getElementById('testIncome').value);
+                const resultDiv = document.getElementById('testPredictionResult');
+
+                if (isNaN(age) || isNaN(income)) {
+                    showError('Please enter valid age and income.');
+                    return;
+                }
+
+                const forest = window._currentForest;
+                const votes = forest.map(tree => traverseTree(tree, { age, income }));
+                const yesVotes = votes.filter(v => v).length;
+                const noVotes = votes.length - yesVotes;
+                const final = yesVotes > noVotes ? 'Yes' : 'No';
+
+                resultDiv.textContent = `Random Forest Prediction: ${final} (Yes: ${yesVotes}, No: ${noVotes})`;
+                resultDiv.style.color = final === 'Yes' ? 'var(--success-color)' : 'var(--warning-color)';
+                showSuccess('Prediction completed!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('predictButton', false);
+            }
+        }
+
+        // Update resetModels function with confirmation and loading state
+        async function resetModels() {
+            if (document.getElementById('decisionTree').children.length > 0 &&
+                !confirm('Are you sure you want to reset the models?')) {
+                return;
+            }
+
+            try {
+                setLoading('resetButton', true);
+                document.getElementById('decisionTree').innerHTML = '';
+                document.getElementById('randomForest').innerHTML = '';
+                document.getElementById('finalPrediction').style.display = 'none';
+                showSuccess('Models reset successfully!');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading('resetButton', false);
+            }
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case 't':
+                        e.preventDefault();
+                        trainModels();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        resetModels();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        if (document.getElementById('predictButton')) {
+                            predictTestSample();
+                        }
+                        break;
+                }
+            }
+        });
+
+        // Initialize the page
+        window.onload = function () {
+            // Add IDs to buttons
+            document.querySelector('button[onclick="trainModels()"]').id = 'trainButton';
+            document.querySelector('button[onclick="resetModels()"]').id = 'resetButton';
+
+            // Add keyboard shortcut hints
+            const shortcutHints = document.createElement('div');
+            shortcutHints.className = 'text-muted mt-2';
+            shortcutHints.style.fontSize = 'var(--font-size-sm)';
+            shortcutHints.innerHTML = 'Keyboard shortcuts:<br>' +
+                'Ctrl + T: Train models<br>' +
+                'Ctrl + R: Reset models<br>' +
+                'Ctrl + P: Make prediction';
+            document.querySelector('.card').appendChild(shortcutHints);
+
+            // Add event listener for Enter key in textarea
+            document.getElementById('dataInput').addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    trainModels();
+                }
+            });
+        };
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 4: Non-Comparison Sorts</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Non-Comparison Sorting Algorithms</h1>
+        <p style="text-align: center; color: white;">Interactive visualization of Counting and Radix Sort</p>
+
+        <div class="card">
+            <h2>Array Setup</h2>
+            <div class="controls">
+                <input type="number" id="arraySize" min="5" max="20" value="10" placeholder="Array Size">
+                <input type="number" id="maxValue" min="10" max="100" value="50" placeholder="Max Value">
+                <button onclick="generateArray()">Generate Array</button>
+                <button onclick="startAllSorts()">Start All Sorts</button>
+            </div>
+            <div id="arrayVisualization" style="text-align: center; margin: 20px 0;"></div>
+        </div>
+
+        <div class="visualization-container">
+            <div class="card">
+                <h2>Counting Sort</h2>
+                <div class="controls">
+                    <button onclick="startCountingSort()">Start Sort</button>
+                    <button onclick="resetCountingSort()">Reset</button>
+                </div>
+                <div id="countingSortVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="countingSortChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Radix Sort</h2>
+                <div class="controls">
+                    <button onclick="startRadixSort()">Start Sort</button>
+                    <button onclick="resetRadixSort()">Reset</button>
+                </div>
+                <div id="radixSortVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="radixSortChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card explanation">
+            <h3>Algorithm Analysis</h3>
+            <p><strong>Counting Sort:</strong> O(n + k) time complexity, O(n + k) space complexity - where k is the range of input</p>
+            <p><strong>Radix Sort:</strong> O(d * (n + b)) time complexity, O(n + b) space complexity - where d is number of digits and b is base</p>
+            <p><strong>Best Case:</strong> O(n + k) for Counting Sort, O(d * (n + b)) for Radix Sort</p>
+            <p><strong>Note:</strong> These algorithms are efficient when the range of input is not significantly greater than the number of elements</p>
+        </div>
+    </div>
+
+    <script>
+        let originalArray = [];
+        let countingArray = [];
+        let radixArray = [];
+        let charts = {};
+
+        function generateArray() {
+            const size = parseInt(document.getElementById('arraySize').value);
+            const max = parseInt(document.getElementById('maxValue').value);
+            originalArray = Array.from({length: size}, () => Math.floor(Math.random() * max));
+            resetAllArrays();
+            visualizeAllArrays();
+            updateCharts();
+        }
+
+        function resetAllArrays() {
+            countingArray = [...originalArray];
+            radixArray = [...originalArray];
+        }
+
+        function visualizeArray(array, containerId, highlightIndices = [], swapIndices = [], sortedIndices = []) {
+            const container = document.getElementById(containerId);
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.justifyContent = 'center';
+            container.innerHTML = array.map((num, i) => {
+                let bg = '#e5e7eb';
+                if (sortedIndices.includes(i)) bg = '#22c55e';
+                else if (swapIndices.includes(i)) bg = '#fbbf24';
+                else if (highlightIndices.includes(i)) bg = '#2563eb';
+                return `<div class=\"viz-bar\" id=\"bar-${containerId}-${i}\" style=\"margin:2px; background:${bg}; transition:background 0.3s;\"><span class=\"viz-number viz-bar\">${num}</span></div>`;
+            }).join('');
+        }
+
+        function visualizeAllArrays() {
+            visualizeArray(countingArray, 'countingSortVisualization');
+            visualizeArray(radixArray, 'radixSortVisualization');
+        }
+
+        async function animateHighlight(containerId, i, color) {
+            const bar = document.getElementById(`bar-${containerId}-${i}`);
+            if (!bar) return;
+            await anime({ targets: bar, backgroundColor: color, duration: 300, easing: 'easeInOutQuad' }).finished;
+        }
+
+        async function countingSort(arr) {
+            const max = Math.max(...arr);
+            const count = new Array(max + 1).fill(0);
+            const output = new Array(arr.length);
+            // Count occurrences
+            for (let i = 0; i < arr.length; i++) {
+                count[arr[i]]++;
+                visualizeArray(arr, 'countingSortVisualization', [i], [], []);
+                await animateHighlight('countingSortVisualization', i, '#2563eb');
+                await new Promise(res => setTimeout(res, 100));
+            }
+            // Modify count[i] to store position
+            for (let i = 1; i <= max; i++) {
+                count[i] += count[i - 1];
+            }
+            // Build output array
+            for (let i = arr.length - 1; i >= 0; i--) {
+                output[count[arr[i]] - 1] = arr[i];
+                count[arr[i]]--;
+                visualizeArray(output, 'countingSortVisualization', [count[arr[i]]], [], []);
+                await animateHighlight('countingSortVisualization', count[arr[i]], '#fbbf24');
+                await new Promise(res => setTimeout(res, 200));
+            }
+            // Copy output to original array
+            for (let i = 0; i < arr.length; i++) {
+                arr[i] = output[i];
+                visualizeArray(arr, 'countingSortVisualization', [i], [], Array.from({length: i+1}, (_, k) => k));
+                await animateHighlight('countingSortVisualization', i, '#22c55e');
+                await new Promise(res => setTimeout(res, 100));
+            }
+            visualizeArray(arr, 'countingSortVisualization', [], [], Array.from({length: arr.length}, (_, k) => k));
+        }
+
+        async function radixSort(arr) {
+            const max = Math.max(...arr);
+            const maxDigits = Math.floor(Math.log10(max)) + 1;
+            for (let exp = 1; exp <= Math.pow(10, maxDigits - 1); exp *= 10) {
+                await countingSortForRadix(arr, exp);
+            }
+        }
+
+        async function countingSortForRadix(arr, exp) {
+            const n = arr.length;
+            const output = new Array(n);
+            const count = new Array(10).fill(0);
+            // Count occurrences
+            for (let i = 0; i < n; i++) {
+                count[Math.floor(arr[i] / exp) % 10]++;
+                visualizeArray(arr, 'radixSortVisualization', [i], [], []);
+                await animateHighlight('radixSortVisualization', i, '#2563eb');
+                await new Promise(res => setTimeout(res, 100));
+            }
+            // Modify count[i] to store position
+            for (let i = 1; i < 10; i++) {
+                count[i] += count[i - 1];
+            }
+            // Build output array
+            for (let i = n - 1; i >= 0; i--) {
+                const digit = Math.floor(arr[i] / exp) % 10;
+                output[count[digit] - 1] = arr[i];
+                count[digit]--;
+                visualizeArray(output, 'radixSortVisualization', [count[digit]], [], []);
+                await animateHighlight('radixSortVisualization', count[digit], '#fbbf24');
+                await new Promise(res => setTimeout(res, 200));
+            }
+            // Copy output to original array
+            for (let i = 0; i < n; i++) {
+                arr[i] = output[i];
+                visualizeArray(arr, 'radixSortVisualization', [i], [], Array.from({length: i+1}, (_, k) => k));
+                await animateHighlight('radixSortVisualization', i, '#22c55e');
+                await new Promise(res => setTimeout(res, 100));
+            }
+            visualizeArray(arr, 'radixSortVisualization', [], [], Array.from({length: arr.length}, (_, k) => k));
+        }
+
+        async function startCountingSort() {
+            await countingSort(countingArray);
+        }
+
+        async function startRadixSort() {
+            await radixSort(radixArray);
+        }
+
+        function startAllSorts() {
+            resetAllArrays();
+            visualizeAllArrays();
+            startCountingSort();
+            startRadixSort();
+        }
+
+        function resetCountingSort() {
+            countingArray = [...originalArray];
+            visualizeArray(countingArray, 'countingSortVisualization');
+        }
+
+        function resetRadixSort() {
+            radixArray = [...originalArray];
+            visualizeArray(radixArray, 'radixSortVisualization');
+        }
+
+        function updateCharts() {
+            const sizes = Array.from({length: 20}, (_, i) => i + 1);
+            const max = parseInt(document.getElementById('maxValue').value);
+            
+            const datasets = [
+                {
+                    label: 'Counting Sort (O(n + k))',
+                    data: sizes.map(n => n + max),
+                    borderColor: '#0072ff'
+                },
+                {
+                    label: 'Radix Sort (O(d * (n + b)))',
+                    data: sizes.map(n => Math.floor(Math.log10(max)) * (n + 10)),
+                    borderColor: '#00c6ff'
+                }
+            ];
+
+            ['countingSortChart', 'radixSortChart'].forEach(chartId => {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                if (charts[chartId]) charts[chartId].destroy();
+                charts[chartId] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sizes,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Non-Comparison Sort Complexity'
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        // Initialize
+        generateArray();
+    </script>
+</body>
+</html> 

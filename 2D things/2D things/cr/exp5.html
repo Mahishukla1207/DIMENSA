@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playfair Cipher Grid Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #1a73e8;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #1557b0;
+        }
+
+        .matrix-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .matrix {
+            border: 2px solid #1a73e8;
+            border-collapse: collapse;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .matrix td {
+            width: 20%;
+            height: 0;
+            padding-bottom: 20%;
+            position: relative;
+            border: 1px solid #1a73e8;
+            text-align: center;
+            font-size: clamp(16px, 4vw, 20px);
+            font-weight: bold;
+            color: #1a73e8;
+            background-color: white;
+            transition: background-color 0.3s;
+        }
+
+        .matrix td span {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            text-align: center;
+        }
+
+        .matrix td.keyword {
+            background-color: #e8f0fe;
+        }
+
+        .matrix td.remaining {
+            background-color: #f8f9fa;
+        }
+
+        .explanation {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f0fe;
+            border-radius: 4px;
+            color: #1a73e8;
+        }
+
+        .process {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .process pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Playfair Cipher Grid Setup</h1>
+
+        <div class="input-group">
+            <label for="keyword">Enter your keyword:</label>
+            <input type="text" id="keyword" placeholder="Enter your keyword (e.g., MONARCHY)"
+                oninput="this.value = this.value.replace(/[^a-zA-Z]/g, '').toUpperCase()">
+        </div>
+
+        <button onclick="generateMatrix()">Generate Matrix</button>
+
+        <div class="matrix-container" id="matrixContainer">
+            
+        </div>
+
+        <div class="process" id="process">
+            <h3>Matrix Generation Process:</h3>
+            <pre id="processText">The matrix generation process will be shown here...</pre>
+        </div>
+
+        <div class="explanation">
+            <h3>How it works:</h3>
+            <p>The Playfair Cipher uses a 5x5 matrix of letters to encrypt messages. Here's how the matrix is created:
+            </p>
+            <ol>
+                <li>Start with your keyword (e.g., "MONARCHY")</li>
+                <li>Remove any duplicate letters from the keyword</li>
+                <li>Fill the first row(s) with the keyword letters</li>
+                <li>Fill the remaining spaces with the rest of the alphabet (excluding 'J', as I and J share a space)
+                </li>
+            </ol>
+            <p>For example, with the keyword "MONARCHY":</p>
+            <ul>
+                <li>First row: M O N A R</li>
+                <li>Second row: C H Y B D</li>
+                <li>And so on...</li>
+            </ul>
+            <p>Note: The letters I and J share the same position in the matrix!</p>
+        </div>
+    </div>
+
+    <script>
+        function generateMatrix() {
+            const keyword = document.getElementById('keyword').value.toUpperCase();
+            const processText = document.getElementById('processText');
+            const matrixContainer = document.getElementById('matrixContainer');
+
+            if (!keyword) {
+                processText.textContent = 'Please enter a keyword!';
+                return;
+            }
+
+            // Remove duplicates and 'J' from keyword
+            let uniqueKeyword = '';
+            let usedLetters = new Set();
+            for (let char of keyword) {
+                if (char === 'J') char = 'I';
+                if (!usedLetters.has(char)) {
+                    uniqueKeyword += char;
+                    usedLetters.add(char);
+                }
+            }
+
+            // Create the matrix
+            let matrix = [];
+            let remainingLetters = 'ABCDEFGHIKLMNOPQRSTUVWXYZ'.split('');
+
+            // Remove letters that are in the keyword
+            for (let char of uniqueKeyword) {
+                if (char === 'J') char = 'I';
+                const index = remainingLetters.indexOf(char);
+                if (index > -1) {
+                    remainingLetters.splice(index, 1);
+                }
+            }
+
+            // Fill the matrix
+            let currentIndex = 0;
+            for (let i = 0; i < 5; i++) {
+                matrix[i] = [];
+                for (let j = 0; j < 5; j++) {
+                    if (currentIndex < uniqueKeyword.length) {
+                        matrix[i][j] = uniqueKeyword[currentIndex];
+                    } else {
+                        matrix[i][j] = remainingLetters[currentIndex - uniqueKeyword.length];
+                    }
+                    currentIndex++;
+                }
+            }
+
+            // Generate HTML for the matrix
+            let matrixHTML = '<table class="matrix">';
+            for (let i = 0; i < 5; i++) {
+                matrixHTML += '<tr>';
+                for (let j = 0; j < 5; j++) {
+                    const isKeyword = uniqueKeyword.includes(matrix[i][j]);
+                    matrixHTML += `<td class="${isKeyword ? 'keyword' : 'remaining'}"><span>${matrix[i][j]}</span></td>`;
+                }
+                matrixHTML += '</tr>';
+            }
+            matrixHTML += '</table>';
+
+            matrixContainer.innerHTML = matrixHTML;
+
+            // Generate process text
+            let process = 'Keyword: ' + keyword + '\n\n';
+            process += '1. Remove duplicates and J: ' + uniqueKeyword + '\n\n';
+            process += '2. Remaining letters: ' + remainingLetters.join(' ') + '\n\n';
+            process += 'Final 5x5 Matrix:\n';
+            process += '┌─────┬─────┬─────┬─────┬─────┐\n';
+            for (let i = 0; i < 5; i++) {
+                process += '│ ' + matrix[i].join(' │ ') + ' │\n';
+                if (i < 4) process += '├─────┼─────┼─────┼─────┼─────┤\n';
+            }
+            process += '└─────┴─────┴─────┴─────┴─────┘\n';
+
+            processText.textContent = process;
+        }
+    </script>
+</body>
+
+</html>

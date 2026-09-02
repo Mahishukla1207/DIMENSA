@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 6: Smart Contracts</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --code-bg: #282c34;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .contract-panel,
+        .execution-panel {
+            background: white;
+            padding: clamp(15px, 3vw, 20px);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+            font-size: clamp(1.2em, 2.5vw, 1.5em);
+        }
+
+        .code-editor {
+            background: var(--code-bg);
+            color: #abb2bf;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: 5px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            margin: clamp(15px, 3vw, 20px) 0;
+            position: relative;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .code-editor:focus-within {
+            box-shadow: 0 0 0 2px var(--secondary-color);
+        }
+
+        .code-editor textarea {
+            width: 100%;
+            height: clamp(250px, 40vh, 300px);
+            background: transparent;
+            border: none;
+            color: #abb2bf;
+            font-family: inherit;
+            font-size: clamp(13px, 1.5vw, 14px);
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            padding: clamp(8px, 1.5vw, 10px);
+        }
+
+        .contract-templates {
+            margin: clamp(15px, 3vw, 20px) 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: clamp(8px, 1.5vw, 10px);
+        }
+
+        .template-button {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: clamp(8px, 1.5vw, 10px) clamp(15px, 2.5vw, 20px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .template-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .template-button:active {
+            transform: translateY(0);
+        }
+
+        .contract-actions {
+            margin: clamp(15px, 3vw, 20px) 0;
+        }
+
+        .action-button {
+            background-color: var(--success-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .action-button:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        .action-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .action-button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .action-button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .action-button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .action-button.deploy {
+            background-color: var(--secondary-color);
+        }
+
+        .action-button.deploy:hover {
+            background-color: #2980b9;
+        }
+
+        .contract-state {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: 5px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .contract-state:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .state-item {
+            margin: clamp(8px, 1.5vw, 10px) 0;
+            padding: clamp(8px, 1.5vw, 10px);
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .state-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .state-label {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .state-value {
+            font-family: 'Consolas', monospace;
+            color: var(--secondary-color);
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            word-break: break-all;
+        }
+
+        .execution-log {
+            height: clamp(200px, 30vh, 250px);
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: 5px;
+            margin: clamp(15px, 3vw, 20px) 0;
+            font-family: 'Consolas', monospace;
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary-color) #f8f9fa;
+        }
+
+        .execution-log::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .execution-log::-webkit-scrollbar-track {
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .execution-log::-webkit-scrollbar-thumb {
+            background-color: var(--secondary-color);
+            border-radius: 4px;
+        }
+
+        .log-entry {
+            margin-bottom: clamp(4px, 1vw, 5px);
+            padding: clamp(4px, 1vw, 5px);
+            border-bottom: 1px solid #eee;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .log-entry:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .log-entry.success {
+            color: var(--success-color);
+        }
+
+        .log-entry.error {
+            color: var(--error-color);
+        }
+
+        .log-entry.info {
+            color: var(--secondary-color);
+        }
+
+        .contract-list {
+            margin: clamp(15px, 3vw, 20px) 0;
+        }
+
+        .contract-item {
+            background: #f8f9fa;
+            padding: clamp(12px, 2.5vw, 15px);
+            border-radius: 5px;
+            margin-bottom: clamp(8px, 1.5vw, 10px);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            border: 2px solid transparent;
+        }
+
+        .contract-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-color: var(--secondary-color);
+        }
+
+        .contract-item.active {
+            border-color: var(--secondary-color);
+            background: #e9ecef;
+        }
+
+        .contract-address {
+            font-family: 'Consolas', monospace;
+            color: var(--accent-color);
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            margin-top: 5px;
+            word-break: break-all;
+        }
+
+        .function-call {
+            margin: clamp(15px, 3vw, 20px) 0;
+            padding: clamp(12px, 2.5vw, 15px);
+            background: #f8f9fa;
+            border-radius: 5px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .function-call:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: clamp(12px, 2.5vw, 15px);
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: clamp(8px, 1.5vw, 10px);
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .action-button {
+                margin-right: 0;
+            }
+
+            .state-item {
+                flex-direction: column;
+            }
+
+            .contract-templates {
+                flex-direction: column;
+            }
+
+            .template-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Smart Contracts</h1>
+            <p class="experiment-description">Understanding and interacting with smart contracts on the blockchain</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="contract-panel">
+                <h2 class="panel-title">Smart Contract Editor</h2>
+                <div class="contract-templates">
+                    <button class="template-button" onclick="loadTemplate('simple')">Simple Contract</button>
+                    <button class="template-button" onclick="loadTemplate('token')">Token Contract</button>
+                    <button class="template-button" onclick="loadTemplate('voting')">Voting Contract</button>
+                </div>
+                <div class="code-editor">
+                    <textarea id="contractCode" spellcheck="false"
+                        placeholder="Write your smart contract here..."></textarea>
+                </div>
+                <div class="contract-actions">
+                    <button class="action-button deploy" onclick="deployContract()" id="deployBtn">
+                        <span class="button-text">Deploy Contract</span>
+                    </button>
+                    <div class="error-message" id="deployError"></div>
+                </div>
+                <div class="contract-state" id="contractState">
+                    <h3>Contract State</h3>
+                    
+                </div>
+            </div>
+
+            <div class="execution-panel">
+                <h2 class="panel-title">Contract Execution</h2>
+                <div class="contract-list" id="contractList">
+                    
+                </div>
+                <div class="function-call" id="functionCall">
+                    <h3>Call Contract Function</h3>
+                    
+                </div>
+                <div class="execution-log" id="executionLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SmartContract {
+            constructor(code, name, address) {
+                this.code = code;
+                this.name = name;
+                this.address = address;
+                this.state = {};
+                this.functions = this.parseFunctions(code);
+            }
+
+            parseFunctions(code) {
+                // Simple function parser for demonstration
+                const functionRegex = /function\s+(\w+)\s*\(([^)]*)\)/g;
+                const functions = [];
+                let match;
+
+                while ((match = functionRegex.exec(code)) !== null) {
+                    functions.push({
+                        name: match[1],
+                        params: match[2].split(',').map(p => p.trim()).filter(p => p),
+                        isView: code.includes('view') || code.includes('pure')
+                    });
+                }
+
+                return functions;
+            }
+
+            executeFunction(name, params) {
+                const func = this.functions.find(f => f.name === name);
+                if (!func) {
+                    throw new Error(`Function ${name} not found`);
+                }
+
+                // Simulate function execution
+                const gasUsed = Math.floor(Math.random() * 100000) + 50000;
+                updateGasMeter(gasUsed);
+
+                // Simulate state changes based on function
+                switch (name) {
+                    case 'transfer':
+                        if (this.state.balances && this.state.balances[params[0]] >= params[1]) {
+                            this.state.balances[params[0]] -= params[1];
+                            this.state.balances[params[1]] = (this.state.balances[params[1]] || 0) + params[1];
+                            return true;
+                        }
+                        throw new Error('Transfer failed: Insufficient balance');
+                    case 'balanceOf':
+                        return this.state.balances ? (this.state.balances[params[0]] || 0) : 0;
+                    default:
+                        return `Executed ${name} with params: ${params.join(', ')}`;
+                }
+            }
+        }
+
+        let deployedContracts = [];
+        let currentContract = null;
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        async function deployContract() {
+            setLoading('deployBtn', true);
+
+            try {
+                const code = document.getElementById('contractCode').value;
+                if (!code.trim()) {
+                    throw new Error('Please write a contract before deploying');
+                }
+
+                const contract = await contractManager.deployContract(code);
+                updateContractList();
+                updateContractState(contract);
+                addLogEntry(`Contract deployed at ${contract.address}`, 'success');
+            } catch (error) {
+                showError('deployError', error.message);
+                addLogEntry(`Deployment failed: ${error.message}`, 'error');
+            } finally {
+                setLoading('deployBtn', false);
+            }
+        }
+
+        function loadTemplate(type) {
+            const templates = {
+                simple: `contract SimpleContract {
+    uint256 private value;
+    
+    function setValue(uint256 _value) public {
+        value = _value;
+    }
+    
+    function getValue() public view returns (uint256) {
+        return value;
+    }
+}`,
+                token: `contract TokenContract {
+    string public name;
+    string public symbol;
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    
+    constructor(string memory _name, string memory _symbol) {
+        name = _name;
+        symbol = _symbol;
+        totalSupply = 1000000;
+        balanceOf[msg.sender] = totalSupply;
+    }
+    
+    function transfer(address _to, uint256 _value) public returns (bool) {
+        require(balanceOf[msg.sender] >= _value);
+        balanceOf[msg.sender] -= _value;
+        balanceOf[_to] += _value;
+        return true;
+    }
+}`,
+                voting: `contract VotingContract {
+    struct Proposal {
+        string name;
+        uint256 voteCount;
+    }
+    
+    Proposal[] public proposals;
+    mapping(address => bool) public hasVoted;
+    
+    constructor(string[] memory _proposalNames) {
+        for (uint i = 0; i < _proposalNames.length; i++) {
+            proposals.push(Proposal({
+                name: _proposalNames[i],
+                voteCount: 0
+            }));
+        }
+    }
+    
+    function vote(uint256 _proposalIndex) public {
+        require(!hasVoted[msg.sender]);
+        require(_proposalIndex < proposals.length);
+        proposals[_proposalIndex].voteCount++;
+        hasVoted[msg.sender] = true;
+    }
+}`
+            };
+
+            document.getElementById('contractCode').value = templates[type];
+            addLogEntry(`Loaded ${type} contract template`, 'info');
+        }
+
+        function updateContractList() {
+            const container = document.getElementById('contractList');
+            container.innerHTML = '';
+
+            contractManager.contracts.forEach((contract, index) => {
+                const contractElement = document.createElement('div');
+                contractElement.className = 'contract-item';
+                contractElement.onclick = () => selectContract(contract);
+                contractElement.innerHTML = `
+                    <div>
+                        <strong>Contract #${index + 1}</strong>
+                        <div class="contract-address">${contract.address}</div>
+                    </div>
+                `;
+                container.appendChild(contractElement);
+            });
+        }
+
+        function updateContractState(contract) {
+            const container = document.getElementById('contractState');
+            container.innerHTML = '<h3>Contract State</h3>';
+
+            Object.entries(contract.state).forEach(([key, value]) => {
+                const stateElement = document.createElement('div');
+                stateElement.className = 'state-item';
+                stateElement.innerHTML = `
+                    <span class="state-label">${key}</span>
+                    <span class="state-value">${JSON.stringify(value)}</span>
+                `;
+                container.appendChild(stateElement);
+            });
+        }
+
+        function addLogEntry(message, type = '') {
+            const log = document.getElementById('executionLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Initialize contract manager and event listeners
+        let contractManager = new ContractManager();
+        updateContractList();
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'd') {
+                deployContract();
+            }
+        });
+    </script>
+</body>
+
+</html>

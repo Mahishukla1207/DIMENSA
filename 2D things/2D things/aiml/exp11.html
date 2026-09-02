@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Metrics Simulation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            /* Colors */
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #2196F3;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+            --warning-color: #FFC107;
+            --info-color: #2196F3;
+            --tp-color: #4CAF50;
+            --tn-color: #2196F3;
+            --fp-color: #FFC107;
+            --fn-color: #F44336;
+
+            /* Spacing */
+            --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+            --spacing-sm: clamp(0.5rem, 1vw, 1rem);
+            --spacing-md: clamp(1rem, 2vw, 1.5rem);
+            --spacing-lg: clamp(1.5rem, 3vw, 2rem);
+
+            /* Typography */
+            --font-size-sm: clamp(0.875rem, 1.5vw, 1rem);
+            --font-size-md: clamp(1rem, 2vw, 1.25rem);
+            --font-size-lg: clamp(1.25rem, 2.5vw, 1.5rem);
+            --font-size-xl: clamp(1.5rem, 3vw, 2rem);
+
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-slow: 350ms ease;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+
+            /* Border Radius */
+            --border-radius-sm: 4px;
+            --border-radius-md: 8px;
+            --border-radius-lg: 12px;
+
+            /* Slider */
+            --slider-height: 8px;
+            --slider-thumb-size: 20px;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-size: var(--font-size-md);
+            line-height: 1.5;
+            padding: var(--spacing-md);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            flex: 1;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+            box-shadow: var(--shadow-md);
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .confusion-matrix {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-xs);
+            margin: var(--spacing-md) 0;
+            max-width: min(400px, 100%);
+        }
+
+        .matrix-cell {
+            padding: var(--spacing-md);
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            border-radius: var(--border-radius-md);
+            transition: transform var(--transition-fast);
+        }
+
+        .matrix-cell:hover {
+            transform: scale(1.05);
+        }
+
+        .tp {
+            background-color: var(--tp-color);
+        }
+
+        .tn {
+            background-color: var(--tn-color);
+        }
+
+        .fp {
+            background-color: var(--fp-color);
+        }
+
+        .fn {
+            background-color: var(--fn-color);
+        }
+
+        .metric-card {
+            background-color: var(--background-color);
+            border-radius: var(--border-radius-md);
+            padding: var(--spacing-md);
+            margin: var(--spacing-sm) 0;
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .metric-value {
+            font-size: var(--font-size-xl);
+            font-weight: bold;
+            color: var(--accent-color);
+            transition: color var(--transition-normal);
+        }
+
+        .metric-card:hover .metric-value {
+            color: var(--primary-color);
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            background-color: rgba(33, 150, 243, 0.1);
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius-sm);
+            margin: var(--spacing-sm) 0;
+            transition: background-color var(--transition-normal);
+        }
+
+        .formula:hover {
+            background-color: rgba(33, 150, 243, 0.15);
+        }
+
+        .slider-container {
+            margin: var(--spacing-md) 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+        }
+
+        /* Custom slider styles */
+        .form-range {
+            height: var(--slider-height);
+            padding: 0;
+            background-color: var(--border-color);
+            border-radius: var(--slider-height);
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: var(--slider-thumb-size);
+            height: var(--slider-thumb-size);
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform var(--transition-fast), background-color var(--transition-fast);
+        }
+
+        .form-range::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background-color: var(--primary-color);
+        }
+
+        .form-range::-moz-range-thumb {
+            width: var(--slider-thumb-size);
+            height: var(--slider-thumb-size);
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform var(--transition-fast), background-color var(--transition-fast);
+            border: none;
+        }
+
+        .form-range::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            background-color: var(--primary-color);
+        }
+
+        .instructions {
+            background-color: rgba(33, 150, 243, 0.1);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius-md);
+            margin: var(--spacing-sm) 0;
+            transition: background-color var(--transition-normal);
+        }
+
+        .instructions:hover {
+            background-color: rgba(33, 150, 243, 0.15);
+        }
+
+        .explanation {
+            font-size: var(--font-size-sm);
+            color: var(--secondary-color);
+            margin-top: var(--spacing-xs);
+            transition: color var(--transition-normal);
+        }
+
+        .metric-card:hover .explanation {
+            color: var(--text-color);
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius-sm);
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+            font-size: var(--font-size-sm);
+            white-space: nowrap;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .error-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .success-message {
+            color: var(--success-color);
+            margin-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all var(--transition-normal);
+        }
+
+        .success-message.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--spacing-sm);
+            }
+
+            .card {
+                padding: var(--spacing-sm);
+            }
+
+            .confusion-matrix {
+                gap: 1px;
+            }
+
+            .matrix-cell {
+                padding: var(--spacing-sm);
+                font-size: var(--font-size-sm);
+            }
+
+            .metric-card {
+                padding: var(--spacing-sm);
+            }
+
+            .metric-value {
+                font-size: var(--font-size-lg);
+            }
+
+            .formula {
+                font-size: var(--font-size-sm);
+                padding: var(--spacing-xs);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">📊 Evaluation Metrics Simulation</h1>
+
+        
+        <div class="card">
+            <div class="instructions">
+                <h3>Understanding Classification Metrics:</h3>
+                <ul>
+                    <li>True Positive (TP): Correctly predicted positive cases</li>
+                    <li>True Negative (TN): Correctly predicted negative cases</li>
+                    <li>False Positive (FP): Incorrectly predicted positive cases</li>
+                    <li>False Negative (FN): Incorrectly predicted negative cases</li>
+                </ul>
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <h3>Confusion Matrix</h3>
+            <div class="confusion-matrix" role="grid" aria-label="Confusion Matrix">
+                <div class="matrix-cell tn" role="gridcell" aria-label="True Negative">
+                    <div>True Negative</div>
+                    <div id="tnValue">0</div>
+                </div>
+                <div class="matrix-cell fp" role="gridcell" aria-label="False Positive">
+                    <div>False Positive</div>
+                    <div id="fpValue">0</div>
+                </div>
+                <div class="matrix-cell fn" role="gridcell" aria-label="False Negative">
+                    <div>False Negative</div>
+                    <div id="fnValue">0</div>
+                </div>
+                <div class="matrix-cell tp" role="gridcell" aria-label="True Positive">
+                    <div>True Positive</div>
+                    <div id="tpValue">0</div>
+                </div>
+            </div>
+
+            
+            <div class="slider-container">
+                <div class="mb-3">
+                    <div class="slider-label">
+                        <label for="tpSlider">True Positives (TP):</label>
+                        <span id="tpSliderValue">0</span>
+                    </div>
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="tpSlider"
+                        aria-label="True Positives Slider">
+                </div>
+                <div class="mb-3">
+                    <div class="slider-label">
+                        <label for="tnSlider">True Negatives (TN):</label>
+                        <span id="tnSliderValue">0</span>
+                    </div>
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="tnSlider"
+                        aria-label="True Negatives Slider">
+                </div>
+                <div class="mb-3">
+                    <div class="slider-label">
+                        <label for="fpSlider">False Positives (FP):</label>
+                        <span id="fpSliderValue">0</span>
+                    </div>
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="fpSlider"
+                        aria-label="False Positives Slider">
+                </div>
+                <div class="mb-3">
+                    <div class="slider-label">
+                        <label for="fnSlider">False Negatives (FN):</label>
+                        <span id="fnSliderValue">0</span>
+                    </div>
+                    <input type="range" class="form-range" min="0" max="100" value="0" id="fnSlider"
+                        aria-label="False Negatives Slider">
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="card">
+            <h3>Evaluation Metrics</h3>
+
+            
+            <div class="metric-card">
+                <h4>Accuracy</h4>
+                <div class="formula">
+                    Accuracy = (TP + TN) / (TP + TN + FP + FN)
+                </div>
+                <div class="metric-value" id="accuracyValue">0.00</div>
+                <div class="explanation tooltip">
+                    Measures the proportion of correct predictions (both positive and negative) among all predictions.
+                    <span class="tooltip-text">Higher accuracy indicates better overall prediction performance</span>
+                </div>
+            </div>
+
+            
+            <div class="metric-card">
+                <h4>Precision</h4>
+                <div class="formula">
+                    Precision = TP / (TP + FP)
+                </div>
+                <div class="metric-value" id="precisionValue">0.00</div>
+                <div class="explanation tooltip">
+                    Measures the proportion of true positives among all positive predictions.
+                    <span class="tooltip-text">Higher precision means fewer false positives</span>
+                </div>
+            </div>
+
+            
+            <div class="metric-card">
+                <h4>Recall (Sensitivity)</h4>
+                <div class="formula">
+                    Recall = TP / (TP + FN)
+                </div>
+                <div class="metric-value" id="recallValue">0.00</div>
+                <div class="explanation tooltip">
+                    Measures the proportion of actual positives that were correctly identified.
+                    <span class="tooltip-text">Higher recall means fewer false negatives</span>
+                </div>
+            </div>
+
+            
+            <div class="metric-card">
+                <h4>F1 Score</h4>
+                <div class="formula">
+                    F1 = 2 * (Precision * Recall) / (Precision + Recall)
+                </div>
+                <div class="metric-value" id="f1Value">0.00</div>
+                <div class="explanation tooltip">
+                    Harmonic mean of precision and recall, providing a balance between the two metrics.
+                    <span class="tooltip-text">F1 score is useful when you want to balance precision and recall</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Debounce function for performance
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Get all slider elements
+        const tpSlider = document.getElementById('tpSlider');
+        const tnSlider = document.getElementById('tnSlider');
+        const fpSlider = document.getElementById('fpSlider');
+        const fnSlider = document.getElementById('fnSlider');
+
+        // Get all value display elements
+        const tpValue = document.getElementById('tpValue');
+        const tnValue = document.getElementById('tnValue');
+        const fpValue = document.getElementById('fpValue');
+        const fnValue = document.getElementById('fnValue');
+        const tpSliderValue = document.getElementById('tpSliderValue');
+        const tnSliderValue = document.getElementById('tnSliderValue');
+        const fpSliderValue = document.getElementById('fpSliderValue');
+        const fnSliderValue = document.getElementById('fnSliderValue');
+
+        // Get metric value elements
+        const accuracyValue = document.getElementById('accuracyValue');
+        const precisionValue = document.getElementById('precisionValue');
+        const recallValue = document.getElementById('recallValue');
+        const f1Value = document.getElementById('f1Value');
+
+        // Add error handling
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            document.querySelector('.card').insertAdjacentElement('afterbegin', errorDiv);
+
+            // Show error
+            setTimeout(() => errorDiv.classList.add('visible'), 10);
+
+            // Remove error after 3 seconds
+            setTimeout(() => {
+                errorDiv.classList.remove('visible');
+                setTimeout(() => errorDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Add success message
+        function showSuccess(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.textContent = message;
+            document.querySelector('.card').insertAdjacentElement('afterbegin', successDiv);
+
+            // Show success
+            setTimeout(() => successDiv.classList.add('visible'), 10);
+
+            // Remove success after 3 seconds
+            setTimeout(() => {
+                successDiv.classList.remove('visible');
+                setTimeout(() => successDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Update values and calculate metrics with error handling
+        const updateMetrics = debounce(async function () {
+            try {
+                const tp = parseInt(tpSlider.value);
+                const tn = parseInt(tnSlider.value);
+                const fp = parseInt(fpSlider.value);
+                const fn = parseInt(fnSlider.value);
+
+                // Validate inputs
+                if (isNaN(tp) || isNaN(tn) || isNaN(fp) || isNaN(fn)) {
+                    throw new Error('Invalid input values');
+                }
+
+                // Update confusion matrix values
+                tpValue.textContent = tp;
+                tnValue.textContent = tn;
+                fpValue.textContent = fp;
+                fnValue.textContent = fn;
+
+                // Update slider value displays
+                tpSliderValue.textContent = tp;
+                tnSliderValue.textContent = tn;
+                fpSliderValue.textContent = fp;
+                fnSliderValue.textContent = fn;
+
+                // Calculate metrics
+                const total = tp + tn + fp + fn;
+
+                // Accuracy
+                const accuracy = total > 0 ? (tp + tn) / total : 0;
+                accuracyValue.textContent = accuracy.toFixed(2);
+
+                // Precision
+                const precision = (tp + fp) > 0 ? tp / (tp + fp) : 0;
+                precisionValue.textContent = precision.toFixed(2);
+
+                // Recall
+                const recall = (tp + fn) > 0 ? tp / (tp + fn) : 0;
+                recallValue.textContent = recall.toFixed(2);
+
+                // F1 Score
+                const f1 = (precision + recall) > 0 ?
+                    2 * (precision * recall) / (precision + recall) : 0;
+                f1Value.textContent = f1.toFixed(2);
+
+                // Show success message for significant changes
+                if (total > 0 && (accuracy > 0.8 || precision > 0.8 || recall > 0.8 || f1 > 0.8)) {
+                    showSuccess('Great performance metrics achieved!');
+                }
+            } catch (error) {
+                showError(error.message);
+            }
+        }, 100);
+
+        // Add keyboard shortcuts for sliders
+        function handleSliderKeydown(event, slider, increment) {
+            if (event.ctrlKey) {
+                event.preventDefault();
+                const currentValue = parseInt(slider.value);
+                const newValue = Math.max(0, Math.min(100, currentValue + increment));
+                slider.value = newValue;
+                updateMetrics();
+            }
+        }
+
+        // Add event listeners to sliders
+        [tpSlider, tnSlider, fpSlider, fnSlider].forEach(slider => {
+            slider.addEventListener('input', updateMetrics);
+            slider.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowUp') {
+                    handleSliderKeydown(e, slider, 1);
+                } else if (e.key === 'ArrowDown') {
+                    handleSliderKeydown(e, slider, -1);
+                }
+            });
+        });
+
+        // Add keyboard shortcut hints
+        const shortcutHints = document.createElement('div');
+        shortcutHints.className = 'text-muted mt-2';
+        shortcutHints.style.fontSize = 'var(--font-size-sm)';
+        shortcutHints.innerHTML = 'Keyboard shortcuts:<br>' +
+            'Ctrl + Arrow Up/Down: Adjust slider values<br>' +
+            'Hover over explanations for more details';
+        document.querySelector('.slider-container').appendChild(shortcutHints);
+
+        // Add focus styles for keyboard navigation
+        document.querySelectorAll('input[type="range"], .metric-card').forEach(element => {
+            element.addEventListener('focus', () => {
+                element.style.outline = `2px solid var(--accent-color)`;
+                element.style.outlineOffset = '2px';
+            });
+            element.addEventListener('blur', () => {
+                element.style.outline = 'none';
+            });
+        });
+
+        // Initial update
+        updateMetrics();
+    </script>
+</body>
+
+</html>

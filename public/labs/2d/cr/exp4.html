@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vigenère Cipher Decryption</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1a73e8;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background-color: #1a73e8;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #1557b0;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            min-height: 50px;
+        }
+
+        .explanation {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e8f0fe;
+            border-radius: 4px;
+            color: #1a73e8;
+        }
+
+        .visualization {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .visualization pre {
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .auto-update {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .auto-update input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Vigenère Cipher Decryption</h1>
+
+        <div class="input-group">
+            <label for="encrypted">Enter encrypted message:</label>
+            <textarea id="encrypted" rows="4" placeholder="Type your encrypted message here..."
+                oninput="if(document.getElementById('autoUpdate').checked) decryptMessage()"></textarea>
+        </div>
+
+        <div class="input-group">
+            <label for="keyword">Enter keyword:</label>
+            <input type="text" id="keyword" placeholder="Enter your keyword (e.g., KEY)"
+                oninput="this.value = this.value.replace(/[^a-zA-Z]/g, '').toUpperCase(); if(document.getElementById('autoUpdate').checked) decryptMessage()">
+        </div>
+
+        <div class="auto-update">
+            <input type="checkbox" id="autoUpdate" checked>
+            <label for="autoUpdate">Automatically update decryption as you type</label>
+        </div>
+
+        <button onclick="decryptMessage()">Decrypt Message</button>
+
+        <div class="result" id="result">
+            Decrypted message will appear here...
+        </div>
+
+        <div class="visualization" id="visualization">
+            <h3>Decryption Process:</h3>
+            <pre id="process">The decryption process will be shown here...</pre>
+        </div>
+
+        <div class="explanation">
+            <h3>How it works:</h3>
+            <p>The Vigenère Cipher decryption uses the same keyword to decrypt your message. Each letter in the keyword
+                tells us how far to shift the corresponding letter backward:</p>
+            <ul>
+                <li>A = shift back by 0</li>
+                <li>B = shift back by 1</li>
+                <li>C = shift back by 2</li>
+                <li>...and so on!</li>
+            </ul>
+            <p>For example, if your keyword is "KEY":</p>
+            <ul>
+                <li>K (10) shifts the first letter back by 10 positions</li>
+                <li>E (4) shifts the second letter back by 4 positions</li>
+                <li>Y (24) shifts the third letter back by 24 positions</li>
+                <li>Then it repeats: K, E, Y, K, E, Y...</li>
+            </ul>
+            <p>Make sure to use the same keyword that was used to encrypt the message!</p>
+        </div>
+    </div>
+
+    <script>
+        function decryptMessage() {
+            const encrypted = document.getElementById('encrypted').value;
+            const keyword = document.getElementById('keyword').value.toUpperCase();
+            const result = document.getElementById('result');
+            const process = document.getElementById('process');
+
+            if (!encrypted) {
+                result.textContent = 'Please enter an encrypted message!';
+                return;
+            }
+
+            if (!keyword) {
+                result.textContent = 'Please enter a keyword!';
+                return;
+            }
+
+            let decrypted = '';
+            let processText = 'Encrypted message: ' + encrypted + '\nKeyword: ' + keyword + '\n\nDecryption process:\n';
+
+            for (let i = 0; i < encrypted.length; i++) {
+                let char = encrypted[i];
+                let keyChar = keyword[i % keyword.length];
+                let keyShift = keyChar.charCodeAt(0) - 65; // Convert key letter to shift value (A=0, B=1, etc.)
+
+                // Check if character is a letter
+                if (char.match(/[a-z]/i)) {
+                    // Get the ASCII code
+                    let code = encrypted.charCodeAt(i);
+                    let isUpperCase = code >= 65 && code <= 90;
+                    let baseCode = isUpperCase ? 65 : 97;
+
+                    // Apply the reverse shift (add 26 before subtracting to handle negative numbers)
+                    let shiftedCode = ((code - baseCode - keyShift + 26) % 26) + baseCode;
+                    char = String.fromCharCode(shiftedCode);
+
+                    // Add to process visualization
+                    processText += `${encrypted[i]} (${encrypted[i].toUpperCase()}) - ${keyChar} (${keyShift}) = ${char}\n`;
+                } else {
+                    processText += `${char} (not a letter, unchanged)\n`;
+                }
+
+                decrypted += char;
+            }
+
+            result.textContent = decrypted;
+            process.textContent = processText;
+        }
+    </script>
+</body>
+
+</html>

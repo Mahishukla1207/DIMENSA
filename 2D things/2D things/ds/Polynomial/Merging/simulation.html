@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polynomial Addition & Linked List Merge Visualizer</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #fff;
+      text-align: center;
+      font-family: 'Poppins', sans-serif;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .controls {
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      backdrop-filter: blur(10px);
+    }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    input, button {
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    input {
+      background: rgba(255,255,255,0.9);
+      color: #333;
+      width: 260px;
+    }
+    button {
+      background: #f7971e;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    button:hover {
+      background: #ffd200;
+      color: #f7971e;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .step-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 10px 0 20px 0;
+    }
+    .poly-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 40px;
+      min-height: 120px;
+      margin: 30px 0 20px 0;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .ll-node {
+      position: relative;
+      min-width: 90px;
+      height: 60px;
+      background: linear-gradient(135deg, #fffde4, #ffe29f);
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f7971e;
+      font-weight: bold;
+      font-size: 22px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      border: 4px solid #fff;
+      transition: background 0.3s, border 0.3s, transform 0.3s;
+      user-select: none;
+      z-index: 2;
+      margin-bottom: 0;
+      margin-right: 10px;
+    }
+    .ll-node.current {
+      background: #FFC107;
+      border-color: #fff176;
+      color: #fff;
+      transform: scale(1.1);
+      z-index: 3;
+    }
+    .ll-node.merged {
+      background: #4CAF50;
+      border-color: #a5d6a7;
+      color: #fff;
+      transform: scale(1.15);
+      z-index: 3;
+    }
+    .ll-arrow {
+      display: inline-block;
+      width: 30px;
+      height: 4px;
+      background: #fff;
+      border-radius: 2px;
+      margin: 0 5px;
+      position: relative;
+      top: -2px;
+    }
+    .ll-arrow::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: -6px;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 12px solid #fff;
+    }
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      background: rgba(255,255,255,0.1);
+      padding: 12px 20px;
+      border-radius: 10px;
+      min-width: 120px;
+      backdrop-filter: blur(10px);
+    }
+    .stat-value {
+      font-size: 22px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    .algorithm-info {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 20px;
+      text-align: left;
+      min-height: 40px;
+      backdrop-filter: blur(10px);
+    }
+    .section-title {
+      font-size: 1.2rem;
+      margin: 10px 0 0 0;
+      color: #fffde4;
+      letter-spacing: 1px;
+    }
+  
+                    .current-page {
+                        text-decoration: underline;
+                        text-decoration-thickness: 2px;
+                        text-decoration-color: var(--primary-color);
+                        font-weight: bold;
+                        color: var(--primary-color);
+                    }
+                    </style>
+</head>
+<body>
+<h1>Polynomial Addition & Linked List Merge</h1>
+<div class="controls">
+  <div class="input-group">
+    <input type="text" id="poly1" placeholder="Enter Polynomial 1 (e.g., 3x^2+2x+1)">
+    <input type="text" id="poly2" placeholder="Enter Polynomial 2 (e.g., 5x^2+3)">
+  </div>
+  <div class="input-group">
+    <button onclick="startPolyAddition()">Add Polynomials</button>
+    <button onclick="startMergeLists()">Merge as Linked Lists</button>
+    <button onclick="resetPoly()">Reset</button>
+  </div>
+  <div class="step-controls">
+    <button onclick="prevStep()">&#8592; Prev</button>
+    <button onclick="playPause()" id="playPauseBtn">Play</button>
+    <button onclick="nextStep()">Next &#8594;</button>
+  </div>
+</div>
+<div class="section-title">Polynomial 1</div>
+<div class="poly-visual" id="poly1Visual"></div>
+<div class="section-title">Polynomial 2</div>
+<div class="poly-visual" id="poly2Visual"></div>
+<div class="section-title">Result / Merged List</div>
+<div class="poly-visual" id="resultVisual"></div>
+<div class="stats">
+  <div class="stat-box">
+    <div>Steps</div>
+    <div class="stat-value" id="steps">0</div>
+  </div>
+</div>
+<div class="algorithm-info" id="algorithmInfo">Enter two polynomials and visualize addition or merging.</div>
+<footer style="margin-top: 30px;">&copy; 2025 Virtual DSA Lab | Polynomial & Linked List</footer>
+<script>
+let steps = [], currentStep = 0, playInterval = null;
+let poly1List = [], poly2List = [], resultList = [];
+
+function parsePolynomial(str) {
+  // Returns array of {coeff, exp}
+  str = str.replace(/\s+/g, '');
+  if (!str) return [];
+  let terms = str.match(/[+-]?\d*x\^\d+|[+-]?\d*x|[+-]?\d+/g);
+  if (!terms) return [];
+  return terms.map(term => {
+    let coeff = 1, exp = 0;
+    if (term.includes('x^')) {
+      [coeff, exp] = term.split('x^');
+      coeff = coeff === '' || coeff === '+' ? 1 : (coeff === '-' ? -1 : parseInt(coeff));
+      exp = parseInt(exp);
+    } else if (term.includes('x')) {
+      coeff = term.replace('x', '');
+      coeff = coeff === '' || coeff === '+' ? 1 : (coeff === '-' ? -1 : parseInt(coeff));
+      exp = 1;
+    } else {
+      coeff = parseInt(term);
+      exp = 0;
+    }
+    return {coeff, exp};
+  }).sort((a, b) => b.exp - a.exp);
+}
+function renderPolyList(list, containerId, highlightIdx = null, mergedIdxs = []) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  list.forEach((term, idx) => {
+    const node = document.createElement('div');
+    node.className = 'll-node';
+    node.textContent = `${term.coeff}${term.exp > 0 ? 'x' + (term.exp > 1 ? '^' + term.exp : '') : ''}`;
+    if (highlightIdx === idx) node.classList.add('current');
+    if (mergedIdxs.includes(idx)) node.classList.add('merged');
+    container.appendChild(node);
+    if (idx < list.length - 1) {
+      const arrow = document.createElement('div');
+      arrow.className = 'll-arrow';
+      container.appendChild(arrow);
+    }
+  });
+}
+function recordStep(poly1, poly2, result, info, h1 = null, h2 = null, hr = null, mergedIdxs = []) {
+  steps.push({poly1: JSON.parse(JSON.stringify(poly1)), poly2: JSON.parse(JSON.stringify(poly2)), result: JSON.parse(JSON.stringify(result)), info, h1, h2, hr, mergedIdxs: [...mergedIdxs]});
+}
+function showStep(idx) {
+  if (idx < 0 || idx >= steps.length) return;
+  const step = steps[idx];
+  renderPolyList(step.poly1, 'poly1Visual', step.h1);
+  renderPolyList(step.poly2, 'poly2Visual', step.h2);
+  renderPolyList(step.result, 'resultVisual', step.hr, step.mergedIdxs);
+  document.getElementById('algorithmInfo').innerHTML = step.info;
+  document.getElementById('steps').textContent = steps.length;
+}
+function nextStep() {
+  if (currentStep < steps.length - 1) {
+    currentStep++;
+    showStep(currentStep);
+  } else if (playInterval) {
+    playPause();
+  }
+}
+function prevStep() {
+  if (currentStep > 0) {
+    currentStep--;
+    showStep(currentStep);
+  }
+}
+function playPause() {
+  const btn = document.getElementById('playPauseBtn');
+  if (playInterval) {
+    clearInterval(playInterval);
+    playInterval = null;
+    btn.textContent = 'Play';
+  } else {
+    playInterval = setInterval(nextStep, 700);
+    btn.textContent = 'Pause';
+  }
+}
+function startPolyAddition() {
+  const p1 = document.getElementById('poly1').value;
+  const p2 = document.getElementById('poly2').value;
+  poly1List = parsePolynomial(p1);
+  poly2List = parsePolynomial(p2);
+  resultList = [];
+  steps = [];
+  currentStep = 0;
+  let i = 0, j = 0;
+  recordStep(poly1List, poly2List, resultList, 'Starting polynomial addition.');
+  while (i < poly1List.length && j < poly2List.length) {
+    recordStep(poly1List, poly2List, resultList, `Comparing terms: ${poly1List[i].coeff}x^${poly1List[i].exp} and ${poly2List[j].coeff}x^${poly2List[j].exp}`, i, j, resultList.length);
+    if (poly1List[i].exp === poly2List[j].exp) {
+      const sum = poly1List[i].coeff + poly2List[j].coeff;
+      if (sum !== 0) resultList.push({coeff: sum, exp: poly1List[i].exp});
+      recordStep(poly1List, poly2List, resultList, `Added like terms: ${sum}x^${poly1List[i].exp}`, i, j, resultList.length-1);
+      i++; j++;
+    } else if (poly1List[i].exp > poly2List[j].exp) {
+      resultList.push({...poly1List[i]});
+      recordStep(poly1List, poly2List, resultList, `Added term from Poly1: ${poly1List[i].coeff}x^${poly1List[i].exp}`, i, j, resultList.length-1);
+      i++;
+    } else {
+      resultList.push({...poly2List[j]});
+      recordStep(poly1List, poly2List, resultList, `Added term from Poly2: ${poly2List[j].coeff}x^${poly2List[j].exp}`, i, j, resultList.length-1);
+      j++;
+    }
+  }
+  while (i < poly1List.length) {
+    resultList.push({...poly1List[i]});
+    recordStep(poly1List, poly2List, resultList, `Added remaining term from Poly1: ${poly1List[i].coeff}x^${poly1List[i].exp}`, i, null, resultList.length-1);
+    i++;
+  }
+  while (j < poly2List.length) {
+    resultList.push({...poly2List[j]});
+    recordStep(poly1List, poly2List, resultList, `Added remaining term from Poly2: ${poly2List[j].coeff}x^${poly2List[j].exp}`, null, j, resultList.length-1);
+    j++;
+  }
+  recordStep(poly1List, poly2List, resultList, 'Polynomial addition complete!');
+  showStep(0);
+}
+function startMergeLists() {
+  const p1 = document.getElementById('poly1').value;
+  const p2 = document.getElementById('poly2').value;
+  poly1List = parsePolynomial(p1);
+  poly2List = parsePolynomial(p2);
+  resultList = [];
+  steps = [];
+  currentStep = 0;
+  let i = 0, j = 0;
+  recordStep(poly1List, poly2List, resultList, 'Starting merge of two sorted linked lists.');
+  while (i < poly1List.length && j < poly2List.length) {
+    recordStep(poly1List, poly2List, resultList, `Comparing nodes: ${poly1List[i].coeff}x^${poly1List[i].exp} and ${poly2List[j].coeff}x^${poly2List[j].exp}`, i, j, resultList.length);
+    if (poly1List[i].exp >= poly2List[j].exp) {
+      resultList.push({...poly1List[i]});
+      recordStep(poly1List, poly2List, resultList, `Added node from List 1: ${poly1List[i].coeff}x^${poly1List[i].exp}`, i, j, resultList.length-1, [resultList.length-1]);
+      i++;
+    } else {
+      resultList.push({...poly2List[j]});
+      recordStep(poly1List, poly2List, resultList, `Added node from List 2: ${poly2List[j].coeff}x^${poly2List[j].exp}`, i, j, resultList.length-1, [resultList.length-1]);
+      j++;
+    }
+  }
+  while (i < poly1List.length) {
+    resultList.push({...poly1List[i]});
+    recordStep(poly1List, poly2List, resultList, `Added remaining node from List 1: ${poly1List[i].coeff}x^${poly1List[i].exp}`, i, null, resultList.length-1, [resultList.length-1]);
+    i++;
+  }
+  while (j < poly2List.length) {
+    resultList.push({...poly2List[j]});
+    recordStep(poly1List, poly2List, resultList, `Added remaining node from List 2: ${poly2List[j].coeff}x^${poly2List[j].exp}`, null, j, resultList.length-1, [resultList.length-1]);
+    j++;
+  }
+  recordStep(poly1List, poly2List, resultList, 'Merge complete!');
+  showStep(0);
+}
+function resetPoly() {
+  steps = [];
+  currentStep = 0;
+  poly1List = [];
+  poly2List = [];
+  resultList = [];
+  renderPolyList([], 'poly1Visual');
+  renderPolyList([], 'poly2Visual');
+  renderPolyList([], 'resultVisual');
+  document.getElementById('algorithmInfo').innerHTML = 'Enter two polynomials and visualize addition or merging.';
+  document.getElementById('steps').textContent = 0;
+}
+resetPoly();
+</script>
+</html>
+
+
+
+

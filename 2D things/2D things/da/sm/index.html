@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Data Analytics Lab</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 40px;
+      color: #2e7d32;
+    }
+    .experiment-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 20px;
+    }
+    .experiment-item {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .experiment-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .experiment-item a {
+      text-decoration: none;
+      color: #00796b;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .experiment-item p {
+      color: #555;
+    }
+    footer {
+      margin-top: 50px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Welcome to the Virtual Data Analytics Lab</h1>
+<p>Explore and interact with various data analysis experiments below:</p>
+
+<div class="experiment-list">
+  <div class="experiment-item">
+    <a href="experiment_1.html">Experiment 1: Matplotlib Plot Visualizer</a>
+    <p>Learn to create line, bar, pie, scatter, and other plots!</p>
+  </div>
+  
+  <div class="experiment-item">
+    <a href="experiment_2.html">Experiment 2: Data Import/Export</a>
+    <p>Import/export data from CSV, XLS, and TXT files using Pandas.</p>
+  </div>
+
+  <div class="experiment-item">
+    <a href="experiment_3.html">Experiment 3: Linear Regression</a>
+    <p>Perform simple linear regression to predict salary data.</p>
+  </div>
+
+  <div class="experiment-item">
+    <a href="experiment_4.html">Experiment 4: Matrix Operations</a>
+    <p>Perform addition, subtraction, multiplication, and division of matrices.</p>
+  </div>
+
+  <div class="experiment-item">
+    <a href="experiment_5.html">Experiment 5: KNN Disease Diagnosis</a>
+    <p>Use K-Nearest Neighbors to diagnose diseases based on symptoms.</p>
+  </div>
+
+  <div class="experiment-item">
+    <a href="experiment_6.html">Experiment 6: PCA Visualization</a>
+    <p>Visualize dimensionality reduction using Principal Component Analysis (PCA).</p>
+  </div>
+
+  <div class="experiment-item">
+    <a href="experiment_7.html">Experiment 7: Stock Market Prediction</a>
+    <p>Predict stock prices using time series analysis techniques.</p>
+  </div>
+
+  <div class="experiment-item">
+    <a href="experiment_8.html">Experiment 8: K-Means Clustering</a>
+    <p>Use K-Means clustering on the IRIS dataset to find patterns.</p>
+  </div>
+
+  <div class="experiment-item">
+    <a href="experiment_9.html">Experiment 9: Sentiment Analysis</a>
+    <p>Analyze the sentiment of text data (positive, negative, neutral).</p>
+  </div>
+
+  <div class="experiment-item">
+    <a href="experiment_10.html">Experiment 10: Market Basket Analysis</a>
+    <p>Apply the Apriori algorithm to discover frequent item sets.</p>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2025 Virtual Data Analytics Lab | Developed for PSIT, KANPUR</p>
+</footer>
+
+</body>
+</html>

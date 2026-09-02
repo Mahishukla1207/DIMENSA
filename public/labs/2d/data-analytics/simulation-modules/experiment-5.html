@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Disease Diagnosis using KNN - Data Analytics Lab</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9fbfd;
+      margin: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    #canvas {
+      background: #fff;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 14px;
+      font-size: 15px;
+    }
+    #controls {
+      margin-top: 10px;
+    }
+    #kValue {
+      width: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🧬 KNN Disease Diagnosis Simulator</h1>
+<p>Click to add **Patient Data Points**: <strong style="color:green;">Healthy</strong> (Left-click) | <strong style="color:red;">Diseased</strong> (Right-click)</p>
+
+<canvas id="canvas" width="600" height="400"></canvas>
+
+<div id="controls">
+  <label>K (Neighbors):</label>
+  <input type="number" id="kValue" value="3" min="1" max="10">
+  <button onclick="predictNew()">Predict New Patient</button>
+  <button onclick="clearCanvas()">Clear All</button>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  let points = []; // {x, y, label} label: 0 = healthy, 1 = diseased
+
+  canvas.addEventListener('click', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    points.push({x, y, label: 0});
+    draw();
+  });
+
+  canvas.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    points.push({x, y, label: 1});
+    draw();
+  });
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let p of points) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+      ctx.fillStyle = (p.label === 0) ? 'green' : 'red';
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  function predictNew() {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const k = parseInt(document.getElementById('kValue').value);
+
+    const distances = points.map(p => ({
+      point: p,
+      dist: Math.hypot(p.x - x, p.y - y)
+    }));
+
+    distances.sort((a, b) => a.dist - b.dist);
+    const kNearest = distances.slice(0, k);
+
+    const labels = kNearest.map(d => d.point.label);
+    const prediction = (labels.reduce((a,b) => a+b, 0) > k/2) ? 1 : 0;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, 2 * Math.PI);
+    ctx.fillStyle = (prediction === 0) ? 'limegreen' : 'crimson';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    alert(prediction === 0 ? "Prediction: Healthy Patient ✅" : "Prediction: Diseased Patient ⚠️");
+  }
+
+  function clearCanvas() {
+    points = [];
+    draw();
+  }
+</script>
+
+</body>
+</html>

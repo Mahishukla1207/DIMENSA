@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 8: Graph Algorithms</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Graph Algorithms</h1>
+        <p style="text-align: center; color: white;">Interactive visualization of Breadth-First Search (BFS) and Depth-First Search (DFS)</p>
+
+        <div class="card">
+            <h2>Graph Setup</h2>
+            <div class="controls">
+                <input type="number" id="numNodes" min="3" max="10" value="6" placeholder="Number of Nodes">
+                <input type="number" id="numEdges" min="2" max="20" value="8" placeholder="Number of Edges">
+                <button onclick="generateGraph()">Generate Graph</button>
+                <button onclick="resetGraph()">Reset</button>
+            </div>
+            <div id="graphVisualization" style="text-align: center; margin: 20px 0;"></div>
+        </div>
+
+        <div class="visualization-container">
+            <div class="card">
+                <h2>Breadth-First Search (BFS)</h2>
+                <div class="controls">
+                    <input type="number" id="bfsStart" min="0" max="9" value="0" placeholder="Start Node">
+                    <button onclick="startBFS()">Start BFS</button>
+                    <button onclick="resetBFS()">Reset</button>
+                </div>
+                <div id="bfsVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="bfsResult" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="bfsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Depth-First Search (DFS)</h2>
+                <div class="controls">
+                    <input type="number" id="dfsStart" min="0" max="9" value="0" placeholder="Start Node">
+                    <button onclick="startDFS()">Start DFS</button>
+                    <button onclick="resetDFS()">Reset</button>
+                </div>
+                <div id="dfsVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="dfsResult" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="dfsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Kruskal's Algorithm (MST)</h2>
+                <div class="controls">
+                    <button onclick="runKruskal()">Run Kruskal's MST</button>
+                    <button onclick="resetKruskal()">Reset</button>
+                </div>
+                <div id="kruskalVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="kruskalResult" style="text-align: center; margin: 20px 0;"></div>
+            </div>
+
+            <div class="card">
+                <h2>Prim's Algorithm (MST)</h2>
+                <div class="controls">
+                    <input type="number" id="primStart" min="0" max="9" value="0" placeholder="Start Node">
+                    <button onclick="runPrim()">Run Prim's MST</button>
+                    <button onclick="resetPrim()">Reset</button>
+                </div>
+                <div id="primVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="primResult" style="text-align: center; margin: 20px 0;"></div>
+            </div>
+        </div>
+
+        <div class="card explanation">
+            <h3>Algorithm Analysis</h3>
+            <p><strong>BFS:</strong> O(V + E) time complexity, O(V) space complexity - where V is vertices and E is edges</p>
+            <p><strong>DFS:</strong> O(V + E) time complexity, O(V) space complexity - where V is vertices and E is edges</p>
+            <p><strong>Note:</strong> Both algorithms visit all nodes, but in different orders - BFS explores level by level, DFS goes deep first</p>
+        </div>
+    </div>
+
+    <script>
+        let graph = {
+            nodes: [],
+            edges: []
+        };
+        let charts = {};
+
+        function generateGraph() {
+            const numNodes = parseInt(document.getElementById('numNodes').value);
+            const numEdges = parseInt(document.getElementById('numEdges').value);
+            if (isNaN(numNodes) || isNaN(numEdges) || numNodes < 3) {
+                alert('Please enter a valid number of nodes and edges.');
+                return;
+            }
+            // Generate nodes
+            graph.nodes = Array.from({length: numNodes}, (_, i) => ({
+                id: i,
+                x: Math.random() * 400 + 50,
+                y: Math.random() * 300 + 50
+            }));
+            // Generate edges
+            graph.edges = [];
+            const maxEdges = (numNodes * (numNodes - 1)) / 2;
+            const actualEdges = Math.min(numEdges, maxEdges);
+            while (graph.edges.length < actualEdges) {
+                const node1 = Math.floor(Math.random() * numNodes);
+                const node2 = Math.floor(Math.random() * numNodes);
+                if (node1 !== node2) {
+                    const edge = [Math.min(node1, node2), Math.max(node1, node2)];
+                    if (!graph.edges.some(e => e[0] === edge[0] && e[1] === edge[1])) {
+                        graph.edges.push(edge);
+                    }
+                }
+            }
+            document.getElementById('bfsVisualization').innerHTML = '';
+            document.getElementById('dfsVisualization').innerHTML = '';
+            document.getElementById('bfsResult').innerHTML = '';
+            document.getElementById('dfsResult').innerHTML = '';
+            visualizeGraph();
+            updateCharts();
+        }
+
+        function resetGraph() {
+            graph = { nodes: [], edges: [] };
+            document.getElementById('graphVisualization').innerHTML = '';
+            document.getElementById('bfsVisualization').innerHTML = '';
+            document.getElementById('dfsVisualization').innerHTML = '';
+            document.getElementById('bfsResult').innerHTML = '';
+            document.getElementById('dfsResult').innerHTML = '';
+        }
+
+        function visualizeGraph() {
+            const container = document.getElementById('graphVisualization');
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", "500");
+            svg.setAttribute("height", "400");
+            svg.style.border = "1px solid #2B6CB0";
+            
+            // Draw edges
+            graph.edges.forEach(edge => {
+                const node1 = graph.nodes[edge[0]];
+                const node2 = graph.nodes[edge[1]];
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", node1.x);
+                line.setAttribute("y1", node1.y);
+                line.setAttribute("x2", node2.x);
+                line.setAttribute("y2", node2.y);
+                line.setAttribute("stroke", "#2B6CB0");
+                line.setAttribute("stroke-width", "2");
+                svg.appendChild(line);
+            });
+            
+            // Draw nodes
+            graph.nodes.forEach(node => {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", node.x);
+                circle.setAttribute("cy", node.y);
+                circle.setAttribute("r", "20");
+                circle.setAttribute("fill", "#2B6CB0");
+                svg.appendChild(circle);
+                
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", node.x);
+                text.setAttribute("y", node.y + 7);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("font-size", "1.3em");
+                text.setAttribute("font-weight", "bold");
+                text.setAttribute("fill", "#fff");
+                text.textContent = node.id;
+                svg.appendChild(text);
+            });
+            
+            container.innerHTML = '';
+            container.appendChild(svg);
+        }
+
+        async function startBFS() {
+            if (!graph.nodes.length) {
+                alert('Please generate a graph first.');
+                return;
+            }
+            const startNode = parseInt(document.getElementById('bfsStart').value);
+            if (isNaN(startNode) || startNode < 0 || startNode >= graph.nodes.length) {
+                alert('Please enter a valid start node.');
+                return;
+            }
+            const visited = new Set();
+            const queue = [startNode];
+            const result = [];
+            while (queue.length > 0) {
+                const node = queue.shift();
+                if (!visited.has(node)) {
+                    visited.add(node);
+                    result.push(node);
+                    // Visualize current node
+                    const svg = document.getElementById('graphVisualization').querySelector('svg');
+                    const circles = svg.querySelectorAll('circle');
+                    if (circles[node]) circles[node].setAttribute('fill', '#00c6ff');
+                    // Add neighbors to queue
+                    graph.edges.forEach(edge => {
+                        if (edge[0] === node && !visited.has(edge[1])) {
+                            queue.push(edge[1]);
+                        } else if (edge[1] === node && !visited.has(edge[0])) {
+                            queue.push(edge[0]);
+                        }
+                    });
+                    await new Promise(resolve => setTimeout(resolve, 700));
+                }
+            }
+            document.getElementById('bfsResult').innerHTML = `
+                <h3>BFS Traversal Order</h3>
+                <p>${result.join(' → ')}</p>
+            `;
+        }
+
+        async function startDFS() {
+            if (!graph.nodes.length) {
+                alert('Please generate a graph first.');
+                return;
+            }
+            const startNode = parseInt(document.getElementById('dfsStart').value);
+            if (isNaN(startNode) || startNode < 0 || startNode >= graph.nodes.length) {
+                alert('Please enter a valid start node.');
+                return;
+            }
+            const visited = new Set();
+            const result = [];
+            async function dfs(node) {
+                if (!visited.has(node)) {
+                    visited.add(node);
+                    result.push(node);
+                    // Visualize current node
+                    const svg = document.getElementById('graphVisualization').querySelector('svg');
+                    const circles = svg.querySelectorAll('circle');
+                    if (circles[node]) circles[node].setAttribute('fill', '#00c6ff');
+                    await new Promise(resolve => setTimeout(resolve, 700));
+                    // Visit neighbors
+                    for (const edge of graph.edges) {
+                        if (edge[0] === node && !visited.has(edge[1])) {
+                            await dfs(edge[1]);
+                        } else if (edge[1] === node && !visited.has(edge[0])) {
+                            await dfs(edge[0]);
+                        }
+                    }
+                }
+            }
+            await dfs(startNode);
+            document.getElementById('dfsResult').innerHTML = `
+                <h3>DFS Traversal Order</h3>
+                <p>${result.join(' → ')}</p>
+            `;
+        }
+
+        function resetBFS() {
+            document.getElementById('bfsResult').innerHTML = '';
+            visualizeGraph();
+        }
+
+        function resetDFS() {
+            document.getElementById('dfsResult').innerHTML = '';
+            visualizeGraph();
+        }
+
+        function updateCharts() {
+            const sizes = Array.from({length: 20}, (_, i) => i + 1);
+            
+            ['bfsChart', 'dfsChart'].forEach(chartId => {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                if (charts[chartId]) charts[chartId].destroy();
+                charts[chartId] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sizes,
+                        datasets: [{
+                            label: chartId === 'bfsChart' ? 'BFS (O(V + E))' : 'DFS (O(V + E))',
+                            data: sizes.map(n => n + (n * (n - 1)) / 2), // V + E
+                            borderColor: '#0072ff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: chartId === 'bfsChart' ? 'BFS Complexity' : 'DFS Complexity'
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function edgeListWithWeights() {
+            // For MST, generate edges with random weights if not present
+            if (graph.edges.length && typeof graph.edges[0][2] !== 'undefined') return graph.edges;
+            return graph.edges.map(e => [e[0], e[1], Math.floor(Math.random() * 20) + 1]);
+        }
+
+        async function runKruskal() {
+            if (!graph.nodes.length) { alert('Please generate a graph first.'); return; }
+            const edges = edgeListWithWeights().slice().sort((a, b) => a[2] - b[2]);
+            const parent = Array(graph.nodes.length).fill(0).map((_, i) => i);
+            function find(u) { return parent[u] === u ? u : parent[u] = find(parent[u]); }
+            let mst = [], total = 0;
+            const container = document.getElementById('kruskalVisualization');
+            container.innerHTML = '';
+            for (const [u, v, w] of edges) {
+                // Animate edge consideration
+                await visualizeMST([...mst, [u, v, w]], 'kruskalVisualization', [u, v]);
+                await new Promise(res => setTimeout(res, 400));
+                if (find(u) !== find(v)) {
+                    mst.push([u, v, w]);
+                    total += w;
+                    parent[find(u)] = find(v);
+                    // Animate edge selection
+                    await visualizeMST(mst, 'kruskalVisualization', [u, v], true);
+                    await new Promise(res => setTimeout(res, 400));
+                }
+            }
+            document.getElementById('kruskalResult').innerHTML = `<h3>MST Total Weight: ${total}</h3><p>Edges: ${mst.map(e => `(${e[0]}-${e[1]}, w=${e[2]})`).join(', ')}</p>`;
+        }
+        function resetKruskal() {
+            document.getElementById('kruskalVisualization').innerHTML = '';
+            document.getElementById('kruskalResult').innerHTML = '';
+            visualizeGraph();
+        }
+
+        async function runPrim() {
+            if (!graph.nodes.length) { alert('Please generate a graph first.'); return; }
+            const start = parseInt(document.getElementById('primStart').value);
+            if (isNaN(start) || start < 0 || start >= graph.nodes.length) { alert('Invalid start node.'); return; }
+            const n = graph.nodes.length;
+            const edges = edgeListWithWeights();
+            const selected = Array(n).fill(false);
+            const minEdge = Array(n).fill([Infinity, -1]);
+            minEdge[start] = [0, -1];
+            let mst = [], total = 0;
+            for (let i = 0; i < n; i++) {
+                let v = -1;
+                for (let j = 0; j < n; j++) {
+                    if (!selected[j] && (v === -1 || minEdge[j][0] < minEdge[v][0])) v = j;
+                }
+                if (minEdge[v][0] === Infinity) break;
+                selected[v] = true;
+                if (minEdge[v][1] !== -1) {
+                    const w = edges.find(e => (e[0] === v && e[1] === minEdge[v][1]) || (e[1] === v && e[0] === minEdge[v][1]))[2];
+                    mst.push([v, minEdge[v][1], w]);
+                    total += w;
+                    // Animate edge selection
+                    await visualizeMST(mst, 'primVisualization', [v, minEdge[v][1]], true);
+                    await new Promise(res => setTimeout(res, 400));
+                }
+                for (const [u, to, w] of edges) {
+                    if (u === v && !selected[to] && w < minEdge[to][0]) minEdge[to] = [w, v];
+                    if (to === v && !selected[u] && w < minEdge[u][0]) minEdge[u] = [w, v];
+                }
+            }
+            document.getElementById('primResult').innerHTML = `<h3>MST Total Weight: ${total}</h3><p>Edges: ${mst.map(e => `(${e[0]}-${e[1]}, w=${e[2]})`).join(', ')}</p>`;
+        }
+        function resetPrim() {
+            document.getElementById('primVisualization').innerHTML = '';
+            document.getElementById('primResult').innerHTML = '';
+            visualizeGraph();
+        }
+
+        async function visualizeMST(mst, containerId, highlightEdge = [], animate = false) {
+            const container = document.getElementById(containerId);
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '500');
+            svg.setAttribute('height', '400');
+            svg.style.border = '1px solid #2B6CB0';
+            // Draw MST edges
+            mst.forEach(([u, v, w]) => {
+                const node1 = graph.nodes[u];
+                const node2 = graph.nodes[v];
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', node1.x);
+                line.setAttribute('y1', node1.y);
+                line.setAttribute('x2', node2.x);
+                line.setAttribute('y2', node2.y);
+                line.setAttribute('stroke', animate && highlightEdge && (u === highlightEdge[0] && v === highlightEdge[1] || u === highlightEdge[1] && v === highlightEdge[0]) ? '#fbbf24' : '#48BB78');
+                line.setAttribute('stroke-width', animate && highlightEdge && (u === highlightEdge[0] && v === highlightEdge[1] || u === highlightEdge[1] && v === highlightEdge[0]) ? '8' : '4');
+                svg.appendChild(line);
+                // Draw weight
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', (node1.x + node2.x) / 2);
+                text.setAttribute('y', (node1.y + node2.y) / 2);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '1.1em');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('fill', '#2B6CB0');
+                text.textContent = w;
+                svg.appendChild(text);
+            });
+            // Draw nodes
+            graph.nodes.forEach(node => {
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', node.x);
+                circle.setAttribute('cy', node.y);
+                circle.setAttribute('r', '20');
+                circle.setAttribute('fill', '#2B6CB0');
+                svg.appendChild(circle);
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', node.x);
+                text.setAttribute('y', node.y + 7);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '1.3em');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('fill', '#fff');
+                text.textContent = node.id;
+                svg.appendChild(text);
+            });
+            container.innerHTML = '';
+            container.appendChild(svg);
+            if (animate && highlightEdge.length === 2) {
+                // Animate the highlighted edge
+                const lines = svg.querySelectorAll('line');
+                lines.forEach(line => {
+                    if (line.getAttribute('stroke') === '#fbbf24') {
+                        anime({ targets: line, stroke: ['#fbbf24', '#48BB78'], duration: 400, easing: 'easeInOutQuad' });
+                    }
+                });
+            }
+        }
+
+        // Initialize
+        generateGraph();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NumPy & pandas Simulation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.4/math.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #5c6bc0;
+            --secondary-color: #66bb6a;
+            --background-color: #f8f9fa;
+            --text-color: #2c3e50;
+            --border-color: #dee2e6;
+            --card-bg: #ffffff;
+            --header-bg: #f1f8ff;
+            --border-radius: 8px;
+            --transition-speed: 0.3s;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 4px 15px rgba(60, 98, 180, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .card {
+            box-shadow: var(--shadow-md);
+            border-radius: var(--border-radius);
+            transition: transform var(--transition-speed) ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            background-color: var(--header-bg);
+            border-bottom: 2px solid var(--border-color);
+            padding: clamp(15px, 2vw, 20px);
+        }
+
+        .section {
+            margin-bottom: clamp(1.5rem, 3vw, 2rem);
+            padding: clamp(1rem, 2vw, 1.5rem);
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .output-area {
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: clamp(0.8rem, 1.5vw, 1rem);
+            margin: clamp(0.8rem, 1.5vw, 1rem) 0;
+            min-height: 100px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            font-size: clamp(0.9rem, 1.2vw, 1rem);
+            line-height: 1.4;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+            border: none !important;
+            color: #fff !important;
+            font-size: clamp(1rem, 1.2vw, 1.1em);
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            padding: clamp(0.5rem, 1vw, 0.8rem) clamp(1rem, 2vw, 1.5rem);
+            border-radius: var(--border-radius);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)) !important;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .btn-primary:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .btn-primary.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-primary.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: clamp(0.8rem, 1.1vw, 0.9rem);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: clamp(2rem, 4vw, 2.5rem);
+            margin-bottom: clamp(1rem, 2vw, 1.5rem);
+            color: var(--text-color);
+        }
+
+        h3 {
+            font-size: clamp(1.5rem, 2.5vw, 1.8rem);
+            color: var(--text-color);
+        }
+
+        h4 {
+            font-size: clamp(1.2rem, 2vw, 1.4rem);
+            color: var(--text-color);
+            margin-bottom: clamp(0.8rem, 1.5vw, 1rem);
+        }
+
+        .code-block {
+            background-color: var(--background-color);
+            padding: clamp(0.8rem, 1.5vw, 1rem);
+            border-radius: var(--border-radius);
+            margin-bottom: clamp(0.8rem, 1.5vw, 1rem);
+            font-size: clamp(0.9rem, 1.1vw, 1rem);
+        }
+
+        @media (max-width: 768px) {
+            .row {
+                flex-direction: column;
+            }
+
+            .col-md-6 {
+                width: 100%;
+                margin-bottom: clamp(1rem, 2vw, 1.5rem);
+            }
+
+            .code-block {
+                font-size: 14px;
+            }
+
+            .output-area {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">🧪 NumPy & pandas</h1>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>NumPy Operations</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="section">
+                            <h4>1D Array Creation</h4>
+                            <div class="code-block">
+                                <pre>import numpy as np
+arr = np.array([1, 2, 3, 4, 5])</pre>
+                            </div>
+                            <pre id="numpy-1d-output" class="output-area"></pre>
+                            <button class="btn btn-primary" onclick="create1DArray()">Create 1D Array</button>
+                        </div>
+
+                        <div class="section">
+                            <h4>2D Array Creation</h4>
+                            <div class="code-block">
+                                <pre>import numpy as np
+arr_2d = np.array([[1, 2, 3],
+                   [4, 5, 6],
+                   [7, 8, 9]])</pre>
+                            </div>
+                            <pre id="numpy-2d-output" class="output-area"></pre>
+                            <button class="btn btn-primary" onclick="create2DArray()">Create 2D Array</button>
+                        </div>
+                        <div class="section">
+                            <h4>Data Cleaning</h4>
+                            <div class="code-block">
+                                <pre>import pandas as pd
+import numpy as np
+# Create DataFrame with missing values
+df = pd.DataFrame({
+    'Name': ['John', 'Alice', 'Bob', 'Emma', 'Mike', 'Sarah'],
+    'Age': [20, np.nan, 21, 20, 22, 19],
+    'Math_Score': [85, 92, np.nan, 95, 88, 90],
+    'Science_Score': [88, 90, 85, 92, 87, 89],
+    'English_Score': [82, 95, 80, 88, 85, 92]
+})</pre>
+                            </div>
+                            <pre id="pandas-clean-output" class="output-area"></pre>
+                            <button class="btn btn-primary" onclick="cleanData()">Clean Data</button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3>pandas Operations</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="section">
+                            <h4>Create DataFrame</h4>
+                            <div class="code-block">
+                                <pre>import pandas as pd
+df = pd.DataFrame({
+    'Name': ['John', 'Alice', 'Bob', 'Emma', 'Mike', 'Sarah'],
+    'Age': [20, 19, 21, 20, 22, 19],
+    'Math_Score': [85, 92, 78, 95, 88, 90],
+    'Science_Score': [88, 90, 85, 92, 87, 89],
+    'English_Score': [82, 95, 80, 88, 85, 92]
+})</pre>
+                            </div>
+                            <pre id="pandas-create-output" class="output-area"></pre>
+                            <button class="btn btn-primary" onclick="createDataFrame()">Create DataFrame</button>
+                        </div>
+
+                        <div class="section">
+                            <h4>DataFrame Info</h4>
+                            <div class="code-block">
+                                <pre>import pandas as pd
+print(df.info())
+print(df.head(3))
+print(df.tail(2))
+print(df.describe())</pre>
+                            </div>
+                            <pre id="pandas-info-output" class="output-area"></pre>
+                            <button class="btn btn-primary" onclick="showDataFrameInfo()">Show Info</button>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample data for the simulation
+        const studentData = {
+            'Name': ['John', 'Alice', 'Bob', 'Emma', 'Mike', 'Sarah'],
+            'Age': [20, 19, 21, 20, 22, 19],
+            'Math_Score': [85, 92, 78, 95, 88, 90],
+            'Science_Score': [88, 90, 85, 92, 87, 89],
+            'English_Score': [82, 95, 80, 88, 85, 92]
+        };
+
+        // NumPy-like Operations using math.js
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        async function create1DArray() {
+            const button = document.querySelector('#numpy-1d-output').nextElementSibling;
+            setLoading(button.id, true);
+
+            try {
+                const output = document.getElementById('numpy-1d-output');
+                const arr = [1, 2, 3, 4, 5];
+
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                let result = `Output:\n`;
+                result += `Array: [${arr.join(' ')}]\n`;
+                result += `Shape: (${arr.length},)\n`;
+                result += `Data type: number\n`;
+
+                output.textContent = result;
+            } catch (error) {
+                showError('numpy1dError', error.message);
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function create2DArray() {
+            const button = document.querySelector('#numpy-2d-output').nextElementSibling;
+            setLoading(button.id, true);
+
+            try {
+                const output = document.getElementById('numpy-2d-output');
+                const arr2d = [
+                    [1, 2, 3],
+                    [4, 5, 6],
+                    [7, 8, 9]
+                ];
+
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                let result = `Output:\n`;
+                result += `2D Array:\n`;
+                result += arr2d.map(row => `[${row.join(' ')}]`).join('\n') + '\n';
+                result += `Shape: (${arr2d.length}, ${arr2d[0].length})\n`;
+                result += `Data type: number\n`;
+
+                output.textContent = result;
+            } catch (error) {
+                showError('numpy2dError', error.message);
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        function performArrayOperations() {
+            const output = document.getElementById('numpy-ops-output');
+            const arr1 = [1, 2, 3];
+            const arr2 = [4, 5, 6];
+
+            // Perform operations using math.js
+            const addition = math.add(arr1, arr2);
+            const multiplication = math.multiply(arr1, arr2);
+            const mean = math.mean(arr1);
+            const sum = math.sum(arr1);
+
+            let result = `Output:\n`;
+            result += `Addition: [${addition.join(' ')}]\n`;
+            result += `Multiplication: [${multiplication.join(' ')}]\n`;
+            result += `Mean: ${mean}\n`;
+            result += `Sum: ${sum}\n\n`;
+
+            // Array slicing
+            const arr = [1, 2, 3, 4, 5];
+            result += `First three elements: [${arr.slice(0, 3).join(' ')}]\n`;
+            result += `Last two elements: [${arr.slice(-2).join(' ')}]\n`;
+
+            output.textContent = result;
+        }
+
+        // pandas-like Operations
+        class DataFrame {
+            constructor(data) {
+                this.data = data;
+                this.columns = Object.keys(data);
+                this.length = data[this.columns[0]].length;
+            }
+
+            info() {
+                let result = `DataFrame Info:\n`;
+                result += `RangeIndex: ${this.length} entries, 0 to ${this.length - 1}\n`;
+                result += `Data columns (total ${this.columns.length} columns):\n`;
+                result += ` #   Column          Non-Null Count  Dtype \n`;
+                result += `---  ------          --------------  ----- \n`;
+
+                this.columns.forEach((col, i) => {
+                    const nonNull = this.data[col].filter(x => x !== null && x !== undefined).length;
+                    const dtype = typeof this.data[col][0] === 'number' ? 'int64' : 'object';
+                    result += `${i.toString().padStart(2)}   ${col.padEnd(15)} ${nonNull.toString().padEnd(15)} ${dtype}\n`;
+                });
+
+                return result;
+            }
+
+            head(n = 5) {
+                return this.slice(0, n);
+            }
+
+            tail(n = 5) {
+                return this.slice(-n);
+            }
+
+            slice(start, end) {
+                const result = {};
+                this.columns.forEach(col => {
+                    result[col] = this.data[col].slice(start, end);
+                });
+                return new DataFrame(result);
+            }
+
+            describe() {
+                const result = {};
+                this.columns.forEach(col => {
+                    if (typeof this.data[col][0] === 'number') {
+                        const values = this.data[col];
+                        result[col] = {
+                            count: values.length,
+                            mean: math.mean(values),
+                            std: math.std(values),
+                            min: math.min(values),
+                            '25%': math.quantileSeq(values, 0.25),
+                            '50%': math.median(values),
+                            '75%': math.quantileSeq(values, 0.75),
+                            max: math.max(values)
+                        };
+                    }
+                });
+                return result;
+            }
+
+            fillna(value) {
+                const result = {};
+                this.columns.forEach(col => {
+                    result[col] = this.data[col].map(x => x === null || x === undefined ? value : x);
+                });
+                return new DataFrame(result);
+            }
+
+            rename(columns) {
+                const result = {};
+                this.columns.forEach(col => {
+                    const newName = columns[col] || col;
+                    result[newName] = this.data[col];
+                });
+                return new DataFrame(result);
+            }
+
+            drop_duplicates() {
+                const seen = new Set();
+                const indices = [];
+
+                for (let i = 0; i < this.length; i++) {
+                    const row = this.columns.map(col => this.data[col][i]).join('|');
+                    if (!seen.has(row)) {
+                        seen.add(row);
+                        indices.push(i);
+                    }
+                }
+
+                const result = {};
+                this.columns.forEach(col => {
+                    result[col] = indices.map(i => this.data[col][i]);
+                });
+                return new DataFrame(result);
+            }
+
+            toString() {
+                let result = '';
+                // Add column headers
+                result += this.columns.map(col => col.padEnd(10)).join('  ') + '\n';
+                // Add data rows
+                for (let i = 0; i < this.length; i++) {
+                    result += this.columns.map(col => {
+                        const value = this.data[col][i];
+                        return String(value).padEnd(10);
+                    }).join('  ') + '\n';
+                }
+                return result;
+            }
+        }
+
+        async function createDataFrame() {
+            const button = document.querySelector('#pandas-create-output').nextElementSibling;
+            setLoading(button.id, true);
+
+            try {
+                const output = document.getElementById('pandas-create-output');
+                const df = new DataFrame(studentData);
+
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                output.textContent = `Output:\nDataFrame:\n${df.toString()}`;
+            } catch (error) {
+                showError('pandasCreateError', error.message);
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function showDataFrameInfo() {
+            const button = document.querySelector('#pandas-info-output').nextElementSibling;
+            setLoading(button.id, true);
+
+            try {
+                const output = document.getElementById('pandas-info-output');
+                const df = new DataFrame(studentData);
+
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                let result = `Output:\n`;
+                result += df.info() + '\n';
+                result += `First 3 rows:\n${df.head(3).toString()}\n`;
+                result += `Last 2 rows:\n${df.tail(2).toString()}\n`;
+                result += `DataFrame Description:\n`;
+
+                const desc = df.describe();
+                const columns = Object.keys(desc);
+                const metrics = ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'];
+
+                result += '             ' + columns.map(col => col.padEnd(12)).join('') + '\n';
+                metrics.forEach(metric => {
+                    result += metric.padEnd(12) + columns.map(col =>
+                        desc[col][metric].toFixed(6).padEnd(12)
+                    ).join('') + '\n';
+                });
+
+                output.textContent = result;
+            } catch (error) {
+                showError('pandasInfoError', error.message);
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function cleanData() {
+            const button = document.querySelector('#pandas-clean-output').nextElementSibling;
+            setLoading(button.id, true);
+
+            try {
+                const output = document.getElementById('pandas-clean-output');
+                const data = {
+                    'Name': ['John', 'Alice', 'Bob', 'Emma', 'Mike', 'Sarah'],
+                    'Age': [20, null, 21, 20, 22, 19],
+                    'Math_Score': [85, 92, null, 95, 88, 90],
+                    'Science_Score': [88, 90, 85, 92, 87, 89],
+                    'English_Score': [82, 95, 80, 88, 85, 92]
+                };
+
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                let df = new DataFrame(data);
+                let result = `Output:\n`;
+
+                result += `Original DataFrame:\n${df.toString()}\n\n`;
+
+                // Fill missing values with mean
+                const meanAge = math.mean(df.data['Age'].filter(x => x !== null));
+                const meanMath = math.mean(df.data['Math_Score'].filter(x => x !== null));
+                df = df.fillna({ 'Age': meanAge, 'Math_Score': meanMath });
+                result += `After filling missing values:\n${df.toString()}\n\n`;
+
+                // Rename columns
+                df = df.rename({
+                    'Math_Score': 'Mathematics',
+                    'Science_Score': 'Science',
+                    'English_Score': 'English'
+                });
+                result += `After renaming columns:\n${df.toString()}\n\n`;
+
+                // Remove duplicates
+                df = df.drop_duplicates();
+                result += `After removing duplicates:\n${df.toString()}`;
+
+                output.textContent = result;
+            } catch (error) {
+                showError('pandasCleanError', error.message);
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                create1DArray();
+            } else if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                create2DArray();
+            } else if (e.ctrlKey && e.key === '3') {
+                e.preventDefault();
+                createDataFrame();
+            } else if (e.ctrlKey && e.key === '4') {
+                e.preventDefault();
+                showDataFrameInfo();
+            } else if (e.ctrlKey && e.key === '5') {
+                e.preventDefault();
+                cleanData();
+            }
+        });
+
+        // Update button text elements and add error message elements
+        document.querySelectorAll('.btn-primary').forEach(button => {
+            const text = button.textContent;
+            button.innerHTML = `<span class="button-text">${text}</span>`;
+            button.id = `${button.closest('.section').querySelector('h4').textContent.toLowerCase().replace(/\s+/g, '-')}-btn`;
+
+            const errorDiv = document.createElement('div');
+            errorDiv.id = `${button.id}-error`;
+            errorDiv.className = 'error-message';
+            button.parentNode.insertBefore(errorDiv, button.nextSibling);
+        });
+    </script>
+</body>
+
+</html>

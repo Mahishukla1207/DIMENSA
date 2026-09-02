@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Market Basket Analysis Simulator - Data Analytics Lab</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9fff9;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .items {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .item {
+      border: 1px solid #ccc;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 10px;
+      cursor: pointer;
+      background: #e8f5e9;
+    }
+    .item.selected {
+      background: #a5d6a7;
+      font-weight: bold;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🛒 Market Basket Analysis Simulator</h1>
+<p>Select items bought together and discover frequent item sets!</p>
+
+<div class="items" id="itemList"></div>
+
+<button onclick="analyzeBasket()">Analyze Basket</button>
+
+<div id="result"></div>
+
+<script>
+  const items = ["Milk", "Bread", "Butter", "Eggs", "Cheese", "Apples", "Bananas", "Juice", "Cereal", "Yogurt"];
+  const transactions = [
+    ["Milk", "Bread", "Butter"],
+    ["Bread", "Butter", "Eggs"],
+    ["Milk", "Eggs"],
+    ["Milk", "Bread", "Eggs", "Butter"],
+    ["Bread", "Butter", "Cheese"],
+    ["Milk", "Cheese", "Apples"],
+    ["Bananas", "Juice"],
+    ["Milk", "Bananas", "Juice"],
+    ["Cereal", "Milk"],
+    ["Yogurt", "Apples", "Juice"]
+  ];
+
+  const itemListDiv = document.getElementById('itemList');
+
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerText = item;
+    div.onclick = () => {
+      div.classList.toggle('selected');
+    };
+    itemListDiv.appendChild(div);
+  });
+
+  function analyzeBasket() {
+    const selected = Array.from(document.getElementsByClassName('selected')).map(div => div.innerText);
+    if (selected.length === 0) {
+      alert("Select at least one item!");
+      return;
+    }
+
+    let count = 0;
+    transactions.forEach(t => {
+      if (selected.every(item => t.includes(item))) {
+        count++;
+      }
+    });
+
+    const support = (count / transactions.length * 100).toFixed(2);
+
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = `
+      Selected Items: <b>${selected.join(", ")}</b><br>
+      Support: <b>${support}%</b><br>
+      ${support >= 30 ? "✅ Frequent Itemset!" : "❌ Not a Frequent Itemset"}
+    `;
+  }
+</script>
+
+</body>
+</html>

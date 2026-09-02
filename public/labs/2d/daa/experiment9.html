@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 9: Shortest Path Algorithms</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Shortest Path Algorithms</h1>
+        <p style="text-align: center; color: white;">Interactive visualization of Dijkstra's and Bellman-Ford algorithms</p>
+
+        <div class="card">
+            <h2>Graph Setup</h2>
+            <div class="controls">
+                <input type="number" id="numNodes" min="3" max="10" value="6" placeholder="Number of Nodes">
+                <input type="number" id="numEdges" min="2" max="20" value="8" placeholder="Number of Edges">
+                <input type="number" id="maxWeight" min="1" max="20" value="10" placeholder="Max Edge Weight">
+                <button onclick="generateGraph()">Generate Graph</button>
+                <button onclick="resetGraph()">Reset</button>
+            </div>
+            <div id="graphVisualization" style="text-align: center; margin: 20px 0;"></div>
+        </div>
+
+        <div class="visualization-container">
+            <div class="card">
+                <h2>Dijkstra's Algorithm</h2>
+                <div class="controls">
+                    <input type="number" id="dijkstraStart" min="0" max="9" value="0" placeholder="Start Node">
+                    <input type="number" id="dijkstraEnd" min="0" max="9" value="5" placeholder="End Node">
+                    <button onclick="startDijkstra()">Find Shortest Path</button>
+                    <button onclick="resetDijkstra()">Reset</button>
+                </div>
+                <div id="dijkstraVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="dijkstraResult" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="dijkstraChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Bellman-Ford Algorithm</h2>
+                <div class="controls">
+                    <input type="number" id="bellmanStart" min="0" max="9" value="0" placeholder="Start Node">
+                    <input type="number" id="bellmanEnd" min="0" max="9" value="5" placeholder="End Node">
+                    <button onclick="startBellmanFord()">Find Shortest Path</button>
+                    <button onclick="resetBellmanFord()">Reset</button>
+                </div>
+                <div id="bellmanVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div id="bellmanResult" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="bellmanChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Warshall's Algorithm (All Pair Shortest Path)</h2>
+                <div class="controls">
+                    <input type="number" id="warshallNodes" min="2" max="8" value="4" placeholder="Nodes">
+                    <button onclick="generateWarshallMatrix()">Generate Matrix</button>
+                    <button onclick="runWarshall()">Run Warshall's Algorithm</button>
+                    <button onclick="resetWarshall()">Reset</button>
+                </div>
+                <div id="warshallMatrix" style="text-align: center; margin: 20px 0;"></div>
+                <div id="warshallResult" style="text-align: center; margin: 20px 0;"></div>
+            </div>
+        </div>
+
+        <div class="card explanation">
+            <h3>Algorithm Analysis</h3>
+            <p><strong>Dijkstra's:</strong> O((V + E) log V)) time complexity, O(V) space complexity - using priority queue</p>
+            <p><strong>Bellman-Ford:</strong> O(VE) time complexity, O(V) space complexity - can handle negative weights</p>
+            <p><strong>Note:</strong> Dijkstra's is faster but can't handle negative weights, Bellman-Ford is slower but more versatile</p>
+        </div>
+    </div>
+
+    <script>
+        let graph = {
+            nodes: [],
+            edges: []
+        };
+        let charts = {};
+        let warshallMatrix = [];
+
+        function generateGraph() {
+            const numNodes = parseInt(document.getElementById('numNodes').value);
+            const numEdges = parseInt(document.getElementById('numEdges').value);
+            const maxWeight = parseInt(document.getElementById('maxWeight').value);
+            if (isNaN(numNodes) || isNaN(numEdges) || isNaN(maxWeight) || numNodes < 3) {
+                alert('Please enter valid values for nodes, edges, and max weight.');
+                return;
+            }
+            // Generate nodes
+            graph.nodes = Array.from({length: numNodes}, (_, i) => ({
+                id: i,
+                x: Math.random() * 400 + 50,
+                y: Math.random() * 300 + 50
+            }));
+            // Generate edges with weights
+            graph.edges = [];
+            const maxEdges = (numNodes * (numNodes - 1)) / 2;
+            const actualEdges = Math.min(numEdges, maxEdges);
+            while (graph.edges.length < actualEdges) {
+                const node1 = Math.floor(Math.random() * numNodes);
+                const node2 = Math.floor(Math.random() * numNodes);
+                if (node1 !== node2) {
+                    const edge = [Math.min(node1, node2), Math.max(node1, node2)];
+                    if (!graph.edges.some(e => e[0] === edge[0] && e[1] === edge[1])) {
+                        const weight = Math.floor(Math.random() * maxWeight) + 1;
+                        graph.edges.push([...edge, weight]);
+                    }
+                }
+            }
+            document.getElementById('dijkstraVisualization').innerHTML = '';
+            document.getElementById('bellmanVisualization').innerHTML = '';
+            document.getElementById('dijkstraResult').innerHTML = '';
+            document.getElementById('bellmanResult').innerHTML = '';
+            visualizeGraph();
+            updateCharts();
+        }
+
+        function resetGraph() {
+            graph = { nodes: [], edges: [] };
+            document.getElementById('graphVisualization').innerHTML = '';
+            document.getElementById('dijkstraVisualization').innerHTML = '';
+            document.getElementById('bellmanVisualization').innerHTML = '';
+            document.getElementById('dijkstraResult').innerHTML = '';
+            document.getElementById('bellmanResult').innerHTML = '';
+        }
+
+        function visualizeGraph() {
+            const container = document.getElementById('graphVisualization');
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", "500");
+            svg.setAttribute("height", "400");
+            svg.style.border = "1px solid #2B6CB0";
+            
+            // Draw edges with weights
+            graph.edges.forEach(edge => {
+                const node1 = graph.nodes[edge[0]];
+                const node2 = graph.nodes[edge[1]];
+                const weight = edge[2];
+                
+                // Draw line
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", node1.x);
+                line.setAttribute("y1", node1.y);
+                line.setAttribute("x2", node2.x);
+                line.setAttribute("y2", node2.y);
+                line.setAttribute("stroke", "#2B6CB0");
+                line.setAttribute("stroke-width", "2");
+                svg.appendChild(line);
+                
+                // Draw weight
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", (node1.x + node2.x) / 2);
+                text.setAttribute("y", (node1.y + node2.y) / 2);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("font-size", "1.1em");
+                text.setAttribute("font-weight", "bold");
+                text.setAttribute("fill", "#2B6CB0");
+                text.textContent = weight;
+                svg.appendChild(text);
+            });
+            
+            // Draw nodes
+            graph.nodes.forEach(node => {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", node.x);
+                circle.setAttribute("cy", node.y);
+                circle.setAttribute("r", "20");
+                circle.setAttribute("fill", "#2B6CB0");
+                svg.appendChild(circle);
+                
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", node.x);
+                text.setAttribute("y", node.y + 7);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("font-size", "1.3em");
+                text.setAttribute("font-weight", "bold");
+                text.setAttribute("fill", "#fff");
+                text.textContent = node.id;
+                svg.appendChild(text);
+            });
+            
+            container.innerHTML = '';
+            container.appendChild(svg);
+        }
+
+        async function startDijkstra() {
+            if (!graph.nodes.length) {
+                alert('Please generate a graph first.');
+                return;
+            }
+            const start = parseInt(document.getElementById('dijkstraStart').value);
+            const end = parseInt(document.getElementById('dijkstraEnd').value);
+            if (isNaN(start) || isNaN(end) || start < 0 || end < 0 || start >= graph.nodes.length || end >= graph.nodes.length) {
+                alert('Please enter valid start and end nodes.');
+                return;
+            }
+            const distances = Array(graph.nodes.length).fill(Infinity);
+            const previous = Array(graph.nodes.length).fill(null);
+            const visited = new Set();
+            distances[start] = 0;
+            while (visited.size < graph.nodes.length) {
+                // Find unvisited node with smallest distance
+                let minNode = null;
+                let minDist = Infinity;
+                for (let i = 0; i < distances.length; i++) {
+                    if (!visited.has(i) && distances[i] < minDist) {
+                        minDist = distances[i];
+                        minNode = i;
+                    }
+                }
+                if (minNode === null) break;
+                visited.add(minNode);
+                // Visualize current node
+                const svg = document.getElementById('graphVisualization').querySelector('svg');
+                const circles = svg.querySelectorAll('circle');
+                if (circles[minNode]) circles[minNode].setAttribute('fill', '#00c6ff');
+                // Update distances to neighbors
+                for (const edge of graph.edges) {
+                    if (edge[0] === minNode && !visited.has(edge[1])) {
+                        const newDist = distances[minNode] + edge[2];
+                        if (newDist < distances[edge[1]]) {
+                            distances[edge[1]] = newDist;
+                            previous[edge[1]] = minNode;
+                        }
+                    } else if (edge[1] === minNode && !visited.has(edge[0])) {
+                        const newDist = distances[minNode] + edge[2];
+                        if (newDist < distances[edge[0]]) {
+                            distances[edge[0]] = newDist;
+                            previous[edge[0]] = minNode;
+                        }
+                    }
+                }
+                await new Promise(resolve => setTimeout(resolve, 700));
+            }
+            // Reconstruct path
+            const path = [];
+            let current = end;
+            while (current !== null) {
+                path.unshift(current);
+                current = previous[current];
+            }
+            document.getElementById('dijkstraResult').innerHTML = `
+                <h3>Shortest Path from ${start} to ${end}</h3>
+                <p>Path: ${path.join(' → ')}</p>
+                <p>Total Distance: ${distances[end]}</p>
+            `;
+        }
+
+        async function startBellmanFord() {
+            if (!graph.nodes.length) {
+                alert('Please generate a graph first.');
+                return;
+            }
+            const start = parseInt(document.getElementById('bellmanStart').value);
+            const end = parseInt(document.getElementById('bellmanEnd').value);
+            if (isNaN(start) || isNaN(end) || start < 0 || end < 0 || start >= graph.nodes.length || end >= graph.nodes.length) {
+                alert('Please enter valid start and end nodes.');
+                return;
+            }
+            const distances = Array(graph.nodes.length).fill(Infinity);
+            const previous = Array(graph.nodes.length).fill(null);
+            distances[start] = 0;
+            // Relax edges V-1 times
+            for (let i = 0; i < graph.nodes.length - 1; i++) {
+                for (const edge of graph.edges) {
+                    const [u, v, weight] = edge;
+                    if (distances[u] + weight < distances[v]) {
+                        distances[v] = distances[u] + weight;
+                        previous[v] = u;
+                    }
+                    if (distances[v] + weight < distances[u]) {
+                        distances[u] = distances[v] + weight;
+                        previous[u] = v;
+                    }
+                }
+                // Visualize current state
+                const svg = document.getElementById('graphVisualization').querySelector('svg');
+                const circles = svg.querySelectorAll('circle');
+                for (let j = 0; j < graph.nodes.length; j++) {
+                    if (distances[j] !== Infinity && circles[j]) {
+                        circles[j].setAttribute('fill', '#00c6ff');
+                    }
+                }
+                await new Promise(resolve => setTimeout(resolve, 700));
+            }
+            // Reconstruct path
+            const path = [];
+            let current = end;
+            while (current !== null) {
+                path.unshift(current);
+                current = previous[current];
+            }
+            document.getElementById('bellmanResult').innerHTML = `
+                <h3>Shortest Path from ${start} to ${end}</h3>
+                <p>Path: ${path.join(' → ')}</p>
+                <p>Total Distance: ${distances[end]}</p>
+            `;
+        }
+
+        function resetDijkstra() {
+            document.getElementById('dijkstraResult').innerHTML = '';
+            visualizeGraph();
+        }
+
+        function resetBellmanFord() {
+            document.getElementById('bellmanResult').innerHTML = '';
+            visualizeGraph();
+        }
+
+        function updateCharts() {
+            const sizes = Array.from({length: 20}, (_, i) => i + 1);
+            
+            ['dijkstraChart', 'bellmanChart'].forEach(chartId => {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                if (charts[chartId]) charts[chartId].destroy();
+                charts[chartId] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sizes,
+                        datasets: [{
+                            label: chartId === 'dijkstraChart' ? 
+                                'Dijkstra (O((V + E) log V))' : 
+                                'Bellman-Ford (O(VE))',
+                            data: sizes.map(n => chartId === 'dijkstraChart' ? 
+                                (n + (n * (n - 1)) / 2) * Math.log2(n) : 
+                                n * (n * (n - 1)) / 2),
+                            borderColor: '#0072ff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: chartId === 'dijkstraChart' ? 
+                                    'Dijkstra Complexity' : 
+                                    'Bellman-Ford Complexity'
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function generateWarshallMatrix() {
+            const n = parseInt(document.getElementById('warshallNodes').value);
+            if (isNaN(n) || n < 2 || n > 8) {
+                alert('Please enter a valid number of nodes (2-8).');
+                return;
+            }
+            warshallMatrix = Array.from({length: n}, () => Array.from({length: n}, () => {
+                const val = Math.random() < 0.3 ? Infinity : Math.floor(Math.random() * 10) + 1;
+                return val === 0 ? Infinity : val;
+            }));
+            for (let i = 0; i < n; i++) warshallMatrix[i][i] = 0;
+            renderWarshallMatrix();
+            document.getElementById('warshallResult').innerHTML = '';
+        }
+
+        function renderWarshallMatrix() {
+            const n = warshallMatrix.length;
+            let html = '<table style="margin: 0 auto; border-collapse: collapse;">';
+            for (let i = 0; i < n; i++) {
+                html += '<tr>';
+                for (let j = 0; j < n; j++) {
+                    html += `<td style="border: 1px solid #2B6CB0; width: 40px; height: 40px; text-align: center;">${warshallMatrix[i][j] === Infinity ? '&infin;' : warshallMatrix[i][j]}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            document.getElementById('warshallMatrix').innerHTML = html;
+        }
+
+        function runWarshall() {
+            if (!warshallMatrix.length) {
+                alert('Please generate a matrix first.');
+                return;
+            }
+            const n = warshallMatrix.length;
+            let dist = warshallMatrix.map(row => row.slice());
+            for (let k = 0; k < n; k++) {
+                for (let i = 0; i < n; i++) {
+                    for (let j = 0; j < n; j++) {
+                        if (dist[i][k] + dist[k][j] < dist[i][j]) {
+                            dist[i][j] = dist[i][k] + dist[k][j];
+                        }
+                    }
+                }
+            }
+            let html = '<h3>Shortest Path Matrix</h3><table style="margin: 0 auto; border-collapse: collapse;">';
+            for (let i = 0; i < n; i++) {
+                html += '<tr>';
+                for (let j = 0; j < n; j++) {
+                    html += `<td style="border: 1px solid #48BB78; width: 40px; height: 40px; text-align: center;">${dist[i][j] === Infinity ? '&infin;' : dist[i][j]}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            document.getElementById('warshallResult').innerHTML = html;
+        }
+
+        function resetWarshall() {
+            warshallMatrix = [];
+            document.getElementById('warshallMatrix').innerHTML = '';
+            document.getElementById('warshallResult').innerHTML = '';
+        }
+
+        // Initialize
+        generateGraph();
+    </script>
+</body>
+</html> 

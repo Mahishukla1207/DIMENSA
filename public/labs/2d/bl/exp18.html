@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Lab - Experiment 18: Smart Contracts & DApps</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --error-color: #e74c3c;
+            --background-color: #f5f6fa;
+            --text-color: #2c3e50;
+            --contract-color: #9b59b6;
+            --border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: clamp(10px, 3vw, 20px);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: min(1200px, 95vw);
+            margin: 0 auto;
+            padding: clamp(10px, 2vw, 20px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: clamp(20px, 4vw, 40px);
+            padding: clamp(15px, 3vw, 20px);
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .experiment-title {
+            color: var(--primary-color);
+            font-size: clamp(1.8em, 4vw, 2.5em);
+            margin-bottom: 10px;
+        }
+
+        .experiment-description {
+            color: #666;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+        }
+
+        .simulator-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+            gap: clamp(15px, 3vw, 20px);
+            margin-bottom: clamp(20px, 4vw, 30px);
+        }
+
+        .contract-panel,
+        .dapp-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--contract-color);
+        }
+
+        .contract-controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .contract-method {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .method-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .method-name {
+            font-weight: bold;
+            color: var(--contract-color);
+        }
+
+        .method-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .method-parameters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .parameter-group {
+            margin-bottom: 10px;
+        }
+
+        .parameter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .parameter-group input,
+        .parameter-group select,
+        .parameter-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .parameter-group textarea {
+            height: 100px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        .button {
+            background-color: var(--contract-color);
+            color: white;
+            padding: clamp(10px, 2vw, 12px) clamp(20px, 4vw, 24px);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: clamp(0.9em, 1.5vw, 1em);
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .button:hover {
+            background-color: #8e44ad;
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .button:focus:not(:active)::after {
+            animation: ripple 1s ease out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        .button.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .button.loading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: clamp(0.8em, 1.2vw, 0.9em);
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .contract-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            color: var(--contract-color);
+            font-family: monospace;
+        }
+
+        .contract-visualization {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            position: relative;
+            height: 300px;
+            overflow: hidden;
+        }
+
+        .contract-node {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .contract-node.active {
+            box-shadow: 0 0 15px var(--success-color);
+        }
+
+        .contract-node.warning {
+            box-shadow: 0 0 15px var(--warning-color);
+        }
+
+        .contract-node.error {
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        .contract-name {
+            font-weight: bold;
+            color: var(--contract-color);
+            margin-bottom: 5px;
+        }
+
+        .contract-status {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .contract-connection {
+            position: absolute;
+            height: 2px;
+            background: var(--contract-color);
+            transform-origin: left center;
+            transition: all 0.3s ease;
+        }
+
+        .contract-connection.active {
+            background: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+        }
+
+        .contract-connection.warning {
+            background: var(--warning-color);
+            box-shadow: 0 0 10px var(--warning-color);
+        }
+
+        .contract-connection.error {
+            background: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .transaction-list {
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .transaction-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .transaction-title {
+            font-weight: bold;
+            color: var(--contract-color);
+        }
+
+        .transaction-status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .status-completed {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-failed {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .transaction-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .transaction-progress {
+            height: 4px;
+            background: #f8f9fa;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--contract-color);
+            transition: width 0.3s ease;
+        }
+
+        .contract-log {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .log-entry.transaction {
+            color: var(--contract-color);
+        }
+
+        .log-entry.success {
+            color: var(--success-color);
+        }
+
+        .log-entry.warning {
+            color: var(--warning-color);
+        }
+
+        .log-entry.error {
+            color: var(--accent-color);
+        }
+
+        .dapp-status {
+            margin: 20px 0;
+        }
+
+        .status-card {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .status-title {
+            font-weight: bold;
+            color: var(--contract-color);
+        }
+
+        .status-value {
+            font-family: monospace;
+            color: var(--secondary-color);
+        }
+
+        .status-description {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .indicator-online {
+            background-color: var(--success-color);
+        }
+
+        .indicator-offline {
+            background-color: var(--accent-color);
+        }
+
+        .indicator-warning {
+            background-color: var(--warning-color);
+        }
+
+        .dapp-interface {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .interface-element {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .element-title {
+            font-weight: bold;
+            color: var(--contract-color);
+            margin-bottom: 10px;
+        }
+
+        .element-content {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes transaction {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translateY(100%);
+                opacity: 1;
+            }
+        }
+
+        .transaction-animation {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--contract-color);
+            border-radius: 50%;
+            animation: transaction 2s linear infinite;
+        }
+
+        @media (max-width: 768px) {
+            .simulator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .method-parameters {
+                grid-template-columns: 1fr;
+            }
+
+            .contract-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .contract-visualization {
+                height: 200px;
+            }
+
+            .contract-node {
+                width: 100px;
+                height: 100px;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="experiment-title">Smart Contracts & DApps</h1>
+            <p class="experiment-description">Understanding blockchain smart contracts and decentralized applications
+                through interactive simulation</p>
+        </div>
+
+        <div class="simulator-container">
+            <div class="contract-panel">
+                <h2 class="panel-title">Smart Contracts</h2>
+                <div class="contract-controls">
+                    <div class="contract-method">
+                        <div class="method-header">
+                            <span class="method-name">Deploy Contract</span>
+                        </div>
+                        <div class="method-description">
+                            Deploy a new smart contract to the blockchain
+                        </div>
+                        <div class="method-parameters">
+                            <div class="parameter-group">
+                                <label>Contract Type</label>
+                                <select id="contractType">
+                                    <option value="token">Token Contract</option>
+                                    <option value="exchange">Exchange Contract</option>
+                                    <option value="governance">Governance Contract</option>
+                                    <option value="custom">Custom Contract</option>
+                                </select>
+                            </div>
+                            <div class="parameter-group">
+                                <label>Contract Code</label>
+                                <textarea id="contractCode" placeholder="Enter contract code here..."></textarea>
+                            </div>
+                        </div>
+                        <button class="button" onclick="deployContract()">Deploy Contract</button>
+                    </div>
+
+                    <div class="contract-method">
+                        <div class="method-header">
+                            <span class="method-name">Execute Function</span>
+                        </div>
+                        <div class="method-description">
+                            Execute a function on the deployed contract
+                        </div>
+                        <div class="method-parameters">
+                            <div class="parameter-group">
+                                <label>Function Name</label>
+                                <input type="text" id="functionName" placeholder="Enter function name">
+                            </div>
+                            <div class="parameter-group">
+                                <label>Parameters</label>
+                                <input type="text" id="functionParams" placeholder="Enter parameters (comma-separated)">
+                            </div>
+                        </div>
+                        <button class="button" onclick="executeFunction()">Execute Function</button>
+                    </div>
+                </div>
+
+                <div class="contract-metrics">
+                    <div class="metric-card">
+                        <div class="metric-title">Active Contracts</div>
+                        <div class="metric-value" id="activeContracts">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Total Transactions</div>
+                        <div class="metric-value" id="totalTransactions">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Gas Usage</div>
+                        <div class="metric-value" id="gasUsage">0</div>
+                    </div>
+                </div>
+
+                <div class="contract-visualization" id="contractVisualization">
+                    
+                </div>
+
+                <div class="transaction-list" id="transactionList">
+                    
+                </div>
+
+                <div class="contract-log" id="contractLog">
+                    
+                </div>
+            </div>
+
+            <div class="dapp-panel">
+                <h2 class="panel-title">DApp Interface</h2>
+                <div class="dapp-status">
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-title">DApp Status</span>
+                            <span class="status-value">
+                                <span class="status-indicator indicator-online"></span>
+                                Online
+                            </span>
+                        </div>
+                        <div class="status-description">
+                            Current status of the decentralized application
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-title">Wallet Connection</span>
+                            <span class="status-value">
+                                <span class="status-indicator indicator-online"></span>
+                                Connected
+                            </span>
+                        </div>
+                        <div class="status-description">
+                            Status of the wallet connection
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-header">
+                            <span class="status-title">Network</span>
+                            <span class="status-value">Ethereum Mainnet</span>
+                        </div>
+                        <div class="status-description">
+                            Current blockchain network
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dapp-interface">
+                    <div class="interface-element">
+                        <div class="element-title">Token Balance</div>
+                        <div class="element-content">
+                            <div class="metric-value" id="tokenBalance">0.00</div>
+                            <div class="metric-title">Your current token balance</div>
+                        </div>
+                    </div>
+
+                    <div class="interface-element">
+                        <div class="element-title">Transaction History</div>
+                        <div class="element-content" id="dappTransactionList">
+                            
+                        </div>
+                    </div>
+
+                    <div class="interface-element">
+                        <div class="element-title">Contract Events</div>
+                        <div class="element-content" id="contractEvents">
+                            
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="dappChart"></canvas>
+                </div>
+
+                <div class="contract-log" id="dappLog">
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SmartContractSystem {
+            constructor() {
+                this.contracts = new Map();
+                this.transactions = new Map();
+                this.metrics = {
+                    activeContracts: 0,
+                    totalTransactions: 0,
+                    gasUsage: 0,
+                    dappStatus: 'online',
+                    walletStatus: 'connected',
+                    network: 'Ethereum Mainnet',
+                    tokenBalance: 0
+                };
+                this.performanceData = {
+                    labels: [],
+                    transactions: [],
+                    gasUsage: [],
+                    balance: []
+                };
+                this.chart = null;
+                this.initializeChart();
+                this.initializeVisualization();
+            }
+
+            initializeChart() {
+                const ctx = document.getElementById('dappChart').getContext('2d');
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: this.performanceData.labels,
+                        datasets: [{
+                            label: 'Transactions',
+                            data: this.performanceData.transactions,
+                            borderColor: '#9b59b6',
+                            tension: 0.4
+                        }, {
+                            label: 'Gas Usage',
+                            data: this.performanceData.gasUsage,
+                            borderColor: '#3498db',
+                            tension: 0.4
+                        }, {
+                            label: 'Token Balance',
+                            data: this.performanceData.balance,
+                            borderColor: '#2ecc71',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            initializeVisualization() {
+                const container = document.getElementById('contractVisualization');
+                const nodes = ['Wallet', 'DApp', 'Smart Contract', 'Blockchain'];
+
+                nodes.forEach((node, index) => {
+                    const element = document.createElement('div');
+                    element.className = 'contract-node';
+                    element.id = `node-${node.toLowerCase().replace(' ', '-')}`;
+                    element.style.left = `${(index * 30) + 5}%`;
+                    element.style.top = '50%';
+                    element.style.transform = 'translateY(-50%)';
+
+                    element.innerHTML = `
+                        <div class="contract-name">${node}</div>
+                        <div class="contract-status">Online</div>
+                    `;
+
+                    container.appendChild(element);
+                });
+
+                this.updateConnections();
+            }
+
+            deployContract(type, code) {
+                const id = `${type}-${Date.now()}`;
+                const contract = {
+                    id,
+                    type,
+                    code,
+                    status: 'active',
+                    transactions: 0,
+                    createdAt: Date.now()
+                };
+                this.contracts.set(id, contract);
+                this.metrics.activeContracts++;
+                this.updateConnections();
+                this.updateMetrics();
+                return contract;
+            }
+
+            executeFunction(name, params) {
+                const id = Math.random().toString(36).substr(2, 9);
+                const transaction = {
+                    id,
+                    name,
+                    params,
+                    status: 'pending',
+                    progress: 0,
+                    createdAt: Date.now()
+                };
+                this.transactions.set(id, transaction);
+                this.simulateTransaction(transaction);
+                this.updateTransactionList();
+                return transaction;
+            }
+
+            simulateTransaction(transaction) {
+                const steps = ['Validating', 'Executing', 'Confirming', 'Completing'];
+                let currentStep = 0;
+
+                const interval = setInterval(() => {
+                    if (currentStep >= steps.length) {
+                        clearInterval(interval);
+                        transaction.status = 'completed';
+                        transaction.progress = 100;
+                        this.metrics.totalTransactions++;
+                        this.metrics.gasUsage += Math.floor(Math.random() * 100000);
+                        this.metrics.tokenBalance += Math.random() * 10;
+                        this.updateMetrics();
+                        this.updateTransactionList();
+                        addLogEntry(`Transaction ${transaction.id} completed`, 'transaction');
+                        return;
+                    }
+
+                    transaction.progress = (currentStep / steps.length) * 100;
+                    addLogEntry(`Transaction ${transaction.id}: ${steps[currentStep]}`, 'transaction');
+                    this.updateTransactionList();
+                    currentStep++;
+                }, 2000);
+            }
+
+            updateConnections() {
+                const container = document.getElementById('contractVisualization');
+                const existingConnections = container.querySelectorAll('.contract-connection');
+                existingConnections.forEach(conn => conn.remove());
+
+                const nodes = ['wallet', 'dapp', 'smart-contract', 'blockchain'];
+                for (let i = 0; i < nodes.length - 1; i++) {
+                    const sourceNode = document.getElementById(`node-${nodes[i]}`);
+                    const targetNode = document.getElementById(`node-${nodes[i + 1]}`);
+
+                    if (sourceNode && targetNode) {
+                        const connection = document.createElement('div');
+                        connection.className = 'contract-connection';
+                        connection.id = `connection-${nodes[i]}-${nodes[i + 1]}`;
+
+                        const sourceRect = sourceNode.getBoundingClientRect();
+                        const targetRect = targetNode.getBoundingClientRect();
+                        const containerRect = container.getBoundingClientRect();
+
+                        const x1 = sourceRect.left + sourceRect.width / 2 - containerRect.left;
+                        const y1 = sourceRect.top + sourceRect.height / 2 - containerRect.top;
+                        const x2 = targetRect.left + targetRect.width / 2 - containerRect.left;
+                        const y2 = targetRect.top + targetRect.height / 2 - containerRect.top;
+
+                        const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+                        connection.style.width = `${length}px`;
+                        connection.style.left = `${x1}px`;
+                        connection.style.top = `${y1}px`;
+                        connection.style.transform = `rotate(${angle}deg)`;
+
+                        container.appendChild(connection);
+                    }
+                }
+            }
+
+            updateMetrics() {
+                // Update metrics display
+                document.getElementById('activeContracts').textContent =
+                    this.metrics.activeContracts;
+                document.getElementById('totalTransactions').textContent =
+                    this.metrics.totalTransactions.toLocaleString();
+                document.getElementById('gasUsage').textContent =
+                    this.metrics.gasUsage.toLocaleString();
+                document.getElementById('tokenBalance').textContent =
+                    this.metrics.tokenBalance.toFixed(2);
+
+                // Update chart
+                this.updateChart();
+
+                // Update transaction list
+                this.updateTransactionList();
+            }
+
+            updateChart() {
+                const now = new Date().toLocaleTimeString();
+                this.performanceData.labels.push(now);
+                this.performanceData.transactions.push(this.metrics.totalTransactions);
+                this.performanceData.gasUsage.push(this.metrics.gasUsage);
+                this.performanceData.balance.push(this.metrics.tokenBalance);
+
+                if (this.performanceData.labels.length > 20) {
+                    this.performanceData.labels.shift();
+                    this.performanceData.transactions.shift();
+                    this.performanceData.gasUsage.shift();
+                    this.performanceData.balance.shift();
+                }
+
+                this.chart.update();
+            }
+
+            updateTransactionList() {
+                const container = document.getElementById('transactionList');
+                container.innerHTML = '';
+
+                this.transactions.forEach((transaction, id) => {
+                    const card = document.createElement('div');
+                    card.className = 'transaction-card';
+
+                    card.innerHTML = `
+                        <div class="transaction-header">
+                            <span class="transaction-title">Transaction ${id}</span>
+                            <span class="transaction-status status-${transaction.status}">${transaction.status}</span>
+                        </div>
+                        <div class="transaction-details">
+                            ${transaction.name} (${transaction.params})
+                        </div>
+                        <div class="transaction-progress">
+                            <div class="progress-bar" style="width: ${transaction.progress}%"></div>
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+
+                // Update DApp transaction list
+                const dappContainer = document.getElementById('dappTransactionList');
+                dappContainer.innerHTML = '';
+
+                Array.from(this.transactions.values())
+                    .slice(-5)
+                    .reverse()
+                    .forEach(transaction => {
+                        const entry = document.createElement('div');
+                        entry.className = 'log-entry transaction';
+                        entry.textContent = `${transaction.name} (${transaction.params}) - ${transaction.status}`;
+                        dappContainer.appendChild(entry);
+                    });
+            }
+
+            simulateNetworkActivity() {
+                setInterval(() => {
+                    // Simulate random network activity
+                    if (Math.random() < 0.3) {
+                        const types = ['transfer', 'swap', 'stake'];
+                        const type = types[Math.floor(Math.random() * types.length)];
+                        const params = Math.random().toString(36).substr(2, 8);
+                        this.executeFunction(type, params);
+                    }
+                }, 5000);
+            }
+        }
+
+        let contractSystem = new SmartContractSystem();
+
+        function setLoading(buttonId, isLoading) {
+            const button = document.getElementById(buttonId);
+            const buttonText = button.querySelector('.button-text');
+
+            if (isLoading) {
+                button.classList.add('loading');
+                buttonText.style.visibility = 'hidden';
+            } else {
+                button.classList.remove('loading');
+                buttonText.style.visibility = 'visible';
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 3000);
+        }
+
+        async function deployContract() {
+            const button = document.querySelector('.button');
+            setLoading(button.id, true);
+
+            try {
+                const type = document.getElementById('contractType').value;
+                const code = document.getElementById('contractCode').value;
+
+                if (!code.trim()) {
+                    throw new Error('Contract code cannot be empty');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const contract = contractSystem.deployContract(type, code);
+                addLogEntry(`Deployed ${type} contract`, 'success');
+                contractSystem.updateMetrics();
+            } catch (error) {
+                showError('deployError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        async function executeFunction() {
+            const button = document.querySelector('.button:last-child');
+            setLoading(button.id, true);
+
+            try {
+                const name = document.getElementById('functionName').value;
+                const params = document.getElementById('functionParams').value;
+
+                if (!name.trim()) {
+                    throw new Error('Function name cannot be empty');
+                }
+
+                // Simulate network delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const transaction = contractSystem.executeFunction(name, params);
+                addLogEntry(`Executed function ${name}`, 'transaction');
+                contractSystem.updateMetrics();
+            } catch (error) {
+                showError('executeError', error.message);
+                addLogEntry(error.message, 'error');
+            } finally {
+                setLoading(button.id, false);
+            }
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                deployContract();
+            } else if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                executeFunction();
+            }
+        });
+
+        // Initialize the smart contract system
+        addLogEntry('Smart contract system initialized', 'info');
+        contractSystem.simulateNetworkActivity();
+    </script>
+</body>
+
+</html>
+
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PCA Dimensionality Reduction Simulator - Data Analytics Lab</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f7fafc;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    canvas {
+      background: #ffffff;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 14px;
+      font-size: 15px;
+    }
+    #controls {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🌀 PCA Dimensionality Reduction Simulator</h1>
+<p>Click to add 3D Data Points (Randomized Z-axis). Projected onto 2D using PCA!</p>
+
+<canvas id="canvas" width="600" height="400"></canvas>
+
+<div id="controls">
+  <button onclick="projectPCA()">Apply PCA</button>
+  <button onclick="clearCanvas()">Clear All</button>
+</div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  let points = []; // {x, y, z}
+  let isProjected = false;
+
+  canvas.addEventListener('click', function(e) {
+    if (isProjected) return; // Don't allow adding after projection
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const z = Math.random() * 300; // Random z value
+    points.push({x, y, z});
+    draw();
+  });
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let p of points) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = 'blue';
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+
+  function projectPCA() {
+    if (points.length < 2) {
+      alert("Add more points to apply PCA!");
+      return;
+    }
+
+    // Extract data matrix
+    const X = points.map(p => [p.x, p.y, p.z]);
+
+    // Mean center
+    const mean = [0,0,0];
+    for (let i = 0; i < X.length; i++) {
+      mean[0] += X[i][0];
+      mean[1] += X[i][1];
+      mean[2] += X[i][2];
+    }
+    mean[0] /= X.length;
+    mean[1] /= X.length;
+    mean[2] /= X.length;
+
+    const centered = X.map(p => [p[0] - mean[0], p[1] - mean[1], p[2] - mean[2]]);
+
+    // Covariance matrix
+    let cov = [
+      [0,0,0],
+      [0,0,0],
+      [0,0,0]
+    ];
+    for (let i = 0; i < centered.length; i++) {
+      for (let j = 0; j < 3; j++) {
+        for (let k = 0; k < 3; k++) {
+          cov[j][k] += centered[i][j] * centered[i][k];
+        }
+      }
+    }
+    for (let j = 0; j < 3; j++) {
+      for (let k = 0; k < 3; k++) {
+        cov[j][k] /= centered.length;
+      }
+    }
+
+    // Fake Eigenvectors for simplicity (not full eigen decomposition)
+    const pc1 = [1,1,1];
+    const pc2 = [1,-1,0];
+
+    // Normalize
+    const norm1 = Math.hypot(...pc1);
+    const norm2 = Math.hypot(...pc2);
+    const u1 = pc1.map(d => d / norm1);
+    const u2 = pc2.map(d => d / norm2);
+
+    // Project data
+    const projected = centered.map(p => [
+      p[0]*u1[0] + p[1]*u1[1] + p[2]*u1[2],
+      p[0]*u2[0] + p[1]*u2[1] + p[2]*u2[2]
+    ]);
+
+    // Draw projected points
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let p of projected) {
+      ctx.beginPath();
+      ctx.arc(p[0] + canvas.width/2, p[1] + canvas.height/2, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = 'purple';
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    isProjected = true;
+    alert("PCA Projection complete!");
+  }
+
+  function clearCanvas() {
+    points = [];
+    isProjected = false;
+    draw();
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+@font-face {
+    font-family: 'Foco Trial';
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_Rg.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Foco Trial';
+    src: local('Foco Trial'), url('https://fonts.cdnfonts.com/s/83793/Foco_Trial_Bd.woff') format('woff');
+    font-weight: 700;
+    font-style: normal;
+}

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXPERIMENT</title>
+    <link rel="stylesheet" href="/beel/exp4/simulation/css/style.css">
+    <link href="/beel/exp4/simulation/CDN_folder/Font(zacbel-x).css" rel="stylesheet">
+    <link href="/beel/exp4/simulation/CDN_folder/Font(foco-trial).css" rel="stylesheet">
+    <link href="/beel/exp4/simulation/CDN_folder/SevenSegmentFont.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@firestitch/jsplumb@2.12.0/dist/js/jsplumb.min.js"></script>
+
+    <style>
+        footer {
+            position: absolute;
+            text-align: center;
+            margin-top: 1340px;
+            margin-left: 0px;
+            width: 1500px;
+            height: 60px;
+            background-color: #1e1e1e;
+            color: white;
+            font-size: larger;
+        }
+    </style>
+
+</head>
+
+<body id="body">
+    <div class="container">
+
+        
+        <div class="heading">
+            
+            <p style=" font-size: 34px; padding-top: 12px; color:white">Study and Measurement of Power Factor of
+                Electrical Load</p>
+        </div>
+
+        <div class="instructions">
+            <div class="insHeading">
+                <p>Instructions</p>
+
+                <ul class="steps">
+                    
+                    <li><b>STEP 1:</b>Select a load by clicking on the ‘CHANGE LOAD’ button.</li>
+                    <li><b>STEP 2:</b>Make connections as per the instructions given below :<br>
+                        (a) 1 to 11 <br>
+                        (b) 2 to 12<br>
+                        (c) 3 to 13<br>
+                        (d) 4 to 14<br>
+                        (e) 13 to 15<br>
+                        (f) 16 to 17<br>
+                        (g) 5 to 18<br>
+                        (h) 6 to 9 <br>
+                        (i) 9 to 10<br>
+                        (j) 8 to 19<br>
+                        (k) 7 to 20<br>
+                        (l) 7 to 14 <br> <br>
+                    </li>
+
+                    <li id="s3"><b>Note: Click on the label to delete the connection for the corresponding node. </b>
+                    </li> <br>
+                    <li id="s4"><b>STEP 3:</b>Then check the connections by clicking on the <b>‘CHECK’</b> button.</li>
+                    <li id="s4"><b>STEP 4:</b>If the alert is <b>‘Invalid connections’</b> then click on 'RESET' button
+                        and make connection again.</li>
+                    <li id="s5"><b>STEP 5:</b>If the alert is <b>‘Right connections’</b> follow the below steps.</li>
+                    <li id="s6"><b>STEP 6:</b>Turn ON the MCB.</li>
+                    <li id="s7"><b>STEP 7:</b>Then, switch on the variac by clicking on the button.</li>
+                    <li id="s8"><b>STEP 8:</b>Then, click on the variac knob to set the voltage at 230V.</li>
+                    <li id="s9"><b> Note: Once, we have click on the variac knob it automatically set to 230 V. So we
+                            don't have to set it again.</b></li>
+                    <li id="s9"><b>STEP 9:</b>Then, click on switch to turn it ON.</li>
+                    <li id="s10"><b>STEP 10:</b>Click on <b>‘ADD’</b> button to add readings to the observation table.
+                    </li>
+                    <li id="s11"><b>STEP 11:</b>Click on <b>‘CALCULATE’</b> button to calculate the power factor of the
+                        load.</li>
+                    <li id="s12"><b>STEP 12:</b>Select a new load by clicking on the <b>‘CHANGE LOAD’</b>button.</li>
+                    <li id="s13"><b>STEP 13:</b>Then,again check the connections by clicking on the <b>‘CHECK’</b>
+                        button.</li>
+                    <li id="s14"><b>STEP 12:</b>In calculation section, we have to manually find the power factor of the
+                        selected load by using the formulae and verify it with the help of <b>‘VERIFY’</b> button.</li>
+                    <li id="s15"><b>STEP 13:</b>Change the load and repeat the steps from 6 to 12.</li>
+                    <li id="s16"><b>STEP 14:</b>Click on <b>‘PRINT’</b> button to take out the print of the page.</li>
+                    <li id="s17"><b>STEP 15:</b> Click on the <b>RESET</b> button to reset the webpage.</li>
+                </ul>
+            </div>
+            <div class="MyLabel">
+                <p>
+                    Instructions
+                </p>
+            </div>
+        </div>
+        <div class="clear"></div>
+        
+        <div class="r2">
+            <div class="r2c1">
+
+                <div class="action-buttons">
+                    <p style=" color: white; border-radius: 10px; border:2.5px solid black; background-color:#1e1e1e;">
+                        ACTION BUTTONS</p>
+                    <div class="control-panel-buttons">
+                        <button id="check" disabled="true"><b>CHECK</b></button>
+                        <button id="add" disabled="true"><b>ADD</b></button>
+                        <button id="calculate" disabled="true"><b>CALCULATE</b></button>
+                        <button id="reset"><b>RESET</b></button>
+                        <button id="print" onclick='window.print();'><b>PRINT</b></button>
+                        
+                    </div>
+                </div>
+                
+
+                <div class="formulas">
+                    <p
+                        style=" color: white; border-radius: 10px; border:2.5px solid black; background-color:#1e1e1e; padding:20px,30px,40px,50px">
+                        FORMULAS</p>
+                    <formula-text>Power Factor <BR> = True Power/Apparent Power
+                        <BR>
+                        = cos(Phase angle)<br><br>
+                        Note: L1:CFL, L2:Lamp, L3:LED, L4:Tubelight
+                    </formula-text>
+
+                </div>
+
+                
+                <div class="o_table">
+                    <p
+                        style=" color: white; border-radius: 10px; border:2.5px solid black; background-color:#1e1e1e;; padding:20px,30px,40px,50px">
+                        OBSERVATION TABLE</p>
+                    <div class="table">
+                        
+                        <table id="valTable">
+                            <tr>
+                                <th>S.No.</th>
+                                <th>Volts(V)</th>
+                                <th>Amps(A)</th>
+                                <th>Watts(W)</th>
+                                <th>Power Factor</th>
+                            </tr>
+
+                        </table>
+                    </div>
+                </div>
+                
+
+            </div>
+
+            <span
+                style="position: absolute; margin-top:247.5px ; margin-left: 99px; color: white; font-family: 'Times New Roman', Times, serif; font-size: 24px;">VARIAC</span>
+
+
+            <div class="r2c2">
+
+                <div class="circuit">
+
+                    <p>EXPERIMENT</p>
+
+                    <div class="c-diag">
+
+                        <img class="forbidden" src="images/MCB_off.png" id="MCB" height="120" width="100" alt="">
+
+                        <img class="forbidden" src="images/V1.png" id="V" height="180" width="180" alt="">
+                        <img class="forbidden" src="images/Pointer.png" height="11" width="44" id="P_V" alt="">
+
+                        <img class="forbidden" src="images/A1.png" id="A" height="180" width="180" alt="">
+                        <img class="forbidden" src="images/Pointer.png" height="11" width="44" id="P_A" alt="">
+
+                        <img class="forbidden" src="images/wattmeter.png" id="W" height="220" width="220" alt="">
+                        <img class="forbidden" src="images/Pointer.png" height="15" width="60" id="P_W" alt="">
+
+                        <img src="images/Variac_Knob.png" id="Var_Knob" height="100" width="100" alt="">
+
+                        <img class="forbidden" src="images/Variac_OFF.png" id="Var" height="400" width="410" alt="">
+
+                        <img class="forbidden" src="images/Fuse_normal.png" id="fuse" height="60" width="120" alt="">
+                        <img src="images/Switch_Off.png" id="switch" height="200" width="150" alt="">
+
+                        <div class="loads" id="loadContain">
+                            <input type="button" id="up" value="Change Load">
+                            <img class="forbidden" src="images/Loads/NoLoad.png" id="loadImg" height="150" width="300"
+                                alt="">
+                        </div>
+
+                        <div class="nodes">
+                            <div class="positive">
+                                <button id="p_mcb"><label onclick="disconnect(0)">1</label></button>
+                                <button id="n_mcb"><label onclick="disconnect(1)">2</label></button>
+
+                                <button id="on_mcb"></button>
+                                <button id="p_fuse"><label onclick="disconnect(14)">15</label></button>
+                                <button id="n_fuse"><label onclick="disconnect(15)">16</label></button>
+                                <button id="p_switch"><label id="label17" onclick="disconnect(16)">17</label></button>
+                                <button id="n_switch"><label id="label18" onclick="disconnect(17)">18</label></button>
+                                <button id="p_v"><label style="margin-left: -3px;"
+                                        onclick="disconnect(2)">3</label></button>
+                                <button id="n_v"><label style="margin-left: -3px;"
+                                        onclick="disconnect(3)">4</label></button>
+                                <button id="p_a"><label onclick="disconnect(4)">5</label></button>
+                                <button id="n_a"><label onclick="disconnect(5)">6</label></button>
+                                <button id="v_w"><label style="margin-left: -2px;"
+                                        onclick="disconnect(6)">7</label></button>
+                                <button id="l_w"><label style="margin-left: -4px;"
+                                        onclick="disconnect(7)">8</label></button>
+                                <button id="m_w"><label onclick="disconnect(8)">9</label></button>
+                                <button id="c_w"><label onclick="disconnect(9)">10</label></button>
+                                <button id="a_var"><label id="label11" onclick="disconnect(10)">11</label></button>
+                                <button id="b_var"><label id="label12" onclick="disconnect(11)">12</label></button>
+                                <button id="c_var"><label onclick="disconnect(12)">13</label></button>
+                                <button id="d_var"><label onclick="disconnect(13)">14</label></button>
+                                <button id="var_on"></button>
+                                <button id="p_l"><label style="margin-left: -7px;" id="label19"
+                                        onclick="disconnect(18)">19</label></button>
+                                <button id="n_l"><label style="margin-left: 5px;" id="label20"
+                                        onclick="disconnect(19)">20</label></button>
+                                <button id="starter_l" disabled="true"></button>
+                                <button id="starter_r" disabled="true"></button>
+                                <button id="choke_l" disabled="true"></button>
+                                <button id="choke_r" disabled="true"></button>
+
+                                <div class="tubelight-labels">
+                                    <label onclick="disconnect(20)" id="label21">21</label>
+                                    <label onclick="disconnect(21)" id="label22">22</label>
+                                    <label onclick="disconnect(22)" id="label23">23</label>
+                                    <label onclick="disconnect(23)" id="label24">24</label>
+                                </div>
+
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+                <div class="circuit_buttons"></div>
+                <div class="slider_values"></div>
+                
+            </div>
+
+        </div>
+        <div class="clear"></div>
+
+        <div class="r3">
+            <div class="calculation">
+                <p
+                    style=" margin-top: 0px;  color: white; border-radius: 10px; border:2.5px solid black; background-color:#1e1e1e; padding:20px,30px,40px,50px">
+                    CALCULATIONS</p>
+
+                <img class="forbidden" src="images/Power Factor of Devices.png" width="700" alt="">
+                <input type="text" id="DeviceC1">
+                <input type="text" id="VariacValC">
+                <input type="text" id="AmmeterC">
+                <input type="text" id="VoltmeterC">
+                <input type="text" id="WattmeterC">
+                <input type="text" id="numerator">
+                <input type="text" id="denominator1">
+                <input type="text" id="denominator2">
+                <input type="text" id="equalto">
+                <input type="text" id="DeviceC2">
+                <input type="text" id="powerfactor">
+                <button onclick="verify_inputs()" id="VRF">Verify</button>
+
+            </div>
+            <div class="calc_output">
+
+            </div>
+
+        </div>
+
+    </div>
+</body>
+<script src="/beel/exp4/simulation/js/function.js"></script>
+
+</html>

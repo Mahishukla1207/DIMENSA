@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 1: Linear & Binary Search (Recursive)</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Linear & Binary Search (Recursive)</h1>
+        <p style="text-align: center; color: white;">Interactive visualization of search algorithms with complexity analysis</p>
+
+        <div class="card">
+            <h2>Array Setup</h2>
+            <div class="controls">
+                <input type="number" id="arraySize" min="5" max="50" value="20" placeholder="Array Size">
+                <button onclick="generateArray()">Generate Array</button>
+            </div>
+            <div id="arrayVisualization" style="text-align: center; margin: 20px 0;"></div>
+        </div>
+
+        <div class="visualization-container">
+            <div class="card">
+                <h2>Linear Search</h2>
+                <div class="controls">
+                    <input type="number" id="linearSearchValue" placeholder="Search Value">
+                    <button onclick="performLinearSearch()">Search</button>
+                </div>
+                <div id="linearSearchVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="linearSearchChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Binary Search (Recursive)</h2>
+                <div class="controls">
+                    <input type="number" id="binarySearchValue" placeholder="Search Value">
+                    <button onclick="performBinarySearch()">Search</button>
+                </div>
+                <div id="binarySearchVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="binarySearchChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card explanation">
+            <h3>Algorithm Analysis</h3>
+            <p><strong>Linear Search:</strong> O(n) time complexity - checks each element one by one</p>
+            <p><strong>Binary Search:</strong> O(log n) time complexity - divides the search space in half each time</p>
+            <p><strong>Space Complexity:</strong> O(1) for both algorithms (iterative), O(log n) for recursive binary search</p>
+        </div>
+    </div>
+
+    <script>
+        let array = [];
+        let linearSearchChart, binarySearchChart;
+
+        function generateArray() {
+            const size = parseInt(document.getElementById('arraySize').value);
+            array = Array.from({length: size}, () => Math.floor(Math.random() * 100));
+            array.sort((a, b) => a - b); // Sort for binary search
+            visualizeArray();
+            updateCharts();
+        }
+
+        function visualizeArray() {
+            const container = document.getElementById('arrayVisualization');
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.justifyContent = 'center';
+            container.innerHTML = array.map((num, i) => 
+                `<div class="viz-bar" id="array-bar-${i}" style="margin:2px; background:#e5e7eb; transition:background 0.3s;"><span class="viz-number viz-bar">${num}</span></div>`
+            ).join('');
+        }
+
+        async function performLinearSearch() {
+            const value = parseInt(document.getElementById('linearSearchValue').value);
+            const container = document.getElementById('linearSearchVisualization');
+            container.innerHTML = '';
+            // Reset all bars
+            for (let i = 0; i < array.length; i++) {
+                document.getElementById(`array-bar-${i}`).style.background = '#e5e7eb';
+            }
+            let steps = 0;
+            for (let i = 0; i < array.length; i++) {
+                steps++;
+                await anime({
+                    targets: `#array-bar-${i}`,
+                    backgroundColor: '#2563eb',
+                    duration: 300,
+                    easing: 'easeInOutQuad'
+                }).finished;
+                await new Promise(res => setTimeout(res, 200));
+                if (array[i] === value) {
+                    await anime({
+                        targets: `#array-bar-${i}`,
+                        backgroundColor: '#22c55e',
+                        scale: 1.15,
+                        duration: 400,
+                        direction: 'alternate',
+                        easing: 'easeInOutQuad'
+                    }).finished;
+                    container.innerHTML = `Found at index ${i} in ${steps} steps!`;
+                    return;
+                } else {
+                    await anime({
+                        targets: `#array-bar-${i}`,
+                        backgroundColor: '#f87171',
+                        duration: 200,
+                        easing: 'easeInOutQuad'
+                    }).finished;
+                }
+            }
+            container.innerHTML = `Not found after ${steps} steps!`;
+        }
+
+        async function performBinarySearch() {
+            const value = parseInt(document.getElementById('binarySearchValue').value);
+            const container = document.getElementById('binarySearchVisualization');
+            container.innerHTML = '';
+            // Reset all bars
+            for (let i = 0; i < array.length; i++) {
+                document.getElementById(`array-bar-${i}`).style.background = '#e5e7eb';
+            }
+            let steps = 0;
+            let left = 0, right = array.length - 1;
+            while (left <= right) {
+                steps++;
+                const mid = Math.floor((left + right) / 2);
+                await anime({
+                    targets: `#array-bar-${mid}`,
+                    backgroundColor: '#2563eb',
+                    duration: 350,
+                    easing: 'easeInOutQuad'
+                }).finished;
+                await new Promise(res => setTimeout(res, 250));
+                if (array[mid] === value) {
+                    await anime({
+                        targets: `#array-bar-${mid}`,
+                        backgroundColor: '#22c55e',
+                        scale: 1.15,
+                        duration: 400,
+                        direction: 'alternate',
+                        easing: 'easeInOutQuad'
+                    }).finished;
+                    container.innerHTML = `Found at index ${mid} in ${steps} steps!`;
+                    return;
+                } else {
+                    await anime({
+                        targets: `#array-bar-${mid}`,
+                        backgroundColor: '#f87171',
+                        duration: 200,
+                        easing: 'easeInOutQuad'
+                    }).finished;
+                    if (array[mid] < value) {
+                        left = mid + 1;
+                    } else {
+                        right = mid - 1;
+                    }
+                }
+            }
+            container.innerHTML = `Not found after ${steps} steps!`;
+        }
+
+        function updateCharts() {
+            // Linear Search Chart
+            const linearCtx = document.getElementById('linearSearchChart').getContext('2d');
+            if (linearSearchChart) linearSearchChart.destroy();
+            linearSearchChart = new Chart(linearCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: array.length}, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Linear Search Steps',
+                        data: Array.from({length: array.length}, (_, i) => i + 1),
+                        borderColor: '#0072ff',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Linear Search Complexity (O(n))'
+                        }
+                    }
+                }
+            });
+
+            // Binary Search Chart
+            const binaryCtx = document.getElementById('binarySearchChart').getContext('2d');
+            if (binarySearchChart) binarySearchChart.destroy();
+            binarySearchChart = new Chart(binaryCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: array.length}, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Binary Search Steps',
+                        data: Array.from({length: array.length}, (_, i) => Math.log2(i + 1)),
+                        borderColor: '#00c6ff',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Binary Search Complexity (O(log n))'
+                        }
+                    }
+                }
+            });
+        }
+
+        function visualizeSearch(array, containerId, highlightIndex) {
+            const container = document.getElementById(containerId);
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.justifyContent = 'center';
+            container.innerHTML = array.map((num, i) => 
+                `<div class="viz-bar" style="background:${i===highlightIndex?'#48BB78':'#2B6CB0'};"><span class="viz-number viz-bar">${num}</span></div>`
+            ).join('');
+        }
+
+        // Initialize
+        generateArray();
+    </script>
+</body>
+</html> 

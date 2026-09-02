@@ -1,0 +1,54 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Queue Applications</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body { background: linear-gradient(to right, #ffecd2, #fcb69f); font-family: 'Poppins', sans-serif; text-align: center; padding: 20px; }
+    h1 { color: #333; }
+    .controls { margin: 20px; }
+    input, button { margin: 5px; padding: 10px; border-radius: 5px; }
+    button { background: #ff7043; color: #fff; border: none; cursor: pointer; }
+    button:hover { background: #e64a19; }
+    #output { margin-top: 30px; font-weight: bold; }
+  
+                    .current-page {
+                        text-decoration: underline;
+                        text-decoration-thickness: 2px;
+                        text-decoration-color: var(--primary-color);
+                        font-weight: bold;
+                        color: var(--primary-color);
+                    }
+                    </style>
+</head>
+<body>
+
+<h1>Queue Application: Palindrome Checker</h1>
+
+<div class="controls">
+  <input id="textInput" type="text" placeholder="Enter Text">
+  <button onclick="checkPalindrome()">Check Palindrome</button>
+</div>
+
+<div id="output"></div>
+
+<script>
+function checkPalindrome() {
+  const input = document.getElementById('textInput').value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const queue = input.split('');
+  const reversed = [...queue].reverse().join('');
+  document.getElementById('output').innerText = input === reversed ? "It's a Palindrome!" : "Not a Palindrome.";
+}
+</script>
+
+<footer style="margin-top: 30px;">&copy; 2025 Virtual DSA Lab | Queue Applications</footer>
+
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,594 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shortest Path Algorithms</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    body { 
+      background: linear-gradient(to right, #ffafbd, #ffc3a0); 
+      font-family: 'Poppins', sans-serif; 
+      text-align: center; 
+      padding: 20px; 
+      color: #333; 
+    }
+    h1 { margin-bottom: 20px; }
+    .controls { 
+      margin: 20px; 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    input, button { 
+      padding: 10px; 
+      border-radius: 5px;
+      border: none;
+    }
+    button { 
+      background: #ff5722; 
+      color: white; 
+      cursor: pointer; 
+      transition: all 0.3s ease;
+    }
+    button:hover { 
+      background: #e64a19;
+      transform: scale(1.05);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #graph-container {
+      width: 800px;
+      height: 500px;
+      margin: 20px auto;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    .node {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 3;
+    }
+    .node:hover {
+      transform: scale(1.1);
+    }
+    .edge {
+      position: absolute;
+      height: 3px;
+      background: #fff;
+      transform-origin: 0 0;
+      transition: all 0.3s ease;
+      z-index: 1;
+    }
+    .edge-weight {
+      position: absolute;
+      color: white;
+      font-size: 14px;
+      background: rgba(0,0,0,0.7);
+      padding: 2px 8px;
+      border-radius: 4px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .shortest-path {
+      background: #4CAF50;
+      height: 4px;
+    }
+    .visited-node {
+      background: #2196F3;
+      color: white;
+    }
+    .current-node {
+      background: #FFC107;
+      color: #333;
+      animation: pulse 1s infinite;
+    }
+    #algorithm-info {
+      margin: 20px;
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      text-align: left;
+    }
+    #distance-table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    #distance-table th, #distance-table td {
+      padding: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    #distance-table th {
+      background: rgba(255,255,255,0.2);
+    }
+    .step-highlight {
+      animation: highlight 1s ease-in-out;
+    }
+    @keyframes highlight {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+  
+                    .current-page {
+                        text-decoration: underline;
+                        text-decoration-thickness: 2px;
+                        text-decoration-color: var(--primary-color);
+                        font-weight: bold;
+                        color: var(--primary-color);
+                    }
+                    </style>
+</head>
+<body>
+
+<h1>Shortest Path Algorithms</h1>
+
+<div class="controls">
+  <div class="input-group">
+    <input id="node1" type="text" placeholder="Node 1">
+    <input id="node2" type="text" placeholder="Node 2">
+    <input id="weight" type="number" placeholder="Weight" min="1">
+    <button onclick="addEdge()">Add Edge</button>
+  </div>
+  <div class="input-group">
+    <button onclick="startDijkstra()">Run Dijkstra's</button>
+    <button onclick="startStepByStepDijkstra()">Step-by-Step Dijkstra's</button>
+    <button onclick="startFloydWarshall()">Run Floyd-Warshall</button>
+    <button onclick="startStepByStepFloydWarshall()">Step-by-Step Floyd-Warshall</button>
+    <button onclick="resetGraph()">Reset Graph</button>
+  </div>
+</div>
+
+<div id="graph-container"></div>
+<div id="algorithm-info"></div>
+<div id="distance-table"></div>
+
+<script>
+class Graph {
+  constructor() {
+    this.nodes = new Set();
+    this.edges = [];
+    this.adjacencyList = new Map();
+  }
+
+  addNode(node) {
+    this.nodes.add(node);
+    this.adjacencyList.set(node, []);
+  }
+
+  addEdge(node1, node2, weight) {
+    if (!this.nodes.has(node1)) this.addNode(node1);
+    if (!this.nodes.has(node2)) this.addNode(node2);
+    
+    this.edges.push({ node1, node2, weight });
+    this.adjacencyList.get(node1).push({ node: node2, weight });
+    this.adjacencyList.get(node2).push({ node: node1, weight });
+  }
+
+  getEdges() {
+    return this.edges;
+  }
+
+  getNodes() {
+    return Array.from(this.nodes);
+  }
+}
+
+const graph = new Graph();
+let animationSpeed = 1000; // ms
+
+// Dijkstra's Algorithm State
+let dijkstraState = {
+  distances: {},
+  previous: {},
+  unvisited: new Set(),
+  current: null,
+  isRunning: false,
+  startNode: null
+};
+
+// Floyd-Warshall State
+let floydState = {
+  distances: [],
+  nodes: [],
+  currentK: 0,
+  isRunning: false
+};
+
+function addEdge() {
+  const node1 = document.getElementById('node1').value;
+  const node2 = document.getElementById('node2').value;
+  const weight = parseInt(document.getElementById('weight').value);
+
+  if (node1 && node2 && weight) {
+    graph.addEdge(node1, node2, weight);
+    renderGraph();
+    document.getElementById('node1').value = '';
+    document.getElementById('node2').value = '';
+    document.getElementById('weight').value = '';
+  }
+}
+
+function renderGraph() {
+  const container = document.getElementById('graph-container');
+  container.innerHTML = '';
+  
+  const nodes = graph.getNodes();
+  const edges = graph.getEdges();
+  
+  // Position nodes in a circle
+  const centerX = container.clientWidth / 2;
+  const centerY = container.clientHeight / 2;
+  const radius = Math.min(centerX, centerY) * 0.8;
+  
+  // Create nodes first
+  const nodeElements = {};
+  nodes.forEach((node, index) => {
+    const angle = (index * 2 * Math.PI) / nodes.length;
+    const x = centerX + radius * Math.cos(angle);
+    const y = centerY + radius * Math.sin(angle);
+    
+    const nodeElement = document.createElement('div');
+    nodeElement.className = 'node';
+    nodeElement.textContent = node;
+    nodeElement.style.left = `${x}px`;
+    nodeElement.style.top = `${y}px`;
+    container.appendChild(nodeElement);
+    nodeElements[node] = nodeElement;
+  });
+
+  // Create edges after nodes
+  edges.forEach(edge => {
+    const node1Element = nodeElements[edge.node1];
+    const node2Element = nodeElements[edge.node2];
+    
+    if (node1Element && node2Element) {
+      const x1 = parseFloat(node1Element.style.left) + 20;
+      const y1 = parseFloat(node1Element.style.top) + 20;
+      const x2 = parseFloat(node2Element.style.left) + 20;
+      const y2 = parseFloat(node2Element.style.top) + 20;
+      
+      const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+      const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+      
+      const edgeElement = document.createElement('div');
+      edgeElement.className = 'edge';
+      edgeElement.style.left = `${x1}px`;
+      edgeElement.style.top = `${y1}px`;
+      edgeElement.style.width = `${length}px`;
+      edgeElement.style.transform = `rotate(${angle}deg)`;
+      
+      const weightElement = document.createElement('div');
+      weightElement.className = 'edge-weight';
+      weightElement.textContent = edge.weight;
+      
+      const weightX = length/2 - 15;
+      const weightY = -15;
+      weightElement.style.left = `${weightX}px`;
+      weightElement.style.top = `${weightY}px`;
+      
+      edgeElement.appendChild(weightElement);
+      container.appendChild(edgeElement);
+    }
+  });
+}
+
+function startStepByStepDijkstra() {
+  const nodes = graph.getNodes();
+  if (nodes.length === 0) return;
+
+  // Reset state
+  dijkstraState = {
+    distances: {},
+    previous: {},
+    unvisited: new Set(nodes),
+    current: null,
+    isRunning: true,
+    startNode: nodes[0] // Start with first node
+  };
+
+  // Initialize distances
+  nodes.forEach(node => {
+    dijkstraState.distances[node] = node === dijkstraState.startNode ? 0 : Infinity;
+    dijkstraState.previous[node] = null;
+  });
+
+  // Reset visual state
+  document.querySelectorAll('.edge').forEach(edge => {
+    edge.classList.remove('shortest-path');
+  });
+  document.querySelectorAll('.node').forEach(node => {
+    node.classList.remove('visited-node', 'current-node');
+  });
+
+  document.getElementById('algorithm-info').innerHTML = 
+    'Dijkstra\'s Algorithm (Step-by-Step Mode)<br>Press Right Arrow to advance, Left Arrow to go back';
+  
+  // Enable keyboard controls
+  document.addEventListener('keydown', handleDijkstraStep);
+}
+
+function handleDijkstraStep(event) {
+  if (!dijkstraState.isRunning) return;
+
+  if (event.key === 'ArrowRight') {
+    advanceDijkstraStep();
+  } else if (event.key === 'ArrowLeft') {
+    goBackDijkstraStep();
+  }
+}
+
+async function advanceDijkstraStep() {
+  if (dijkstraState.unvisited.size === 0) {
+    document.getElementById('algorithm-info').innerHTML += 
+      '<br>Algorithm Complete!';
+    dijkstraState.isRunning = false;
+    document.removeEventListener('keydown', handleDijkstraStep);
+    return;
+  }
+
+  // Find node with minimum distance
+  let minNode = null;
+  let minDistance = Infinity;
+
+  dijkstraState.unvisited.forEach(node => {
+    if (dijkstraState.distances[node] < minDistance) {
+      minDistance = dijkstraState.distances[node];
+      minNode = node;
+    }
+  });
+
+  if (minNode) {
+    // Update current node
+    if (dijkstraState.current) {
+      const prevNode = document.querySelector(`.node:contains('${dijkstraState.current}')`);
+      if (prevNode) prevNode.classList.remove('current-node');
+    }
+
+    dijkstraState.current = minNode;
+    const currentNode = document.querySelector(`.node:contains('${minNode}')`);
+    if (currentNode) {
+      currentNode.classList.add('current-node');
+      currentNode.classList.add('visited-node');
+    }
+
+    document.getElementById('algorithm-info').innerHTML = 
+      `Step: Visiting node ${minNode} (distance: ${dijkstraState.distances[minNode]})`;
+
+    // Update distances to neighbors
+    const neighbors = graph.adjacencyList.get(minNode);
+    for (const neighbor of neighbors) {
+      const newDistance = dijkstraState.distances[minNode] + neighbor.weight;
+      if (newDistance < dijkstraState.distances[neighbor.node]) {
+        dijkstraState.distances[neighbor.node] = newDistance;
+        dijkstraState.previous[neighbor.node] = minNode;
+
+        // Highlight the edge
+        const edgeElements = document.querySelectorAll('.edge');
+        const edgeElement = Array.from(edgeElements).find(el => {
+          const weightEl = el.querySelector('.edge-weight');
+          return weightEl && weightEl.textContent === neighbor.weight.toString();
+        });
+
+        if (edgeElement) {
+          edgeElement.classList.add('step-highlight');
+          await new Promise(resolve => setTimeout(resolve, 300));
+          edgeElement.classList.remove('step-highlight');
+        }
+      }
+    }
+
+    dijkstraState.unvisited.delete(minNode);
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+}
+
+function goBackDijkstraStep() {
+  // Implementation for going back in Dijkstra's algorithm
+  // This would require maintaining a history of states
+  // For simplicity, we'll just reset to the beginning
+  startStepByStepDijkstra();
+}
+
+function startStepByStepFloydWarshall() {
+  const nodes = graph.getNodes();
+  if (nodes.length === 0) return;
+
+  // Initialize state
+  floydState = {
+    nodes: nodes,
+    currentK: 0,
+    isRunning: true,
+    distances: initializeFloydWarshallDistances()
+  };
+
+  // Reset visual state
+  document.querySelectorAll('.edge').forEach(edge => {
+    edge.classList.remove('shortest-path');
+  });
+
+  document.getElementById('algorithm-info').innerHTML = 
+    'Floyd-Warshall Algorithm (Step-by-Step Mode)<br>Press Right Arrow to advance, Left Arrow to go back';
+  
+  // Enable keyboard controls
+  document.addEventListener('keydown', handleFloydWarshallStep);
+  updateDistanceTable();
+}
+
+function initializeFloydWarshallDistances() {
+  const nodes = graph.getNodes();
+  const n = nodes.length;
+  const distances = Array(n).fill().map(() => Array(n).fill(Infinity));
+
+  // Set diagonal to 0
+  for (let i = 0; i < n; i++) {
+    distances[i][i] = 0;
+  }
+
+  // Set initial edge weights
+  graph.getEdges().forEach(edge => {
+    const i = nodes.indexOf(edge.node1);
+    const j = nodes.indexOf(edge.node2);
+    distances[i][j] = edge.weight;
+    distances[j][i] = edge.weight;
+  });
+
+  return distances;
+}
+
+function handleFloydWarshallStep(event) {
+  if (!floydState.isRunning) return;
+
+  if (event.key === 'ArrowRight') {
+    advanceFloydWarshallStep();
+  } else if (event.key === 'ArrowLeft') {
+    goBackFloydWarshallStep();
+  }
+}
+
+async function advanceFloydWarshallStep() {
+  const n = floydState.nodes.length;
+  
+  if (floydState.currentK >= n) {
+    document.getElementById('algorithm-info').innerHTML += 
+      '<br>Algorithm Complete!';
+    floydState.isRunning = false;
+    document.removeEventListener('keydown', handleFloydWarshallStep);
+    return;
+  }
+
+  const k = floydState.currentK;
+  document.getElementById('algorithm-info').innerHTML = 
+    `Step: Using node ${floydState.nodes[k]} as intermediate node`;
+
+  // Update distances
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const newDistance = floydState.distances[i][k] + floydState.distances[k][j];
+      if (newDistance < floydState.distances[i][j]) {
+        floydState.distances[i][j] = newDistance;
+        
+        // Highlight the nodes involved
+        const nodeI = document.querySelector(`.node:contains('${floydState.nodes[i]}')`);
+        const nodeJ = document.querySelector(`.node:contains('${floydState.nodes[j]}')`);
+        const nodeK = document.querySelector(`.node:contains('${floydState.nodes[k]}')`);
+        
+        if (nodeI && nodeJ && nodeK) {
+          nodeI.classList.add('step-highlight');
+          nodeJ.classList.add('step-highlight');
+          nodeK.classList.add('step-highlight');
+          
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          nodeI.classList.remove('step-highlight');
+          nodeJ.classList.remove('step-highlight');
+          nodeK.classList.remove('step-highlight');
+        }
+      }
+    }
+  }
+
+  updateDistanceTable();
+  floydState.currentK++;
+  await new Promise(resolve => setTimeout(resolve, 500));
+}
+
+function goBackFloydWarshallStep() {
+  if (floydState.currentK <= 0) return;
+
+  floydState.currentK--;
+  floydState.distances = initializeFloydWarshallDistances();
+  
+  // Recompute distances up to current step
+  for (let k = 0; k < floydState.currentK; k++) {
+    const n = floydState.nodes.length;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        const newDistance = floydState.distances[i][k] + floydState.distances[k][j];
+        if (newDistance < floydState.distances[i][j]) {
+          floydState.distances[i][j] = newDistance;
+        }
+      }
+    }
+  }
+
+  updateDistanceTable();
+  document.getElementById('algorithm-info').innerHTML = 
+    `Step: Using node ${floydState.nodes[floydState.currentK]} as intermediate node`;
+}
+
+function updateDistanceTable() {
+  const table = document.getElementById('distance-table');
+  const nodes = floydState.nodes;
+  const n = nodes.length;
+
+  let html = '<table><tr><th></th>';
+  nodes.forEach(node => html += `<th>${node}</th>`);
+  html += '</tr>';
+
+  for (let i = 0; i < n; i++) {
+    html += `<tr><th>${nodes[i]}</th>`;
+    for (let j = 0; j < n; j++) {
+      const distance = floydState.distances[i][j];
+      html += `<td>${distance === Infinity ? '∞' : distance}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+
+  table.innerHTML = html;
+}
+
+function resetGraph() {
+  graph.nodes.clear();
+  graph.edges = [];
+  graph.adjacencyList.clear();
+  document.getElementById('graph-container').innerHTML = '';
+  document.getElementById('algorithm-info').innerHTML = '';
+  document.getElementById('distance-table').innerHTML = '';
+}
+
+// Helper function for element selection
+Element.prototype.contains = function(text) {
+  return this.textContent.includes(text);
+};
+</script>
+
+<footer style="margin-top: 30px;">&copy; 2025 Virtual DSA Lab | Shortest Path Algorithms</footer>
+
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiment 3: Advanced Sorting Algorithms</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Advanced Sorting Algorithms</h1>
+        <p style="text-align: center; color: white;">Interactive visualization of Merge, Quick, and Heap Sort</p>
+
+        <div class="card">
+            <h2>Array Setup</h2>
+            <div class="controls">
+                <input type="number" id="arraySize" min="5" max="20" value="10" placeholder="Array Size">
+                <button onclick="generateArray()">Generate Array</button>
+                <button onclick="startAllSorts()">Start All Sorts</button>
+            </div>
+            <div id="arrayVisualization" style="text-align: center; margin: 20px 0;"></div>
+        </div>
+
+        <div class="visualization-container">
+            <div class="card">
+                <h2>Merge Sort</h2>
+                <div class="controls">
+                    <button onclick="startMergeSort()">Start Sort</button>
+                    <button onclick="resetMergeSort()">Reset</button>
+                </div>
+                <div id="mergeSortVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="mergeSortChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Quick Sort</h2>
+                <div class="controls">
+                    <button onclick="startQuickSort()">Start Sort</button>
+                    <button onclick="resetQuickSort()">Reset</button>
+                </div>
+                <div id="quickSortVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="quickSortChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Heap Sort</h2>
+                <div class="controls">
+                    <button onclick="startHeapSort()">Start Sort</button>
+                    <button onclick="resetHeapSort()">Reset</button>
+                </div>
+                <div id="heapSortVisualization" style="text-align: center; margin: 20px 0;"></div>
+                <div class="complexity-chart">
+                    <canvas id="heapSortChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card explanation">
+            <h3>Algorithm Analysis</h3>
+            <p><strong>Merge Sort:</strong> O(n log n) time complexity, O(n) space complexity - divide and conquer with stable sorting</p>
+            <p><strong>Quick Sort:</strong> O(n log n) average case, O(n²) worst case, O(log n) space complexity - divide and conquer with in-place sorting</p>
+            <p><strong>Heap Sort:</strong> O(n log n) time complexity, O(1) space complexity - uses binary heap data structure</p>
+            <p><strong>Best Case:</strong> O(n log n) for all three algorithms</p>
+        </div>
+    </div>
+
+    <script>
+        let originalArray = [];
+        let mergeArray = [];
+        let quickArray = [];
+        let heapArray = [];
+        let charts = {};
+
+        function generateArray() {
+            const size = parseInt(document.getElementById('arraySize').value);
+            originalArray = Array.from({length: size}, () => Math.floor(Math.random() * 100));
+            resetAllArrays();
+            visualizeAllArrays();
+            updateCharts();
+        }
+
+        function resetAllArrays() {
+            mergeArray = [...originalArray];
+            quickArray = [...originalArray];
+            heapArray = [...originalArray];
+        }
+
+        function visualizeArray(array, containerId, highlightIndices = [], swapIndices = [], sortedIndices = []) {
+            const container = document.getElementById(containerId);
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.justifyContent = 'center';
+            container.innerHTML = array.map((num, i) => {
+                let bg = '#e5e7eb';
+                if (sortedIndices.includes(i)) bg = '#22c55e';
+                else if (swapIndices.includes(i)) bg = '#fbbf24';
+                else if (highlightIndices.includes(i)) bg = '#2563eb';
+                return `<div class=\"viz-bar\" id=\"bar-${containerId}-${i}\" style=\"margin:2px; background:${bg}; transition:background 0.3s;\"><span class=\"viz-number viz-bar\">${num}</span></div>`;
+            }).join('');
+        }
+
+        function visualizeAllArrays() {
+            visualizeArray(mergeArray, 'mergeSortVisualization');
+            visualizeArray(quickArray, 'quickSortVisualization');
+            visualizeArray(heapArray, 'heapSortVisualization');
+        }
+
+        async function animateSwap(containerId, i, j) {
+            const barI = document.getElementById(`bar-${containerId}-${i}`);
+            const barJ = document.getElementById(`bar-${containerId}-${j}`);
+            if (!barI || !barJ) return;
+            const rectI = barI.getBoundingClientRect();
+            const rectJ = barJ.getBoundingClientRect();
+            const dx = rectJ.left - rectI.left;
+            await Promise.all([
+                anime({ targets: barI, translateX: dx, backgroundColor: '#fbbf24', duration: 350, easing: 'easeInOutQuad' }).finished,
+                anime({ targets: barJ, translateX: -dx, backgroundColor: '#fbbf24', duration: 350, easing: 'easeInOutQuad' }).finished
+            ]);
+            barI.style.transform = '';
+            barJ.style.transform = '';
+        }
+
+        async function mergeSort(arr, start = 0, end = arr.length - 1) {
+            if (start >= end) return;
+            const mid = Math.floor((start + end) / 2);
+            await mergeSort(arr, start, mid);
+            await mergeSort(arr, mid + 1, end);
+            await merge(arr, start, mid, end);
+        }
+
+        async function merge(arr, start, mid, end) {
+            const left = arr.slice(start, mid + 1);
+            const right = arr.slice(mid + 1, end + 1);
+            let i = 0, j = 0, k = start;
+            while (i < left.length && j < right.length) {
+                let highlight = [k];
+                if (left[i] <= right[j]) {
+                    arr[k] = left[i++];
+                } else {
+                    arr[k] = right[j++];
+                }
+                visualizeArray(mergeArray, 'mergeSortVisualization', highlight, [], []);
+                await new Promise(res => setTimeout(res, 350));
+                k++;
+            }
+            while (i < left.length) {
+                arr[k] = left[i++];
+                visualizeArray(mergeArray, 'mergeSortVisualization', [k], [], []);
+                await new Promise(res => setTimeout(res, 200));
+                k++;
+            }
+            while (j < right.length) {
+                arr[k] = right[j++];
+                visualizeArray(mergeArray, 'mergeSortVisualization', [k], [], []);
+                await new Promise(res => setTimeout(res, 200));
+                k++;
+            }
+            visualizeArray(mergeArray, 'mergeSortVisualization', [], [], Array.from({length: mergeArray.length}, (_, k) => k));
+        }
+
+        async function quickSort(arr, low = 0, high = arr.length - 1) {
+            if (low < high) {
+                const pi = await partition(arr, low, high);
+                await quickSort(arr, low, pi - 1);
+                await quickSort(arr, pi + 1, high);
+            }
+        }
+
+        async function partition(arr, low, high) {
+            const pivot = arr[high];
+            let i = low - 1;
+            for (let j = low; j < high; j++) {
+                visualizeArray(quickArray, 'quickSortVisualization', [j, high], [], []);
+                await new Promise(res => setTimeout(res, 200));
+                if (arr[j] < pivot) {
+                    i++;
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                    visualizeArray(quickArray, 'quickSortVisualization', [i, j], [i, j], []);
+                    await animateSwap('quickSortVisualization', i, j);
+                    await new Promise(res => setTimeout(res, 200));
+                }
+            }
+            [arr[i + 1], arr[high]] = [arr[high], arr[i + 1]];
+            visualizeArray(quickArray, 'quickSortVisualization', [i+1, high], [i+1, high], []);
+            await animateSwap('quickSortVisualization', i+1, high);
+            await new Promise(res => setTimeout(res, 200));
+            return i + 1;
+        }
+
+        async function heapSort(arr) {
+            const n = arr.length;
+            for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+                await heapify(arr, n, i);
+            }
+            for (let i = n - 1; i > 0; i--) {
+                [arr[0], arr[i]] = [arr[i], arr[0]];
+                visualizeArray(heapArray, 'heapSortVisualization', [0, i], [0, i], Array.from({length: heapArray.length}, (_, k) => k).slice(i));
+                await animateSwap('heapSortVisualization', 0, i);
+                await new Promise(res => setTimeout(res, 200));
+                await heapify(arr, i, 0);
+            }
+            visualizeArray(heapArray, 'heapSortVisualization', [], [], Array.from({length: heapArray.length}, (_, k) => k));
+        }
+
+        async function heapify(arr, n, i) {
+            let largest = i;
+            const left = 2 * i + 1;
+            const right = 2 * i + 2;
+            if (left < n && arr[left] > arr[largest]) {
+                largest = left;
+            }
+            if (right < n && arr[right] > arr[largest]) {
+                largest = right;
+            }
+            if (largest !== i) {
+                [arr[i], arr[largest]] = [arr[largest], arr[i]];
+                visualizeArray(heapArray, 'heapSortVisualization', [i, largest], [i, largest], []);
+                await animateSwap('heapSortVisualization', i, largest);
+                await new Promise(res => setTimeout(res, 200));
+                await heapify(arr, n, largest);
+            }
+        }
+
+        async function startMergeSort() {
+            await mergeSort(mergeArray);
+        }
+
+        async function startQuickSort() {
+            await quickSort(quickArray);
+        }
+
+        async function startHeapSort() {
+            await heapSort(heapArray);
+        }
+
+        function startAllSorts() {
+            resetAllArrays();
+            visualizeAllArrays();
+            startMergeSort();
+            startQuickSort();
+            startHeapSort();
+        }
+
+        function resetMergeSort() {
+            mergeArray = [...originalArray];
+            visualizeArray(mergeArray, 'mergeSortVisualization');
+        }
+
+        function resetQuickSort() {
+            quickArray = [...originalArray];
+            visualizeArray(quickArray, 'quickSortVisualization');
+        }
+
+        function resetHeapSort() {
+            heapArray = [...originalArray];
+            visualizeArray(heapArray, 'heapSortVisualization');
+        }
+
+        function updateCharts() {
+            const sizes = Array.from({length: 20}, (_, i) => i + 1);
+            const datasets = [
+                {
+                    label: 'Merge Sort (O(n log n))',
+                    data: sizes.map(n => n * Math.log2(n)),
+                    borderColor: '#0072ff'
+                },
+                {
+                    label: 'Quick Sort (O(n log n))',
+                    data: sizes.map(n => n * Math.log2(n)),
+                    borderColor: '#00c6ff'
+                },
+                {
+                    label: 'Heap Sort (O(n log n))',
+                    data: sizes.map(n => n * Math.log2(n)),
+                    borderColor: '#ff6b6b'
+                }
+            ];
+
+            ['mergeSortChart', 'quickSortChart', 'heapSortChart'].forEach(chartId => {
+                const ctx = document.getElementById(chartId).getContext('2d');
+                if (charts[chartId]) charts[chartId].destroy();
+                charts[chartId] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sizes,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Advanced Sorting Algorithm Complexity'
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        // Initialize
+        generateArray();
+    </script>
+</body>
+</html> 

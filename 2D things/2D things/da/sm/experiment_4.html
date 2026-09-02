@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Matrix Operations Simulator - Data Analytics Lab</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #eef2f7;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    .matrix-input {
+      margin: 10px;
+      display: inline-block;
+    }
+    textarea {
+      width: 150px;
+      height: 150px;
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 14px;
+      font-size: 15px;
+    }
+    .result {
+      margin-top: 20px;
+      background: #fff;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+    pre {
+      font-size: 18px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🧮 Matrix Operations Simulator</h1>
+
+<div>
+  <div class="matrix-input">
+    <h3>Matrix A</h3>
+    <textarea id="matrixA" placeholder="e.g. 1 2\n3 4"></textarea>
+  </div>
+
+  <div class="matrix-input">
+    <h3>Matrix B</h3>
+    <textarea id="matrixB" placeholder="e.g. 5 6\n7 8"></textarea>
+  </div>
+</div>
+
+<div>
+  <button onclick="operate('add')">Add</button>
+  <button onclick="operate('subtract')">Subtract</button>
+  <button onclick="operate('multiply')">Multiply</button>
+  <button onclick="operate('divide')">Divide</button>
+  <button onclick="clearAll()">Clear</button>
+</div>
+
+<div class="result">
+  <h3>Result</h3>
+  <pre id="resultArea">Result will appear here...</pre>
+</div>
+
+<script>
+  function parseMatrix(text) {
+    return text.trim().split('\n').map(row => row.trim().split(/\s+/).map(Number));
+  }
+
+  function displayMatrix(matrix) {
+    return matrix.map(row => row.join(' ')).join('\n');
+  }
+
+  function operate(op) {
+    const matrixA = parseMatrix(document.getElementById('matrixA').value);
+    const matrixB = parseMatrix(document.getElementById('matrixB').value);
+
+    if (matrixA.length !== matrixB.length || matrixA[0].length !== matrixB[0].length) {
+      alert("Matrices must be the same dimensions!");
+      return;
+    }
+
+    let result = [];
+
+    for (let i = 0; i < matrixA.length; i++) {
+      let row = [];
+      for (let j = 0; j < matrixA[0].length; j++) {
+        if (op === 'add') row.push(matrixA[i][j] + matrixB[i][j]);
+        else if (op === 'subtract') row.push(matrixA[i][j] - matrixB[i][j]);
+        else if (op === 'multiply') row.push(matrixA[i][j] * matrixB[i][j]);
+        else if (op === 'divide') {
+          if (matrixB[i][j] === 0) {
+            row.push('∞');
+          } else {
+            row.push((matrixA[i][j] / matrixB[i][j]).toFixed(2));
+          }
+        }
+      }
+      result.push(row);
+    }
+
+    document.getElementById('resultArea').innerText = displayMatrix(result);
+  }
+
+  function clearAll() {
+    document.getElementById('matrixA').value = '';
+    document.getElementById('matrixB').value = '';
+    document.getElementById('resultArea').innerText = 'Result will appear here...';
+  }
+</script>
+
+</body>
+</html>
