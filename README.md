@@ -393,17 +393,6 @@ DIMENSA democratizes technical laboratory education by addressing systemic infra
 
 ---
 
-## 👥 Team
-
-Built with passion by **Team DIMENSA**:
-
-- **[Mahi Shukla](https://github.com/Mahishukla1207)**
-- **Kush Kumar Bairwa**
-- **Divyansh Mishra**
-- **Dev Pratap Singh**
-
----
-
 ## 📜 License & Contributions
 
 Contributions, feature suggestions, and educational institution feedback are welcome. Feel free to open an issue or submit a pull request on the [DIMENSA GitHub Repository](https://github.com/Mahishukla1207/DIMENSA).
@@ -412,5 +401,5 @@ Contributions, feature suggestions, and educational institution feedback are wel
 
 <p align="center">
   <strong>DIMENSA — Learn. Experiment. Visualize. Understand.</strong><br>
-  <sub>Built with ❤️ by Team DIMENSA</sub>
+  <sub>Built with ❤️ by Mahi Shukla</sub>
 </p>
